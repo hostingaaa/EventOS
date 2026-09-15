@@ -588,50 +588,49 @@ export function DashboardPage() {
 
   return (
     <div className="dashboard">
-      {/* Title + counters */}
+      {/* Title */}
       <div className="dashboard__title-row">
-        <div className="dashboard__title-block">
-          <div className="dashboard__kicker">Operational execution</div>
-          <div className="dashboard__title-line">
-            <h1>Event Operations</h1>
+        <div className="dashboard__kicker">Operational execution</div>
+        <div className="dashboard__title-line">
+          <h1>Event Operations</h1>
+          <button
+            type="button"
+            className={`dashboard__refresh${loading ? ' loading' : ''}`}
+            onClick={load}
+            disabled={loading}
+            title="Refresh"
+            aria-label="Refresh"
+          >
+            <RefreshIcon />
+          </button>
+          {user && (
             <button
               type="button"
-              className={`dashboard__refresh${loading ? ' loading' : ''}`}
-              onClick={load}
-              disabled={loading}
-              title="Refresh"
-              aria-label="Refresh"
+              className="dashboard__new"
+              onClick={() => setShowNewProject(true)}
+              title="New event"
+              aria-label="New event"
             >
-              <RefreshIcon />
+              <NewEventIcon />
+              New event
             </button>
-            {user && (
-              <button
-                type="button"
-                className="dashboard__new"
-                onClick={() => setShowNewProject(true)}
-                title="New event"
-                aria-label="New event"
-              >
-                <NewEventIcon />
-                New event
-              </button>
-            )}
-          </div>
+          )}
         </div>
+      </div>
 
-        <div className="dashboard__stats">
-          <div className="dashboard__stat">
-            <strong>{activeEvents.length}</strong>
-            <small>Active</small>
-          </div>
-          <div className="dashboard__stat dashboard__stat--accent">
-            <strong>{filterCounts.attention}</strong>
-            <small>Need action</small>
-          </div>
-          <div className="dashboard__stat">
-            <strong>{completedEvents.length}</strong>
-            <small>Completed</small>
-          </div>
+      {/* Stat cards */}
+      <div className="dashboard__stats">
+        <div className="dashboard__stat-card">
+          <div className="dashboard__stat-figure">{activeEvents.length}</div>
+          <div className="dashboard__stat-label">Active events</div>
+        </div>
+        <div className="dashboard__stat-card">
+          <div className="dashboard__stat-figure">{filterCounts.attention}</div>
+          <div className="dashboard__stat-label">Need action</div>
+        </div>
+        <div className="dashboard__stat-card">
+          <div className="dashboard__stat-figure">{completedEvents.length}</div>
+          <div className="dashboard__stat-label">Completed</div>
         </div>
       </div>
 
