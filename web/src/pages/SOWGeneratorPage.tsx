@@ -16,6 +16,7 @@ import type { TaskTemplateWithFiles } from '../types';
 import { findSowTask, isTemplateSuggested, resolveTemplateIds } from '../utils/templateMatch';
 import { formatDateRange, formatMonthYear } from '../utils/dateFormat';
 import { DateInput } from '../components/DateInput';
+import { COUNTRY_CITIES, OTHER_CITY, citiesForCountry, matchCountryCity } from '../data/countryCities';
 import {
   fetchAndCacheMembers,
   getAssignableMembers,
@@ -74,7 +75,9 @@ export function SOWGeneratorPage() {
   // ── Editable event fields ──────────────────────────────────────────────────
   const [code,       setCode]       = useState('');
   const [title,      setTitle]      = useState('');
-  const [location,   setLocation]   = useState('');
+  const [country,    setCountry]    = useState('');
+  const [city,       setCity]       = useState('');
+  const [cityOther,  setCityOther]  = useState('');
   const [startDate,  setStartDate]  = useState('');
   const [endDate,    setEndDate]    = useState('');
   const [notes,      setNotes]      = useState('');
@@ -93,6 +96,19 @@ export function SOWGeneratorPage() {
   // ── Generation ─────────────────────────────────────────────────────────────
   const [generating, setGenerating] = useState(false);
   const [genError,   setGenError]   = useState('');
+
+  // ── Derived "City, Country" location string ───────────────────────────────
+  const cityForLocation = city === OTHER_CITY ? cityOther.trim() : city;
+  const location = country
+    ? (cityForLocation ? `${cityForLocation}, ${country}` : country)
+    : '';
+  const selectedCountryEntry = citiesForCountry(country);
+
+  function handleCountryChange(next: string) {
+    setCountry(next);
+    setCity('');
+    setCityOther('');
+  }
 
   const refreshMembers = () => setMembers(getAssignableMembers());
 
@@ -153,7 +169,10 @@ export function SOWGeneratorPage() {
       // Pre-fill form fields
       setCode(sow.eventCode);
       setTitle(sow.meetingName);
-      setLocation(sow.location || sow.city);
+      const matched = matchCountryCity(sow.location || sow.city);
+      setCountry(matched.country);
+      setCity(matched.city);
+      setCityOther(matched.cityOther);
       setStartDate(sow.startDate);
       setEndDate(sow.endDate);
       setNotes(sow.notes);
@@ -370,7 +389,7 @@ export function SOWGeneratorPage() {
                 {!parsed && <span className="sow-section__optional">(or fill manually)</span>}
               </h2>
 
-              <div className="sow-grid-2">
+              <div className="sow-grid-3">
                 <label className="sow-label sow-label--required">
                   Event code
                   <input
@@ -382,14 +401,54 @@ export function SOWGeneratorPage() {
                   />
                 </label>
                 <label className="sow-label">
-                  Location / City
+                  Country
+                  <select
+                    className="sow-input sow-select"
+                    value={country}
+                    onChange={(e) => handleCountryChange(e.target.value)}
+                  >
+                    <option value="">— select country —</option>
+                    {COUNTRY_CITIES.map((c) => (
+                      <option key={c.country} value={c.country}>{c.country}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="sow-label">
+                  City
+                  <select
+                    className="sow-input sow-select"
+                    value={city}
+                    onChange={(e) => {
+                      setCity(e.target.value);
+                      if (e.target.value !== OTHER_CITY) setCityOther('');
+                    }}
+                    disabled={!country}
+                  >
+                    <option value="">— select city —</option>
+                    {selectedCountryEntry?.capital && (
+                      <option value={selectedCountryEntry.capital}>{selectedCountryEntry.capital} (capital)</option>
+                    )}
+                    {selectedCountryEntry?.secondCity && (
+                      <option value={selectedCountryEntry.secondCity}>{selectedCountryEntry.secondCity}</option>
+                    )}
+                    <option value={OTHER_CITY}>Other (type manually)</option>
+                  </select>
+                </label>
+              </div>
+
+              {city === OTHER_CITY && (
+                <label className="sow-label" style={{ marginTop: '0.65rem' }}>
+                  City name
                   <input
                     className="sow-input"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    placeholder="Astana, Kazakhstan"
+                    value={cityOther}
+                    onChange={(e) => setCityOther(e.target.value)}
+                    placeholder="Enter city name"
                   />
                 </label>
+              )}
+
+              <div className="sow-grid-2" style={{ marginTop: '0.65rem' }}>
                 <label className="sow-label">
                   Start date
                   <DateInput
