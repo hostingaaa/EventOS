@@ -10,6 +10,7 @@ import { CommentThread } from '../components/collaboration/CommentThread';
 import { EventDetail } from '../components/EventDetail';
 import { ApplyTemplatesModal } from '../components/templates/ApplyTemplatesModal';
 import { VendorSharePanel } from '../components/vendor/VendorSharePanel';
+import { formatEventHeaderDates } from '../utils/calendarDates';
 import './EventWorkspacePage.css';
 
 type Tab = 'tasks' | 'overview' | 'activity';
@@ -116,14 +117,14 @@ export function EventWorkspacePage() {
         <span>/</span>
         <strong>{event.code}</strong>
         <span className="workspace__meta">
-          {event.location} · {event.dates}
+          {event.location} · {formatEventHeaderDates(event)}
         </span>
       </nav>
 
       <header className="workspace__header">
         <div>
           <h1>{event.code} — {event.location}</h1>
-          <p className="workspace__header-sub">{event.dates}</p>
+          <p className="workspace__header-sub">{formatEventHeaderDates(event)}</p>
         </div>
         <div className="workspace__header-actions">
           {event.driveFolderUrl && (

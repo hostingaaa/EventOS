@@ -4,6 +4,7 @@ import { StatusChip } from './StatusChip';
 import { updateEvent } from '../api/client';
 import { useUser } from '../context/UserContext';
 import { getAssignableMembers } from '../utils/roleStore';
+import { formatEventHeaderDates } from '../utils/calendarDates';
 import './EventDetail.css';
 
 const LEM_OPTIONS = ['Open', 'Closed', 'Full/Connectmice'];
@@ -67,7 +68,7 @@ export function EventDetail({ event, onUpdated }: Props) {
       <header className="detail__header">
         <h2>{ev.code}</h2>
         <p>
-          {ev.location} · {ev.dates}
+          {ev.location} · {formatEventHeaderDates(ev)}
         </p>
       </header>
 
