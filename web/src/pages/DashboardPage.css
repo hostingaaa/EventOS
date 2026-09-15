@@ -530,18 +530,20 @@
   white-space: nowrap;
 }
 
-/* 2. Location — stacked city / country */
-.dl-location { display: flex; flex-direction: column; min-width: 0; padding-right: 16px; }
-
-.dl-location__city {
-  display: block;
-  font-size: 14px;
-  white-space: nowrap;
+/* 2. Location — "City, Country" on one line */
+.dl-location {
+  min-width: 0;
+  padding-right: 16px;
   overflow: hidden;
+  white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-.dl-location__country { display: block; font-size: 12px; opacity: 0.5; }
+.dl-location__city { font-size: 14px; }
+
+.dl-location__country { font-size: 12px; opacity: 0.5; }
+
+.dl-location__country::before { content: ', '; }
 
 /* 3. Dates */
 .dl-dates {
