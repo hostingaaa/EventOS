@@ -4,11 +4,18 @@ import { deleteEvent, fetchDashboardHealth, fetchEvents } from '../api/client';
 import { useUser } from '../context/UserContext';
 import type { Event, EventHealth } from '../types';
 import { NewProjectModal } from '../components/NewProjectModal';
-import { summariseHealth } from '../utils/health';
-import { getEventDateRange } from '../utils/calendarDates';
+import { getEventDateRange, parseIsoDate, todayAtNoon } from '../utils/calendarDates';
 import './DashboardPage.css';
 
 type Filter = 'all' | 'attention' | 'missing-sow' | 'missing-venue' | 'critical';
+
+const FILTERS: Array<{ id: Filter; label: string }> = [
+  { id: 'all', label: 'All active' },
+  { id: 'attention', label: 'Needs attention' },
+  { id: 'critical', label: 'Behind schedule' },
+  { id: 'missing-sow', label: 'Missing SOW' },
+  { id: 'missing-venue', label: 'Missing venue' },
+];
 
 /** Circular-arrow refresh icon. Uses currentColor so it picks up the
  * button's own color (green, via .dashboard__refresh). */
@@ -40,48 +47,68 @@ function NewEventIcon() {
   );
 }
 
+/** Magnifying-glass search icon for the toolbar's search field. */
+function SearchIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+      <line x1="21" y1="21" x2="16.2" y2="16.2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 // ─── Date helpers ─────────────────────────────────────────────────────────────
 
 const COMPLETED_THRESHOLD = 15; // days past endDate → completed
-const IMMINENT_DAYS = 7;        // days until startDate → imminent row highlight
+const IMMINENT_DAYS = 7;        // days until startDate → countdown pill
 
-function today() {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d;
+// Anchored at local noon (not midnight) so date-only "yyyy-MM-dd" fields
+// compare correctly regardless of the viewer's UTC offset — `new Date(s)`
+// parses a bare date as UTC midnight, which drifts into the previous local
+// day for any positive-offset timezone and silently breaks same-day checks
+// like isHappening(). Matches the convention in utils/calendarDates.ts.
+function today(): Date {
+  return todayAtNoon();
 }
 
 function parseDate(s: string | undefined): Date | null {
-  if (!s) return null;
-  const d = new Date(s);
-  return isNaN(d.getTime()) ? null : d;
+  return parseIsoDate(s);
 }
 
-/** Dashboard-only label, e.g. "June 15-17, 2026". */
+/** Dashboard-only label, e.g. "Sep 15-17, 2026". */
 function formatDashboardDates(ev: Event): string {
   const range = getEventDateRange(ev);
   if (!range) return ev.dates?.trim() || '—';
 
-  const start = parseDate(range.start.includes('T') ? range.start : `${range.start}T12:00:00`);
-  const end = parseDate(range.end.includes('T') ? range.end : `${range.end}T12:00:00`);
+  const start = parseDate(range.start);
+  const end = parseDate(range.end);
   if (!start) return ev.dates?.trim() || '—';
 
-  const monthLong = (d: Date) =>
-    d.toLocaleDateString('en-US', { month: 'long' });
+  const monthShort = (d: Date) =>
+    d.toLocaleDateString('en-US', { month: 'short' });
 
   if (!end || start.toDateString() === end.toDateString()) {
-    return `${monthLong(start)} ${start.getDate()}, ${start.getFullYear()}`;
+    return `${monthShort(start)} ${start.getDate()}, ${start.getFullYear()}`;
   }
 
   if (start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()) {
-    return `${monthLong(start)} ${start.getDate()}-${end.getDate()}, ${start.getFullYear()}`;
+    return `${monthShort(start)} ${start.getDate()}-${end.getDate()}, ${start.getFullYear()}`;
   }
 
   if (start.getFullYear() === end.getFullYear()) {
-    return `${monthLong(start)} ${start.getDate()} – ${monthLong(end)} ${end.getDate()}, ${start.getFullYear()}`;
+    return `${monthShort(start)} ${start.getDate()} – ${monthShort(end)} ${end.getDate()}, ${start.getFullYear()}`;
   }
 
-  return `${monthLong(start)} ${start.getDate()}, ${start.getFullYear()} – ${monthLong(end)} ${end.getDate()}, ${end.getFullYear()}`;
+  return `${monthShort(start)} ${start.getDate()}, ${start.getFullYear()} – ${monthShort(end)} ${end.getDate()}, ${end.getFullYear()}`;
+}
+
+/** Split "City, Country" into its two parts for the stacked Location cell. */
+function splitLocation(location: string): { city: string; country: string } {
+  const trimmed = (location || '').trim();
+  if (!trimmed) return { city: '—', country: '' };
+  const idx = trimmed.indexOf(',');
+  if (idx === -1) return { city: trimmed, country: '' };
+  return { city: trimmed.slice(0, idx).trim(), country: trimmed.slice(idx + 1).trim() };
 }
 
 function isCompleted(ev: Event, archivedCodes: Set<string>): boolean {
@@ -105,6 +132,12 @@ function isHappening(ev: Event): boolean {
   if (s > t) return false;
   if (e && e < t) return false;
   return true;
+}
+
+/** SOW secured — reused as the "Awarded" badge on each row. */
+function isAwarded(ev: Event): boolean {
+  const sow = ev.sow?.trim().toLowerCase();
+  return Boolean(sow) && sow !== '??';
 }
 
 /** Derive "Month YYYY" label from a startDate ISO string. */
@@ -170,6 +203,25 @@ function matchesFilter(ev: Event, filter: Filter, health?: EventHealth | null): 
   return true;
 }
 
+function matchesSearch(ev: Event, query: string): boolean {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return true;
+  return (
+    ev.code.toLowerCase().includes(needle) ||
+    ev.location.toLowerCase().includes(needle) ||
+    ev.ownerEmail.toLowerCase().includes(needle)
+  );
+}
+
+/** Status pill text + tone — "Live" overrides the health tier while an event is underway. */
+function statusInfo(tier: EventHealth['tier'] | null, happening: boolean): { label: string; tone: string } {
+  if (happening) return { label: 'Live', tone: 'live' };
+  if (tier === 'on-track') return { label: 'On track', tone: 'on-track' };
+  if (tier === 'attention') return { label: 'Needs work', tone: 'attention' };
+  if (tier === 'at-risk' || tier === 'critical') return { label: 'Behind', tone: 'behind' };
+  return { label: '—', tone: 'none' };
+}
+
 // ─── EventRow ─────────────────────────────────────────────────────────────────
 
 interface RowProps {
@@ -196,13 +248,16 @@ function EventRow({
   onDelete,
 }: RowProps) {
   const tier = health?.tier ?? null;
-  const pending = health ? health.totalTasks - health.doneTasks : null;
   const days = daysUntilStart(ev);
   const happening = isHappening(ev);
-  const imminent = !done && days !== null && days <= IMMINENT_DAYS;
+  const showCountdown = !done && days !== null && days >= 0 && days <= IMMINENT_DAYS;
+  const { city, country } = splitLocation(ev.location);
+  const awarded = isAwarded(ev);
+  const { label: statusLabel, tone } = statusInfo(tier, happening);
+  const filledDots = health ? Math.min(5, Math.max(0, Math.round(health.completion / 20))) : 0;
 
   return (
-    <div className={`dashboard__row-wrap${imminent ? ' dashboard__row-wrap--imminent' : ''}${happening ? ' dashboard__row-wrap--happening' : ''}`}>
+    <div className={`dashboard__row-wrap${done ? ' dashboard__row-wrap--completed' : ''}`}>
       <Link
         to={`/event/${encodeURIComponent(ev.code)}`}
         className={`dashboard__row dashboard__row--${tier ?? 'none'}`}
@@ -210,33 +265,28 @@ function EventRow({
         <span className="dashboard__row-bar" aria-hidden="true" />
 
         {/* Event code */}
-        <span className="dl-code">
-          {ev.code}
-          {!ev.venue && <span className="dl-flag" title="No venue confirmed">!</span>}
-        </span>
-
-        {/* Location + dates */}
-        <span className="dl-location">
-          <span className="dl-location__place">{ev.location || '—'}</span>
-          <span className="dl-location__dates">
-            {formatDashboardDates(ev)}
-            {happening && (
-              <span className="dl-badge dl-badge--happening">● Now</span>
-            )}
-            {!happening && imminent && days === 0 && (
-              <span className="dl-badge dl-badge--imminent">Today</span>
-            )}
-            {!happening && imminent && days !== null && days > 0 && (
-              <span className="dl-badge dl-badge--imminent">In {days}d</span>
-            )}
-            {!happening && !imminent && days !== null && days < 0 && days > -COMPLETED_THRESHOLD && (
-              <span className="dl-badge dl-badge--concluded">{Math.abs(days)}d ago</span>
-            )}
+        <span className="dl-event">
+          <span className="dl-code">
+            {ev.code}
+            {!ev.venue && <span className="dl-flag" title="No venue confirmed">!</span>}
           </span>
+          {awarded && <span className="dl-awarded">Awarded</span>}
         </span>
 
-        {/* Owner */}
-        <span className="dl-owner">
+        {/* Location */}
+        <span className="dl-location">
+          <span className="dl-location__city">{city}</span>
+          {country && <span className="dl-location__country">{country}</span>}
+        </span>
+
+        {/* Dates */}
+        <span className="dl-dates">{formatDashboardDates(ev)}</span>
+
+        {/* Assigned */}
+        <span className="dl-assigned">
+          {showCountdown && (
+            <span className="dl-countdown">{days === 0 ? 'Today' : `In ${days}d`}</span>
+          )}
           {ev.ownerEmail ? (
             <span className="dl-owner__chip">
               <span className="dl-owner__avatar">{ev.ownerEmail.charAt(0).toUpperCase()}</span>
@@ -247,47 +297,14 @@ function EventRow({
           )}
         </span>
 
-        {/* Progress */}
-        <span className="dl-progress">
-          {health ? (
-            <>
-              <span className="dl-progress__track">
-                <span
-                  className={`dl-progress__fill dl-progress__fill--${tier}`}
-                  style={{ width: `${health.completion}%` }}
-                />
-              </span>
-              <span className="dl-progress__pct">{health.completion}%</span>
-            </>
-          ) : (
-            <span className="dl-progress__na">—</span>
-          )}
-        </span>
-
-        {/* Tasks */}
-        <span className="dl-tasks">
-          {health ? (
-            <>
-              <span className="dl-tasks__done">{health.doneTasks}/{health.totalTasks}</span>
-              {pending !== null && pending > 0 && (
-                <span className="dl-tasks__pending">{pending} left</span>
-              )}
-              {health.overdueTasks > 0 && (
-                <span className="dl-tasks__overdue">⚠ {health.overdueTasks}</span>
-              )}
-            </>
-          ) : (
-            <span className="dl-tasks__none">—</span>
-          )}
-        </span>
-
         {/* Status */}
-        <span className={`dl-status dl-status--${tier ?? 'none'}`}>
-          {tier === 'on-track' && 'On track'}
-          {tier === 'attention' && 'Attention'}
-          {tier === 'at-risk' && 'At risk'}
-          {tier === 'critical' && 'Critical'}
-          {!tier && '—'}
+        <span className={`dl-status dl-status--${tone}`}>
+          <span className="dl-status__dots" aria-hidden="true">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <span key={i} className={`dl-dot${i < filledDots ? ' dl-dot--on' : ''}`} />
+            ))}
+          </span>
+          <span className="dl-status__label">{statusLabel}</span>
         </span>
 
         <span className="dl-arrow" aria-hidden="true">→</span>
@@ -303,7 +320,7 @@ function EventRow({
               disabled={deleting}
               onClick={(e) => {
                 e.preventDefault();
-                done ? onUnarchive(ev.code) : onArchive(ev.code);
+                if (done) onUnarchive(ev.code); else onArchive(ev.code);
               }}
             >
               {done ? '↩' : '⊙'}
@@ -360,15 +377,15 @@ function MonthSection({
     <div className="dashboard__month-group">
       <h2 className="dashboard__month-heading">
         <span className="dmh-label">{month}</span>
+        <span className="dmh-rule" aria-hidden="true" />
         <span className="dmh-count">{events.length}</span>
       </h2>
       <div className="dashboard__list">
         <div className="dashboard__list-head">
-          <span className="dlh-code">Event</span>
-          <span className="dlh-location">Location · Dates</span>
-          <span className="dlh-owner">Assigned member</span>
-          <span className="dlh-progress">Readiness</span>
-          <span className="dlh-tasks">Tasks</span>
+          <span className="dlh-event">Event</span>
+          <span className="dlh-location">Location</span>
+          <span className="dlh-dates">Dates</span>
+          <span className="dlh-assigned">Assigned</span>
           <span className="dlh-status">Status</span>
         </div>
         {events.map((ev) => (
@@ -398,6 +415,8 @@ export function DashboardPage() {
 
   const [events, setEvents] = useState<Event[]>([]);
   const [filter, setFilter] = useState<Filter>('all');
+  const [search, setSearch] = useState('');
+  const [ownerFilter, setOwnerFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showNewProject, setShowNewProject] = useState(false);
@@ -484,110 +503,127 @@ export function DashboardPage() {
     return { activeEvents: active, completedEvents: completed };
   }, [events, archivedCodes]);
 
-  // Apply filter to active events only
+  // Distinct owners among active events, for the "All owners" filter
+  const owners = useMemo(() => {
+    const set = new Set<string>();
+    for (const ev of activeEvents) {
+      const email = ev.ownerEmail?.trim();
+      if (email) set.add(email);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [activeEvents]);
+
+  // Per-filter counts, independent of which tab is currently selected
+  const filterCounts = useMemo(() => {
+    const counts = {} as Record<Filter, number>;
+    for (const { id } of FILTERS) {
+      counts[id] = activeEvents.filter((e) => matchesFilter(e, id, healthByCode[e.code])).length;
+    }
+    return counts;
+  }, [activeEvents, healthByCode]);
+
+  // Apply tab filter + search + owner filter to active events
   const filteredActive = useMemo(
-    () => activeEvents.filter((e) => matchesFilter(e, filter, healthByCode[e.code])),
-    [activeEvents, filter, healthByCode],
+    () =>
+      activeEvents.filter(
+        (e) =>
+          matchesFilter(e, filter, healthByCode[e.code]) &&
+          matchesSearch(e, search) &&
+          (!ownerFilter || e.ownerEmail === ownerFilter),
+      ),
+    [activeEvents, filter, healthByCode, search, ownerFilter],
   );
 
   // Group & sort
   const activeGroups = useMemo(() => groupByMonth(filteredActive, 'asc'), [filteredActive]);
   const completedGroups = useMemo(() => groupByMonth(completedEvents, 'desc'), [completedEvents]);
 
-  // KPI summary (active only)
-  const summary = useMemo(() => {
-    const hs = activeEvents
-      .map((e) => healthByCode[e.code])
-      .filter((h): h is EventHealth => Boolean(h));
-    return summariseHealth(hs);
-  }, [activeEvents, healthByCode]);
-
   return (
     <div className="dashboard">
       {/* Header */}
       <header className="dashboard__header">
-        <div>
-          <h1>Event Operations</h1>
-          <p>Operational execution — tasks, accountability, and vendor coordination.</p>
-        </div>
-        <div className="dashboard__header-actions">
-          <button
-            type="button"
-            className={`dashboard__refresh${loading ? ' loading' : ''}`}
-            onClick={load}
-            disabled={loading}
-            title="Refresh"
-            aria-label="Refresh"
-          >
-            <RefreshIcon />
-          </button>
-          {user && (
-            <button
-              type="button"
-              className="dashboard__new dashboard__new--icon"
-              onClick={() => setShowNewProject(true)}
-              title="New event"
-              aria-label="New event"
-            >
-              <NewEventIcon />
-            </button>
-          )}
+        <div className="dashboard__header-top">
+          <div className="dashboard__header-title">
+            <h1>Event Operations</h1>
+            <div className="dashboard__header-actions">
+              <button
+                type="button"
+                className={`dashboard__refresh${loading ? ' loading' : ''}`}
+                onClick={load}
+                disabled={loading}
+                title="Refresh"
+                aria-label="Refresh"
+              >
+                <RefreshIcon />
+              </button>
+              {user && (
+                <button
+                  type="button"
+                  className="dashboard__new dashboard__new--icon"
+                  onClick={() => setShowNewProject(true)}
+                  title="New event"
+                  aria-label="New event"
+                >
+                  <NewEventIcon />
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="dashboard__stats">
+            <div className="dashboard__stat">
+              <strong>{activeEvents.length}</strong>
+              <small>Active</small>
+            </div>
+            <div className="dashboard__stat dashboard__stat--accent">
+              <strong>{filterCounts.attention}</strong>
+              <small>Need action</small>
+            </div>
+            <div className="dashboard__stat">
+              <strong>{completedEvents.length}</strong>
+              <small>Completed</small>
+            </div>
+          </div>
         </div>
       </header>
 
-      {/* KPI cards */}
-      {summary.total > 0 && (
-        <section className="dashboard__health">
-          <div className="dashboard__health-row">
-            <div className="dashboard__health-card">
-              <small>Portfolio completion</small>
-              <strong>{summary.avgCompletion}%</strong>
-              <div className="dashboard__health-bar">
-                <div className="dashboard__health-fill" style={{ width: `${summary.avgCompletion}%` }} />
-              </div>
-            </div>
-            <div className="dashboard__health-card">
-              <small>On track</small>
-              <strong className="ok">{summary.onTrack}</strong>
-              <span>of {summary.total}</span>
-            </div>
-            <div className="dashboard__health-card">
-              <small>Need attention</small>
-              <strong className="warn">{summary.attention}</strong>
-              <span>events</span>
-            </div>
-            <div className="dashboard__health-card">
-              <small>At risk / critical</small>
-              <strong className="bad">{summary.atRisk + summary.critical}</strong>
-              <span>{summary.critical > 0 ? `${summary.critical} critical` : 'events'}</span>
-            </div>
-          </div>
-        </section>
-      )}
-
       {/* Toolbar */}
       <div className="dashboard__toolbar">
-        {(
-          [
-            ['all', 'All active'],
-            ['attention', 'Needs attention'],
-            ['critical', 'At risk'],
-            ['missing-sow', 'Missing SOW'],
-            ['missing-venue', 'Missing venue'],
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            className={filter === id ? 'active' : ''}
-            onClick={() => setFilter(id)}
+        <div className="dashboard__filters">
+          {FILTERS.map(({ id, label }) => (
+            <button
+              key={id}
+              type="button"
+              className={`dashboard__filter-pill${filter === id ? ' active' : ''}`}
+              onClick={() => setFilter(id)}
+            >
+              {label}
+              <span className="dashboard__filter-count">{filterCounts[id]}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="dashboard__toolbar-controls">
+          <label className="dashboard__search">
+            <SearchIcon />
+            <input
+              type="search"
+              placeholder="Search event, city or owner"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </label>
+          <select
+            className="dashboard__owner-filter"
+            value={ownerFilter}
+            onChange={(e) => setOwnerFilter(e.target.value)}
           >
-            {label}
-          </button>
-        ))}
-        <span className="dashboard__toolbar-count">
-          {filteredActive.length} event{filteredActive.length !== 1 ? 's' : ''}
-        </span>
+            <option value="">All owners</option>
+            {owners.map((email) => (
+              <option key={email} value={email}>{email.split('@')[0]}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {loading && <p className="dashboard__msg">Loading events…</p>}
