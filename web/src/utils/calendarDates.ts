@@ -1,6 +1,6 @@
 /** Calendar grid helpers for the team timeline view. */
 
-import { parseToIsoDate } from './dateFormat';
+import { formatDateRange, parseToIsoDate } from './dateFormat';
 
 export interface CalendarDay {
   date: Date;
@@ -132,6 +132,31 @@ export function getEventDateRange(ev: EventDateFields): ResolvedEventDates | nul
     return { start: startIso, end: endIso || startIso };
   }
   return parseDatesLabel(ev.dates || '', ev.monthGroup);
+}
+
+/**
+ * Event header date list, e.g. "15, 16, 17 - September 2026" for dates
+ * within a single month. Falls back to a written range (formatDateRange)
+ * when the event spans more than one month or year.
+ */
+export function formatEventHeaderDates(ev: EventDateFields): string {
+  const range = getEventDateRange(ev);
+  if (!range) return ev.dates?.trim() || '—';
+
+  const start = parseIsoDate(range.start);
+  if (!start) return ev.dates?.trim() || '—';
+  const end = parseIsoDate(range.end) || start;
+
+  if (end.getFullYear() === start.getFullYear() && end.getMonth() === start.getMonth()) {
+    const days: number[] = [];
+    for (let d = start.getDate(); d <= end.getDate(); d++) days.push(d);
+    const monthLong = start.toLocaleDateString('en-US', { month: 'long' });
+    return days.length > 1
+      ? `${days.join(', ')} - ${monthLong} ${start.getFullYear()}`
+      : `${days[0]} ${monthLong} ${start.getFullYear()}`;
+  }
+
+  return formatDateRange(range.start, range.end);
 }
 
 export function startOfMonth(d: Date): Date {
