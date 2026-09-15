@@ -6,8 +6,8 @@ import {
   fetchWorkspace,
 } from '../api/client';
 import type { Event, TaskTemplateWithFiles } from '../types';
-import { formatDateRange, formatMonthYear } from '../utils/dateFormat';
-import { DateInput } from './DateInput';
+import { formatMonthYear, formatProgramDates } from '../utils/dateFormat';
+import { ProgramDatesPicker } from './ProgramDatesPicker';
 import './NewProjectModal.css';
 
 interface Props {
@@ -19,8 +19,7 @@ interface Props {
 export function NewProjectModal({ actorEmail, onCreated, onClose }: Props) {
   const [code, setCode] = useState('');
   const [location, setLocation] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [programDates, setProgramDates] = useState<string[]>([]);
   const [venue, setVenue] = useState('');
   const [ownerEmail, setOwnerEmail] = useState(actorEmail);
   const [notes, setNotes] = useState('');
@@ -35,6 +34,11 @@ export function NewProjectModal({ actorEmail, onCreated, onClose }: Props) {
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // ── Derived start/end from the picked program dates (backend only stores a range) ──
+  const sortedProgramDates = [...programDates].sort();
+  const startDate = sortedProgramDates[0] ?? '';
+  const endDate   = sortedProgramDates[sortedProgramDates.length - 1] ?? '';
 
   useEffect(() => {
     fetchTemplatesWithFiles()
@@ -108,7 +112,7 @@ export function NewProjectModal({ actorEmail, onCreated, onClose }: Props) {
           location: location.trim(),
           startDate,
           endDate: endDate || startDate,
-          dates: formatDateRange(startDate, endDate),
+          dates: formatProgramDates(programDates),
           monthGroup: formatMonthYear(startDate),
           venue: venue.trim(),
           ownerEmail: ownerEmail.trim(),
@@ -192,13 +196,9 @@ export function NewProjectModal({ actorEmail, onCreated, onClose }: Props) {
                 placeholder="Tbilisi"
               />
             </label>
-            <label>
-              Start date
-              <DateInput value={startDate} onChange={setStartDate} />
-            </label>
-            <label>
-              End date
-              <DateInput value={endDate} min={startDate} onChange={setEndDate} />
+            <label className="new-project__full">
+              Program dates
+              <ProgramDatesPicker value={programDates} onChange={setProgramDates} />
             </label>
             <label className="new-project__full">
               Venue
