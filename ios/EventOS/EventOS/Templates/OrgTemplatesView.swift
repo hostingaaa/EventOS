@@ -133,7 +133,7 @@ struct OrgTemplatesView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(file.name).font(.subheadline.bold()).foregroundStyle(Theme.textPrimary)
                     if file.hasFile {
-                        Text("\(file.addedBy) · \(file.addedAt.prefix(10))").font(.caption2).foregroundStyle(Theme.textSecondary)
+                        Text("\(file.addedBy) · \(DateDisplay.writtenDate(fromIso: file.addedAt))").font(.caption2).foregroundStyle(Theme.textSecondary)
                     } else {
                         Text(isAdmin ? "File not uploaded yet" : "Coming soon")
                             .font(.caption2).foregroundStyle(isAdmin ? Theme.statusAttention : Theme.textTertiary)

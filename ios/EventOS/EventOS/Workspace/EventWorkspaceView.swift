@@ -155,7 +155,7 @@ struct EventWorkspaceView: View {
                 SectionHeaderRow(icon: "info.circle.fill", title: "Event details")
                     .padding(.bottom, 12)
                 detailRow("Location", data.event.location)
-                detailRow("Dates", data.event.dates)
+                detailRow("Dates", DateDisplay.eventDateRange(startIso: data.event.startDate, endIso: data.event.endDate, fallback: data.event.dates))
                 detailRow("Venue", data.event.venue)
                 detailRow("LEM", data.event.lem)
                 detailRow("AV", data.event.av)
@@ -296,7 +296,7 @@ private struct TaskCard: View {
                         Text("• \(task.assigneeName)").font(.caption2).foregroundStyle(Theme.textSecondary)
                     }
                     if !task.dueDate.isEmpty {
-                        Text("• due \(task.dueDate.prefix(10))").font(.caption2).foregroundStyle(Theme.textSecondary)
+                        Text("• due \(DateDisplay.writtenDate(fromIso: task.dueDate))").font(.caption2).foregroundStyle(Theme.textSecondary)
                     }
                 }
             }

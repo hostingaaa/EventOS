@@ -114,7 +114,7 @@ struct TransferListView: View {
                     .font(.subheadline.bold()).foregroundStyle(Theme.textPrimary)
                 let flight = arrival ? traveler.arrivalFlight : traveler.departureFlight
                 let time = arrival ? TransferListViewModel.timeString(traveler.arrivalTime) : TransferListViewModel.timeString(traveler.departureTime)
-                let date = arrival ? TransferListViewModel.dayString(traveler.arrivalDate) : TransferListViewModel.dayString(traveler.departureDate)
+                let date = arrival ? TransferListViewModel.displayDayString(traveler.arrivalDate) : TransferListViewModel.displayDayString(traveler.departureDate)
                 Text("\(flight.isEmpty ? "—" : flight) · \(date) \(time)").font(.caption).foregroundStyle(Theme.textSecondary)
             }
             Spacer()

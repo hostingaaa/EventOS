@@ -63,7 +63,15 @@ final class TransferListViewModel: ObservableObject {
         f.dateFormat = "HH:mm"
         return f
     }()
+    // Written-month format for on-screen display only — dayString() stays
+    // "yyyy-MM-dd" since it also backs sort/group keys and the Excel export.
+    private static let displayDayFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "d MMM yyyy"
+        return f
+    }()
     static func dayString(_ d: Date?) -> String { d.map { dayFormatter.string(from: $0) } ?? "" }
+    static func displayDayString(_ d: Date?) -> String { d.map { displayDayFormatter.string(from: $0) } ?? "" }
     static func timeString(_ d: Date?) -> String { d.map { timeFormatter.string(from: $0) } ?? "" }
 
     private func groupKey(date: Date?, flight: String, time: Date?) -> String {

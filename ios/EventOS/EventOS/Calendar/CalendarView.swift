@@ -139,7 +139,8 @@ struct CalendarView: View {
                 Text(event.code).font(.headline).foregroundStyle(Theme.textPrimary)
                 Text(event.location.isEmpty ? "—" : event.location)
                     .font(.subheadline).foregroundStyle(Theme.textSecondary)
-                Text(event.dates).font(.caption).foregroundStyle(Theme.textTertiary)
+                Text(DateDisplay.eventDateRange(startIso: event.startDate, endIso: event.endDate, fallback: event.dates))
+                    .font(.caption).foregroundStyle(Theme.textTertiary)
             }
             Spacer()
             Image(systemName: "chevron.right").font(.caption).foregroundStyle(Theme.textTertiary)
