@@ -14,8 +14,9 @@ import { parseSOWPdf } from '../utils/parseSOW';
 import type { ParsedSOW } from '../utils/parseSOW';
 import type { TaskTemplateWithFiles } from '../types';
 import { findSowTask, isTemplateSuggested, resolveTemplateIds } from '../utils/templateMatch';
-import { formatDateRange, formatMonthYear } from '../utils/dateFormat';
-import { DateInput } from '../components/DateInput';
+import { formatMonthYear, formatProgramDates } from '../utils/dateFormat';
+import { expandDateRange } from '../utils/calendarDates';
+import { ProgramDatesPicker } from '../components/ProgramDatesPicker';
 import { COUNTRY_CITIES, OTHER_CITY, citiesForCountry, matchCountryCity } from '../data/countryCities';
 import {
   fetchAndCacheMembers,
@@ -78,8 +79,7 @@ export function SOWGeneratorPage() {
   const [country,    setCountry]    = useState('');
   const [city,       setCity]       = useState('');
   const [cityOther,  setCityOther]  = useState('');
-  const [startDate,  setStartDate]  = useState('');
-  const [endDate,    setEndDate]    = useState('');
+  const [programDates, setProgramDates] = useState<string[]>([]);
   const [notes,      setNotes]      = useState('');
   const [venue,      setVenue]      = useState('');
   const [pax,        setPax]        = useState('');
@@ -103,6 +103,11 @@ export function SOWGeneratorPage() {
     ? (cityForLocation ? `${cityForLocation}, ${country}` : country)
     : '';
   const selectedCountryEntry = citiesForCountry(country);
+
+  // ── Derived start/end from the picked program dates (backend only stores a range) ──
+  const sortedProgramDates = [...programDates].sort();
+  const startDate = sortedProgramDates[0] ?? '';
+  const endDate   = sortedProgramDates[sortedProgramDates.length - 1] ?? '';
 
   function handleCountryChange(next: string) {
     setCountry(next);
@@ -173,8 +178,7 @@ export function SOWGeneratorPage() {
       setCountry(matched.country);
       setCity(matched.city);
       setCityOther(matched.cityOther);
-      setStartDate(sow.startDate);
-      setEndDate(sow.endDate);
+      setProgramDates(expandDateRange(sow.startDate, sow.endDate));
       setNotes(sow.notes);
       setPax(sow.totalParticipants);
       setLanguage(sow.language);
@@ -204,7 +208,7 @@ export function SOWGeneratorPage() {
     setGenerating(true);
     setGenError('');
     try {
-      const dates = formatDateRange(startDate, endDate);
+      const dates = formatProgramDates(programDates);
       const templateIds = resolveTemplateIds(Array.from(selectedTemplates), templates);
       let result = await createEvent(
         {
@@ -287,7 +291,7 @@ export function SOWGeneratorPage() {
     : [];
 
   const driveName = code && location
-    ? `${code} – ${location}${startDate ? ' – ' + formatDateRange(startDate, endDate) : ''}`
+    ? `${code} – ${location}${programDates.length ? ' – ' + formatProgramDates(programDates) : ''}`
     : '{Event Code} – {City} – {Dates}';
 
   return (
@@ -448,25 +452,13 @@ export function SOWGeneratorPage() {
                 </label>
               )}
 
-              <div className="sow-grid-2" style={{ marginTop: '0.65rem' }}>
-                <label className="sow-label">
-                  Start date
-                  <DateInput
-                    className="sow-input"
-                    value={startDate}
-                    onChange={setStartDate}
-                  />
-                </label>
-                <label className="sow-label">
-                  End date
-                  <DateInput
-                    className="sow-input"
-                    value={endDate}
-                    min={startDate}
-                    onChange={setEndDate}
-                  />
-                </label>
-              </div>
+              <label className="sow-label" style={{ marginTop: '0.65rem' }}>
+                Program dates
+                <ProgramDatesPicker
+                  value={programDates}
+                  onChange={setProgramDates}
+                />
+              </label>
 
               <label className="sow-label" style={{ marginTop: '0.65rem' }}>
                 Meeting name / Title
@@ -624,7 +616,7 @@ export function SOWGeneratorPage() {
             <div className="sow-preview-card__name">{title || location || 'New Event'}</div>
             <div className="sow-preview-card__meta">
               {location && <span>📍 {location}</span>}
-              {startDate && <span>📅 {formatDateRange(startDate, endDate)}</span>}
+              {programDates.length > 0 && <span>📅 {formatProgramDates(programDates)}</span>}
               {pax && <span>👥 {pax} PAX</span>}
               {language && <span>🗣 {language}</span>}
             </div>
