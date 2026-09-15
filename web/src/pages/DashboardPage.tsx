@@ -7,18 +7,19 @@ import { NewProjectModal } from '../components/NewProjectModal';
 import { getEventDateRange, parseIsoDate, todayAtNoon } from '../utils/calendarDates';
 import './DashboardPage.css';
 
-type Filter = 'all' | 'attention' | 'missing-sow' | 'missing-venue' | 'critical';
+type Filter = 'all' | 'attention' | 'behind' | 'missing-sow' | 'missing-venue';
+type SortKey = 'code' | 'date' | 'updated';
 
 const FILTERS: Array<{ id: Filter; label: string }> = [
   { id: 'all', label: 'All active' },
   { id: 'attention', label: 'Needs attention' },
-  { id: 'critical', label: 'Behind schedule' },
+  { id: 'behind', label: 'Behind schedule' },
   { id: 'missing-sow', label: 'Missing SOW' },
   { id: 'missing-venue', label: 'Missing venue' },
 ];
 
 /** Circular-arrow refresh icon. Uses currentColor so it picks up the
- * button's own color (green, via .dashboard__refresh). */
+ * button's own color. */
 function RefreshIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -28,7 +29,7 @@ function RefreshIcon() {
 }
 
 /** Calendar-with-a-plus "new event" icon. Uses currentColor so it picks up
- * the button's own color (white, on .dashboard__new's green fill). */
+ * the button's own color. */
 function NewEventIcon() {
   return (
     <svg
@@ -60,7 +61,7 @@ function SearchIcon() {
 // ─── Date helpers ─────────────────────────────────────────────────────────────
 
 const COMPLETED_THRESHOLD = 15; // days past endDate → completed
-const IMMINENT_DAYS = 7;        // days until startDate → countdown pill
+const IMMINENT_DAYS = 3;        // days until startDate → urgency tag
 
 // Anchored at local noon (not midnight) so date-only "yyyy-MM-dd" fields
 // compare correctly regardless of the viewer's UTC offset — `new Date(s)`
@@ -75,7 +76,7 @@ function parseDate(s: string | undefined): Date | null {
   return parseIsoDate(s);
 }
 
-/** Dashboard-only label, e.g. "Sep 15-17, 2026". */
+/** Dashboard-only label, e.g. "Sep 15–16, 2026" (en dash), or "Sep 18, 2026". */
 function formatDashboardDates(ev: Event): string {
   const range = getEventDateRange(ev);
   if (!range) return ev.dates?.trim() || '—';
@@ -92,7 +93,7 @@ function formatDashboardDates(ev: Event): string {
   }
 
   if (start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()) {
-    return `${monthShort(start)} ${start.getDate()}-${end.getDate()}, ${start.getFullYear()}`;
+    return `${monthShort(start)} ${start.getDate()}–${end.getDate()}, ${start.getFullYear()}`;
   }
 
   if (start.getFullYear() === end.getFullYear()) {
@@ -140,6 +141,11 @@ function isAwarded(ev: Event): boolean {
   return Boolean(sow) && sow !== '??';
 }
 
+/** Task-completion percentage backing the readiness dots and status label. */
+function pctOf(health: EventHealth | null | undefined): number {
+  return health?.completion ?? 0;
+}
+
 /** Derive "Month YYYY" label from a startDate ISO string. */
 function monthLabel(startDate: string | undefined, fallback: string): string {
   const d = parseDate(startDate ?? '');
@@ -147,14 +153,31 @@ function monthLabel(startDate: string | undefined, fallback: string): string {
   return d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
 }
 
+function defaultDateCompare(a: Event, b: Event): number {
+  const da = parseDate(a.startDate);
+  const db = parseDate(b.startDate);
+  if (!da && !db) return 0;
+  if (!da) return 1;
+  if (!db) return -1;
+  return da.getTime() - db.getTime();
+}
+
+function compareEvents(a: Event, b: Event, key: SortKey, dir: 1 | -1): number {
+  if (key === 'code') return a.code.localeCompare(b.code) * dir;
+  if (key === 'updated') return 0; // no real per-event "last updated" timestamp yet — see README note
+  return defaultDateCompare(a, b) * dir;
+}
+
 /**
  * Group events by month and sort:
- *  - months chronologically (earliest first for active, latest first for completed)
- *  - events within each month by startDate ascending
+ *  - months chronologically (earliest first for active, latest first for completed) —
+ *    always by real start date, independent of the row-level display sort below
+ *  - events within each month by `compareFn` (defaults to startDate ascending)
  */
 function groupByMonth(
   events: Event[],
   monthOrder: 'asc' | 'desc' = 'asc',
+  compareFn: (a: Event, b: Event) => number = defaultDateCompare,
 ): Array<{ month: string; events: Event[] }> {
   const map = new Map<string, { events: Event[]; anchor: Date }>();
 
@@ -166,22 +189,16 @@ function groupByMonth(
     map.get(label)!.events.push(ev);
   }
 
-  // Sort events within each month by startDate ascending
   for (const bucket of map.values()) {
-    bucket.events.sort((a, b) => {
-      const da = parseDate(a.startDate);
-      const db = parseDate(b.startDate);
-      if (!da && !db) return 0;
-      if (!da) return 1;
-      if (!db) return -1;
-      return da.getTime() - db.getTime();
-    });
-    // Update anchor to first event's date for reliable month ordering
-    const first = parseDate(bucket.events[0]?.startDate);
-    if (first) bucket.anchor = first;
+    // Month order always follows the earliest real date in the bucket,
+    // regardless of which column the rows are currently sorted by.
+    const earliest = [...bucket.events].sort(defaultDateCompare)[0];
+    const anchorDate = parseDate(earliest?.startDate);
+    if (anchorDate) bucket.anchor = anchorDate;
+
+    bucket.events.sort(compareFn);
   }
 
-  // Sort months
   const entries = Array.from(map.entries()).sort(([, a], [, b]) => {
     const diff = a.anchor.getTime() - b.anchor.getTime();
     return monthOrder === 'asc' ? diff : -diff;
@@ -195,11 +212,12 @@ function matchesFilter(ev: Event, filter: Filter, health?: EventHealth | null): 
   const sow = ev.sow?.trim().toLowerCase();
   const missingSow = !sow || sow === '??';
   const missingVenue = !ev.venue?.trim();
-  const lemOpen = ev.lem?.trim().toLowerCase() !== 'closed';
-  if (filter === 'attention') return missingSow || missingVenue || lemOpen;
   if (filter === 'missing-sow') return missingSow;
   if (filter === 'missing-venue') return missingVenue;
-  if (filter === 'critical') return health?.tier === 'critical' || health?.tier === 'at-risk';
+  const days = daysUntilStart(ev);
+  const pct = pctOf(health);
+  if (filter === 'attention') return days !== null && days <= 21 && pct < 100;
+  if (filter === 'behind') return days !== null && days <= IMMINENT_DAYS && pct < 80;
   return true;
 }
 
@@ -213,13 +231,26 @@ function matchesSearch(ev: Event, query: string): boolean {
   );
 }
 
-/** Status pill text + tone — "Live" overrides the health tier while an event is underway. */
-function statusInfo(tier: EventHealth['tier'] | null, happening: boolean): { label: string; tone: string } {
+/**
+ * Status label + tone (first match wins):
+ *  1. happening now           → "Live"
+ *  2. starting within 3 days & completion < 80%  → "Behind"
+ *  3. completion === 100%     → "Ready"
+ *  4. completion >= 60%       → "On track"
+ *  5. otherwise               → "Needs work"
+ */
+function statusInfo(
+  ev: Event,
+  health: EventHealth | null | undefined,
+  happening: boolean,
+): { label: string; tone: 'live' | 'behind' | 'ready' | 'on-track' | 'needs-work' } {
+  const pct = pctOf(health);
+  const days = daysUntilStart(ev);
   if (happening) return { label: 'Live', tone: 'live' };
-  if (tier === 'on-track') return { label: 'On track', tone: 'on-track' };
-  if (tier === 'attention') return { label: 'Needs work', tone: 'attention' };
-  if (tier === 'at-risk' || tier === 'critical') return { label: 'Behind', tone: 'behind' };
-  return { label: '—', tone: 'none' };
+  if (days !== null && days <= IMMINENT_DAYS && pct < 80) return { label: 'Behind', tone: 'behind' };
+  if (pct === 100) return { label: 'Ready', tone: 'ready' };
+  if (pct >= 60) return { label: 'On track', tone: 'on-track' };
+  return { label: 'Needs work', tone: 'needs-work' };
 }
 
 // ─── EventRow ─────────────────────────────────────────────────────────────────
@@ -247,25 +278,25 @@ function EventRow({
   onUnarchive,
   onDelete,
 }: RowProps) {
-  const tier = health?.tier ?? null;
   const days = daysUntilStart(ev);
   const happening = isHappening(ev);
-  const showCountdown = !done && days !== null && days >= 0 && days <= IMMINENT_DAYS;
+  const showTag = !done && days !== null && days >= 0 && days <= IMMINENT_DAYS;
   const { city, country } = splitLocation(ev.location);
   const awarded = isAwarded(ev);
-  const { label: statusLabel, tone } = statusInfo(tier, happening);
-  const filledDots = health ? Math.min(5, Math.max(0, Math.round(health.completion / 20))) : 0;
+  const { label: statusLabel, tone } = statusInfo(ev, health, happening);
+  const pct = pctOf(health);
+  const filledDots = Math.min(5, Math.max(0, Math.round(pct / 20)));
+  const barTone = happening ? 'urgent' : days !== null && days <= IMMINENT_DAYS ? 'soon' : 'later';
 
   return (
     <div className={`dashboard__row-wrap${done ? ' dashboard__row-wrap--completed' : ''}`}>
       <Link
         to={`/event/${encodeURIComponent(ev.code)}`}
-        className={`dashboard__row dashboard__row--${tier ?? 'none'}`}
+        className={`dashboard__row${awarded ? ' dashboard__row--awarded' : ''}`}
       >
-        <span className="dashboard__row-bar" aria-hidden="true" />
-
         {/* Event code */}
         <span className="dl-event">
+          <span className={`dl-bar dl-bar--${barTone}`} aria-hidden="true" />
           <span className="dl-code">
             {ev.code}
             {!ev.venue && <span className="dl-flag" title="No venue confirmed">!</span>}
@@ -282,14 +313,22 @@ function EventRow({
         {/* Dates */}
         <span className="dl-dates">{formatDashboardDates(ev)}</span>
 
+        {/* Urgency tag — its own track so it never collides with Assigned */}
+        <span className="dl-tag-cell">
+          {showTag && (
+            <span className={`dl-tag${days === 0 ? ' dl-tag--today' : ' dl-tag--soon'}`}>
+              {days === 0 ? 'Today' : `In ${days}d`}
+            </span>
+          )}
+        </span>
+
         {/* Assigned */}
         <span className="dl-assigned">
-          {showCountdown && (
-            <span className="dl-countdown">{days === 0 ? 'Today' : `In ${days}d`}</span>
-          )}
           {ev.ownerEmail ? (
             <span className="dl-owner__chip">
-              <span className="dl-owner__avatar">{ev.ownerEmail.charAt(0).toUpperCase()}</span>
+              <span className={`dl-owner__avatar${happening ? ' dl-owner__avatar--live' : ''}`}>
+                {ev.ownerEmail.charAt(0).toUpperCase()}
+              </span>
               <span className="dl-owner__name">{ev.ownerEmail.split('@')[0]}</span>
             </span>
           ) : (
@@ -297,15 +336,18 @@ function EventRow({
           )}
         </span>
 
-        {/* Status */}
-        <span className={`dl-status dl-status--${tone}`}>
+        {/* Readiness + status */}
+        <span className="dl-status">
           <span className="dl-status__dots" aria-hidden="true">
             {Array.from({ length: 5 }).map((_, i) => (
               <span key={i} className={`dl-dot${i < filledDots ? ' dl-dot--on' : ''}`} />
             ))}
           </span>
-          <span className="dl-status__label">{statusLabel}</span>
+          <span className={`dl-status__label dl-status__label--${tone}`}>{statusLabel}</span>
         </span>
+
+        {/* Updated — no real per-event last-modified timestamp is tracked yet */}
+        <span className="dl-updated">—</span>
 
         <span className="dl-arrow" aria-hidden="true">→</span>
       </Link>
@@ -381,13 +423,6 @@ function MonthSection({
         <span className="dmh-count">{events.length}</span>
       </h2>
       <div className="dashboard__list">
-        <div className="dashboard__list-head">
-          <span className="dlh-event">Event</span>
-          <span className="dlh-location">Location</span>
-          <span className="dlh-dates">Dates</span>
-          <span className="dlh-assigned">Assigned</span>
-          <span className="dlh-status">Status</span>
-        </div>
         {events.map((ev) => (
           <EventRow
             key={ev.rowId}
@@ -417,6 +452,8 @@ export function DashboardPage() {
   const [filter, setFilter] = useState<Filter>('all');
   const [search, setSearch] = useState('');
   const [ownerFilter, setOwnerFilter] = useState('');
+  const [sortKey, setSortKey] = useState<SortKey>('date');
+  const [sortDir, setSortDir] = useState<1 | -1>(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showNewProject, setShowNewProject] = useState(false);
@@ -446,6 +483,11 @@ export function DashboardPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  function toggleSort(key: SortKey) {
+    setSortDir((prevDir) => (sortKey === key ? (prevDir === 1 ? -1 : 1) : 1));
+    setSortKey(key);
+  }
 
   function archive(code: string) {
     setArchivedCodes((prev) => {
@@ -534,60 +576,65 @@ export function DashboardPage() {
     [activeEvents, filter, healthByCode, search, ownerFilter],
   );
 
-  // Group & sort
-  const activeGroups = useMemo(() => groupByMonth(filteredActive, 'asc'), [filteredActive]);
+  // Group & sort — active rows honor the clicked sort column; month order
+  // itself always stays chronological (see groupByMonth).
+  const activeGroups = useMemo(
+    () => groupByMonth(filteredActive, 'asc', (a, b) => compareEvents(a, b, sortKey, sortDir)),
+    [filteredActive, sortKey, sortDir],
+  );
   const completedGroups = useMemo(() => groupByMonth(completedEvents, 'desc'), [completedEvents]);
+
+  const sortArrow = (key: SortKey) => (sortKey === key ? (sortDir === 1 ? ' ↑' : ' ↓') : '');
 
   return (
     <div className="dashboard">
-      {/* Header */}
-      <header className="dashboard__header">
-        <div className="dashboard__header-top">
-          <div className="dashboard__header-title">
-            <h1>Event Operations</h1>
-            <div className="dashboard__header-actions">
-              <button
-                type="button"
-                className={`dashboard__refresh${loading ? ' loading' : ''}`}
-                onClick={load}
-                disabled={loading}
-                title="Refresh"
-                aria-label="Refresh"
-              >
-                <RefreshIcon />
-              </button>
-              {user && (
-                <button
-                  type="button"
-                  className="dashboard__new dashboard__new--icon"
-                  onClick={() => setShowNewProject(true)}
-                  title="New event"
-                  aria-label="New event"
-                >
-                  <NewEventIcon />
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="dashboard__stats">
-            <div className="dashboard__stat">
-              <strong>{activeEvents.length}</strong>
-              <small>Active</small>
-            </div>
-            <div className="dashboard__stat dashboard__stat--accent">
-              <strong>{filterCounts.attention}</strong>
-              <small>Need action</small>
-            </div>
-            <div className="dashboard__stat">
-              <strong>{completedEvents.length}</strong>
-              <small>Completed</small>
-            </div>
-          </div>
+      {/* Title */}
+      <div className="dashboard__title-row">
+        <div className="dashboard__kicker">Operational execution</div>
+        <div className="dashboard__title-line">
+          <h1>Event Operations</h1>
+          <button
+            type="button"
+            className={`dashboard__refresh${loading ? ' loading' : ''}`}
+            onClick={load}
+            disabled={loading}
+            title="Refresh"
+            aria-label="Refresh"
+          >
+            <RefreshIcon />
+          </button>
+          {user && (
+            <button
+              type="button"
+              className="dashboard__new"
+              onClick={() => setShowNewProject(true)}
+              title="New event"
+              aria-label="New event"
+            >
+              <NewEventIcon />
+              New event
+            </button>
+          )}
         </div>
-      </header>
+      </div>
 
-      {/* Toolbar */}
+      {/* Stat cards */}
+      <div className="dashboard__stats">
+        <div className="dashboard__stat-card">
+          <div className="dashboard__stat-figure">{activeEvents.length}</div>
+          <div className="dashboard__stat-label">Active events</div>
+        </div>
+        <div className="dashboard__stat-card">
+          <div className="dashboard__stat-figure">{filterCounts.attention}</div>
+          <div className="dashboard__stat-label">Need action</div>
+        </div>
+        <div className="dashboard__stat-card">
+          <div className="dashboard__stat-figure">{completedEvents.length}</div>
+          <div className="dashboard__stat-label">Completed</div>
+        </div>
+      </div>
+
+      {/* Filter pills + search + owner */}
       <div className="dashboard__toolbar">
         <div className="dashboard__filters">
           {FILTERS.map(({ id, label }) => (
@@ -597,7 +644,7 @@ export function DashboardPage() {
               className={`dashboard__filter-pill${filter === id ? ' active' : ''}`}
               onClick={() => setFilter(id)}
             >
-              {label}
+              <span>{label}</span>
               <span className="dashboard__filter-count">{filterCounts[id]}</span>
             </button>
           ))}
@@ -624,6 +671,18 @@ export function DashboardPage() {
             ))}
           </select>
         </div>
+      </div>
+
+      {/* Column header — shares the row grid */}
+      <div className="dashboard__list-head">
+        <button type="button" className="dlh-sort" onClick={() => toggleSort('code')}>Event{sortArrow('code')}</button>
+        <span>Location</span>
+        <button type="button" className="dlh-sort" onClick={() => toggleSort('date')}>Dates{sortArrow('date')}</button>
+        <span />
+        <span>Assigned</span>
+        <span>Status</span>
+        <button type="button" className="dlh-sort" onClick={() => toggleSort('updated')}>Updated{sortArrow('updated')}</button>
+        <span />
       </div>
 
       {loading && <p className="dashboard__msg">Loading events…</p>}
@@ -658,7 +717,17 @@ export function DashboardPage() {
       ))}
 
       {!loading && filteredActive.length === 0 && activeEvents.length > 0 && (
-        <p className="dashboard__msg">No active events match the current filter.</p>
+        <div className="dashboard__no-match">
+          <div className="dashboard__no-match-title">Nothing matches</div>
+          <p>No event in this view. Clear the filter to see the full schedule.</p>
+          <button
+            type="button"
+            className="dashboard__clear-filters"
+            onClick={() => { setFilter('all'); setSearch(''); setOwnerFilter(''); }}
+          >
+            Clear filters
+          </button>
+        </div>
       )}
 
       {/* Completed events — collapsible, grouped by month */}
