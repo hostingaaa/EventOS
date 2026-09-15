@@ -389,7 +389,7 @@ export function SOWGeneratorPage() {
                 {!parsed && <span className="sow-section__optional">(or fill manually)</span>}
               </h2>
 
-              <div className="sow-grid-2">
+              <div className="sow-grid-3">
                 <label className="sow-label sow-label--required">
                   Event code
                   <input
@@ -434,17 +434,21 @@ export function SOWGeneratorPage() {
                     <option value={OTHER_CITY}>Other (type manually)</option>
                   </select>
                 </label>
-                {city === OTHER_CITY && (
-                  <label className="sow-label sow-label--full">
-                    City name
-                    <input
-                      className="sow-input"
-                      value={cityOther}
-                      onChange={(e) => setCityOther(e.target.value)}
-                      placeholder="Enter city name"
-                    />
-                  </label>
-                )}
+              </div>
+
+              {city === OTHER_CITY && (
+                <label className="sow-label" style={{ marginTop: '0.65rem' }}>
+                  City name
+                  <input
+                    className="sow-input"
+                    value={cityOther}
+                    onChange={(e) => setCityOther(e.target.value)}
+                    placeholder="Enter city name"
+                  />
+                </label>
+              )}
+
+              <div className="sow-grid-2" style={{ marginTop: '0.65rem' }}>
                 <label className="sow-label">
                   Start date
                   <DateInput
