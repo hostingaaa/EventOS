@@ -36,7 +36,9 @@ export function ActivityFeed({ items }: Props) {
 
 function formatTime(iso: string) {
   try {
-    return new Date(iso).toLocaleString();
+    return new Date(iso).toLocaleString('en-GB', {
+      day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+    });
   } catch {
     return iso;
   }
