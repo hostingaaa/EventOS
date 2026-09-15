@@ -531,16 +531,17 @@
 }
 
 /* 2. Location — stacked city / country */
-.dl-location { min-width: 0; padding-right: 16px; }
+.dl-location { display: flex; flex-direction: column; min-width: 0; padding-right: 16px; }
 
 .dl-location__city {
+  display: block;
   font-size: 14px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.dl-location__country { font-size: 12px; opacity: 0.5; }
+.dl-location__country { display: block; font-size: 12px; opacity: 0.5; }
 
 /* 3. Dates */
 .dl-dates {
