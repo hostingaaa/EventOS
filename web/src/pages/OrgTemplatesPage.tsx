@@ -372,7 +372,9 @@ export function OrgTemplatesPage() {
                       )}
                       {f.addedAt && (
                         <p className="otf-card__meta">
-                          {f.addedBy} · {new Date(f.addedAt).toLocaleDateString()}
+                          {f.addedBy} · {new Date(f.addedAt).toLocaleDateString('en-GB', {
+                            day: 'numeric', month: 'short', year: 'numeric',
+                          })}
                         </p>
                       )}
                     </div>

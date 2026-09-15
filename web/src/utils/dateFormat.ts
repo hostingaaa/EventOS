@@ -2,6 +2,8 @@
 
 export const DATE_INPUT_PLACEHOLDER = 'dd-MM-yyyy';
 
+const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 const ISO_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const DISPLAY_RE = /^(\d{1,2})-(\d{1,2})-(\d{4})$/;
 
@@ -24,15 +26,13 @@ function isValidIsoDate(iso: string): boolean {
   );
 }
 
-/** ISO yyyy-MM-dd → dd-MM-yyyy */
+/** ISO yyyy-MM-dd → display with a written month, e.g. "15 Jun 2026" */
 export function formatIsoDate(iso: string | undefined): string {
   if (!iso?.trim()) return '';
   const t = iso.trim();
-  const m = t.match(ISO_RE);
-  if (m) return `${m[3]}-${m[2]}-${m[1]}`;
   const d = new Date(t.includes('T') ? t : `${t}T12:00:00`);
   if (isNaN(d.getTime())) return t;
-  return `${pad2(d.getDate())}-${pad2(d.getMonth() + 1)}-${d.getFullYear()}`;
+  return `${d.getDate()} ${MONTH_ABBR[d.getMonth()]} ${d.getFullYear()}`;
 }
 
 /** dd-MM-yyyy (or yyyy-MM-dd) → ISO yyyy-MM-dd */
@@ -54,7 +54,7 @@ export function parseToIsoDate(input: string): string | null {
   return isValidIsoDate(iso) ? iso : null;
 }
 
-/** Event date range label stored on the sheet, e.g. 15-06-2026 – 17-06-2026 */
+/** Event date range label stored on the sheet, e.g. 15 Jun 2026 – 17 Jun 2026 */
 export function formatDateRange(startIso: string, endIso: string): string {
   if (!startIso) return '';
   const start = formatIsoDate(startIso);
