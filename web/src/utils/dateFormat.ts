@@ -62,6 +62,23 @@ export function formatDateRange(startIso: string, endIso: string): string {
   return `${start} – ${formatIsoDate(endIso)}`;
 }
 
+/** Format a set of picked program dates: a range if contiguous, else a comma list. */
+export function formatProgramDates(isoDates: string[]): string {
+  const sorted = Array.from(new Set(isoDates.filter(Boolean))).sort();
+  if (sorted.length === 0) return '';
+  if (sorted.length === 1) return formatIsoDate(sorted[0]);
+
+  const contiguous = sorted.every((iso, i) => {
+    if (i === 0) return true;
+    const prev = new Date(`${sorted[i - 1]}T12:00:00`);
+    const cur = new Date(`${iso}T12:00:00`);
+    return Math.round((cur.getTime() - prev.getTime()) / 86400000) === 1;
+  });
+
+  if (contiguous) return formatDateRange(sorted[0], sorted[sorted.length - 1]);
+  return sorted.map(formatIsoDate).join(', ');
+}
+
 /** Month grouping label, e.g. June 2026 */
 export function formatMonthYear(iso: string): string {
   if (!iso) return '';
