@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { fetchWorkspace, updateTask } from '../api/client';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { deleteEvent, fetchWorkspace, updateTask } from '../api/client';
 import { useUser } from '../context/UserContext';
 import type { Comment, Task, TaskFile, WorkspaceData } from '../types';
 import { OpsTaskList } from '../components/tasks/OpsTaskList';
@@ -11,6 +11,7 @@ import { EventDetail } from '../components/EventDetail';
 import { ApplyTemplatesModal } from '../components/templates/ApplyTemplatesModal';
 import { VendorSharePanel } from '../components/vendor/VendorSharePanel';
 import { formatEventHeaderDates } from '../utils/calendarDates';
+import { archiveEvent, getArchivedCodes, isEventCompleted, unarchiveEvent } from '../utils/eventLifecycle';
 import './EventWorkspacePage.css';
 
 type Tab = 'tasks' | 'overview' | 'activity';
@@ -18,6 +19,7 @@ type Tab = 'tasks' | 'overview' | 'activity';
 export function EventWorkspacePage() {
   const { eventCode } = useParams<{ eventCode: string }>();
   const code = decodeURIComponent(eventCode || '');
+  const navigate = useNavigate();
 
   const [data, setData] = useState<WorkspaceData | null>(null);
   const [tab, setTab] = useState<Tab>('tasks');
@@ -25,7 +27,9 @@ export function EventWorkspacePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showApplyModal, setShowApplyModal] = useState(false);
-  const { user, isAdmin } = useUser();
+  const [archivedCodes, setArchivedCodes] = useState<Set<string>>(getArchivedCodes);
+  const [deleting, setDeleting] = useState(false);
+  const { user, isAdmin, can } = useUser();
 
   const load = useCallback(async () => {
     if (!code) return;
@@ -99,6 +103,33 @@ export function EventWorkspacePage() {
 
   const { event, tasks, comments, files, activity } = data;
   const eventComments = comments.filter((c) => !c.taskId);
+  const canDelete = can('events.delete');
+  const completed = isEventCompleted(event, archivedCodes);
+
+  function handleArchiveToggle() {
+    setArchivedCodes(completed ? unarchiveEvent(event.code) : archiveEvent(event.code));
+  }
+
+  async function handleDeleteEvent() {
+    if (!user?.email || !canDelete) return;
+    const label = event.code + (event.location ? ` — ${event.location}` : '');
+    if (
+      !confirm(
+        `Delete "${label}" permanently?\n\nThis removes the event and its tasks from the dashboard. This cannot be undone.`,
+      )
+    ) {
+      return;
+    }
+    setDeleting(true);
+    try {
+      await deleteEvent(event.rowId, event.code, user.email);
+      unarchiveEvent(event.code);
+      navigate('/');
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed to delete event');
+      setDeleting(false);
+    }
+  }
 
   // Operational readiness stats
   const totalTasks = tasks.length;
@@ -149,6 +180,27 @@ export function EventWorkspacePage() {
           {user && (
             <button type="button" className="workspace__add-tasks" onClick={() => setShowApplyModal(true)}>
               + Add from templates
+            </button>
+          )}
+          {isAdmin && (
+            <button
+              type="button"
+              className="workspace__archive-btn"
+              onClick={handleArchiveToggle}
+              title={completed ? 'Restore to active' : 'Archive event'}
+            >
+              {completed ? '↩ Restore to active' : '⊙ Archive event'}
+            </button>
+          )}
+          {canDelete && (
+            <button
+              type="button"
+              className="workspace__delete-btn"
+              onClick={handleDeleteEvent}
+              disabled={deleting}
+              title="Delete event permanently"
+            >
+              {deleting ? 'Deleting…' : '✕ Delete event'}
             </button>
           )}
         </div>
