@@ -155,6 +155,18 @@ export function todayAtNoon(): Date {
   return d;
 }
 
+/** Enumerate every ISO date from start to end, inclusive. */
+export function expandDateRange(startIso: string, endIso: string): string[] {
+  const start = parseIsoDate(startIso);
+  if (!start) return [];
+  const end = parseIsoDate(endIso) || start;
+  const out: string[] = [];
+  for (const d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    out.push(toIsoDate(d));
+  }
+  return out;
+}
+
 export function buildMonthDays(month: Date): CalendarDay[] {
   const start = startOfMonth(month);
   const end = endOfMonth(month);
