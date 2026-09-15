@@ -137,6 +137,53 @@
   white-space: nowrap;
 }
 
+/* ─── Admin-only lifecycle actions (archive / delete) ───────────────────── */
+
+.workspace__archive-btn {
+  display: inline-flex;
+  align-items: center;
+  background: #fff;
+  color: var(--primary);
+  border: 1.5px solid var(--border);
+  padding: 0.42rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.83rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.workspace__archive-btn:hover {
+  background: var(--primary-soft, #ccfbf1);
+  border-color: var(--primary);
+}
+
+.workspace__delete-btn {
+  display: inline-flex;
+  align-items: center;
+  background: #fff;
+  color: #b91c1c;
+  border: 1.5px solid #fecaca;
+  padding: 0.42rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.83rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.workspace__delete-btn:hover:not(:disabled) {
+  background: #fef2f2;
+  border-color: #b91c1c;
+}
+
+.workspace__delete-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .workspace__empty-tasks {
   text-align: center;
   padding: 3.5rem 2rem;

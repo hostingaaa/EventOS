@@ -458,40 +458,6 @@
   background: var(--eo-award-100);
 }
 
-/* Admin row actions (archive + delete, shown on hover) */
-.dl-admin-actions {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-  opacity: 0;
-  transition: opacity 0.15s;
-  margin-left: 0.35rem;
-}
-
-.dashboard__row-wrap:hover .dl-admin-actions { opacity: 1; }
-
-.dl-archive-btn,
-.dl-delete-btn {
-  flex-shrink: 0;
-  width: 24px;
-  height: 24px;
-  border: none;
-  background: transparent;
-  color: color-mix(in srgb, var(--eo-text) 45%, transparent);
-  cursor: pointer;
-  font-size: 0.75rem;
-  transition: color 0.15s, background 0.15s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-}
-
-.dl-archive-btn:disabled, .dl-delete-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.dl-archive-btn:hover:not(:disabled) { color: var(--eo-accent); background: var(--eo-accent-100); }
-.dl-archive-btn--restore:hover:not(:disabled) { color: var(--eo-award); background: var(--eo-award-100); }
-.dl-delete-btn:hover:not(:disabled) { color: #b91c1c; background: #fef2f2; }
-
 /* 1. Event: bar + code + Awarded pill */
 .dl-event {
   display: flex;
