@@ -518,7 +518,11 @@ export function DesignWorkspacePage() {
                   {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save design setup'}
                 </button>
                 {setup.savedAt && (
-                  <span className="dw-hint">Last saved {new Date(setup.savedAt).toLocaleString()}</span>
+                  <span className="dw-hint">
+                    Last saved {new Date(setup.savedAt).toLocaleString('en-GB', {
+                      day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+                    })}
+                  </span>
                 )}
               </div>
             </div>
