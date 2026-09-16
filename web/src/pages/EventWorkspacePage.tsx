@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { deleteEvent, fetchWorkspace, updateTask } from '../api/client';
+import { deleteEvent, fetchWorkspace, updateEvent, updateTask } from '../api/client';
 import { useUser } from '../context/UserContext';
 import type { Comment, Task, TaskFile, WorkspaceData } from '../types';
 import { OpsTaskList } from '../components/tasks/OpsTaskList';
@@ -11,7 +11,7 @@ import { EventDetail } from '../components/EventDetail';
 import { ApplyTemplatesModal } from '../components/templates/ApplyTemplatesModal';
 import { VendorSharePanel } from '../components/vendor/VendorSharePanel';
 import { formatEventHeaderDates } from '../utils/calendarDates';
-import { archiveEvent, getArchivedCodes, isEventCompleted, unarchiveEvent } from '../utils/eventLifecycle';
+import { archiveEvent, getArchivedCodes, isEventAwarded, isEventCompleted, unarchiveEvent } from '../utils/eventLifecycle';
 import './EventWorkspacePage.css';
 
 type Tab = 'tasks' | 'overview' | 'activity';
@@ -29,6 +29,7 @@ export function EventWorkspacePage() {
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [archivedCodes, setArchivedCodes] = useState<Set<string>>(getArchivedCodes);
   const [deleting, setDeleting] = useState(false);
+  const [savingAwarded, setSavingAwarded] = useState(false);
   const { user, isAdmin, can } = useUser();
 
   const load = useCallback(async () => {
@@ -105,9 +106,23 @@ export function EventWorkspacePage() {
   const eventComments = comments.filter((c) => !c.taskId);
   const canDelete = can('events.delete');
   const completed = isEventCompleted(event, archivedCodes);
+  const awarded = isEventAwarded(event);
 
   function handleArchiveToggle() {
     setArchivedCodes(completed ? unarchiveEvent(event.code) : archiveEvent(event.code));
+  }
+
+  async function handleAwardedToggle() {
+    if (!user?.email) return;
+    setSavingAwarded(true);
+    try {
+      const updated = await updateEvent(event.rowId, event.code, { awarded: awarded ? '' : 'Yes' }, user.email);
+      handleEventUpdated(updated);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed to update Awarded status');
+    } finally {
+      setSavingAwarded(false);
+    }
   }
 
   async function handleDeleteEvent() {
@@ -154,10 +169,26 @@ export function EventWorkspacePage() {
 
       <header className="workspace__header">
         <div>
-          <h1>{event.code} — {event.location}</h1>
+          <h1 className="workspace__title">
+            <span>{event.code}</span>
+            {awarded && <span className="workspace__awarded-badge">Awarded</span>}
+            <span className="workspace__title-sep">—</span>
+            <span>{event.location}</span>
+          </h1>
           <p className="workspace__header-sub">{formatEventHeaderDates(event)}</p>
         </div>
         <div className="workspace__header-actions">
+          {isAdmin && (
+            <button
+              type="button"
+              className={`workspace__awarded-btn${awarded ? ' workspace__awarded-btn--on' : ''}`}
+              onClick={handleAwardedToggle}
+              disabled={savingAwarded}
+              title={awarded ? 'Remove Awarded status' : 'Mark as Awarded'}
+            >
+              {savingAwarded ? 'Saving…' : awarded ? '✓ Awarded' : '☆ Mark as Awarded'}
+            </button>
+          )}
           {event.driveFolderUrl && (
             <a
               href={event.driveFolderUrl}

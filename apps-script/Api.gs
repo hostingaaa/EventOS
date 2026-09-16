@@ -91,6 +91,12 @@ function handleRequest_(e, method) {
           403,
         );
       }
+      if (updates.awarded !== undefined && !isAdmin_(actorEmail)) {
+        return jsonResponse_(
+          { error: 'Permission denied: only admins can change Awarded status' },
+          403,
+        );
+      }
       updateEventFields_(target.rowNumber, updates);
       return jsonResponse_(findEventRow_(target.rowId, target.code));
     }

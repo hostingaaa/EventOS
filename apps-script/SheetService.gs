@@ -103,6 +103,7 @@ function getEventsSheet_() {
       CONFIG.COLS.LAST_REMINDER,
       CONFIG.COLS.ROW_ID,
       CONFIG.COLS.DRIVE_FOLDER_URL,
+      CONFIG.COLS.AWARDED,
     ];
     sheet.appendRow(headers);
     sheet.setFrozenRows(1);
@@ -203,6 +204,7 @@ function rowToEvent_(row, rowNum, map) {
     ownerEmail: cell(CONFIG.COLS.OWNER_EMAIL),
     lastReminder: cell(CONFIG.COLS.LAST_REMINDER),
     driveFolderUrl: cell(CONFIG.COLS.DRIVE_FOLDER_URL),
+    awarded: cell(CONFIG.COLS.AWARDED),
   };
 }
 
@@ -288,6 +290,7 @@ function updateEventFields_(rowNumber, updates) {
     monthGroup: CONFIG.COLS.MONTH_GROUP,
     dates: CONFIG.COLS.DATES,
     driveFolderUrl: CONFIG.COLS.DRIVE_FOLDER_URL,
+    awarded: CONFIG.COLS.AWARDED,
   };
 
   Object.keys(updates).forEach(function (key) {
