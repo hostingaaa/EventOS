@@ -338,6 +338,25 @@ function handleRequest_(e, method) {
       return jsonResponse_({ ok: true, time: new Date().toISOString() });
     }
 
+    if (action === 'dashboardHealth') {
+      var allTasks = listTasks_(null, null);
+      var tasksByEvent = {};
+      allTasks.forEach(function (t) {
+        var code = t.eventCode || '';
+        if (!tasksByEvent[code]) tasksByEvent[code] = [];
+        tasksByEvent[code].push({ status: t.status, dueDate: t.dueDate });
+      });
+
+      var allFiles = listFiles_(null, null);
+      var fileCountByEvent = {};
+      allFiles.forEach(function (f) {
+        var code = f.eventCode || '';
+        fileCountByEvent[code] = (fileCountByEvent[code] || 0) + 1;
+      });
+
+      return jsonResponse_({ tasksByEvent: tasksByEvent, fileCountByEvent: fileCountByEvent });
+    }
+
     // ——— Accounts ———
     if (action === 'authList') {
       return jsonResponse_({ accounts: listAccounts_() });
