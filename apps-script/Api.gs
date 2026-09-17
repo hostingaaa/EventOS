@@ -404,6 +404,75 @@ function handleVendorRequest_(vendorToken, action, body) {
     return jsonResponse_(getVendorWorkspace_(token));
   }
 
+  // Every write action below requires a 'collaborate' link, re-resolved from
+  // the token itself — never trust eventCode/category values the client sends.
+  var writeActions = {
+    vendorCostItemCreate: 1,
+    vendorCostItemUpdate: 1,
+    vendorFileUpload: 1,
+    vendorTaskStatusUpdate: 1,
+  };
+  if (writeActions[action]) {
+    var link = findVendorLinkByToken_(token);
+    if (!link) {
+      return jsonResponse_({ error: 'This vendor link is invalid or has expired.' }, 401);
+    }
+    if (link.permission !== 'collaborate') {
+      return jsonResponse_({ error: 'This vendor link is view-only.' }, 403);
+    }
+
+    if (action === 'vendorCostItemCreate') {
+      var createPayload = {
+        eventCode: link.eventCode,
+        eventRowId: link.eventRowId,
+        category: link.vendorCategory || body.category || 'General',
+        description: body.description || '',
+        quantity: body.quantity,
+        unitRate: body.unitRate,
+        currency: body.currency,
+        vendorName: link.vendorName || body.vendorName || '',
+        notes: body.notes || '',
+        createdBy: vendorActorLabel_(link),
+      };
+      return jsonResponse_(createCostItem_(createPayload));
+    }
+
+    if (action === 'vendorCostItemUpdate') {
+      var item = findCostItem_(body.costItemId);
+      if (!item) return jsonResponse_({ error: 'Cost item not found' }, 404);
+      var itemCategory = String(item.category || '').toLowerCase();
+      var linkCategory = String(link.vendorCategory || '').toLowerCase();
+      var isOwnSubmission = String(item.createdBy || '').indexOf('vendor:') === 0;
+      if (item.eventCode !== link.eventCode || (linkCategory && itemCategory !== linkCategory) || !isOwnSubmission) {
+        return jsonResponse_({ error: 'You can only edit cost items you submitted yourself.' }, 403);
+      }
+      return jsonResponse_(updateCostItem_(body.costItemId, body.updates || {}, vendorActorLabel_(link)));
+    }
+
+    if (action === 'vendorFileUpload') {
+      var uploadTask = findTask_(body.taskId);
+      if (!uploadTask || !isTaskVisibleToVendorLink_(uploadTask, link)) {
+        return jsonResponse_({ error: 'Task not found or not visible to this vendor link.' }, 403);
+      }
+      return jsonResponse_(uploadFile_({
+        eventCode: link.eventCode,
+        taskId: body.taskId,
+        fileName: body.fileName,
+        mimeType: body.mimeType,
+        dataBase64: body.dataBase64,
+        uploadedBy: vendorActorLabel_(link),
+      }));
+    }
+
+    if (action === 'vendorTaskStatusUpdate') {
+      var statusTask = findTask_(body.taskId);
+      if (!statusTask || !isTaskVisibleToVendorLink_(statusTask, link)) {
+        return jsonResponse_({ error: 'Task not found or not visible to this vendor link.' }, 403);
+      }
+      return jsonResponse_(updateTask_(body.taskId, { status: body.status }, vendorActorLabel_(link)));
+    }
+  }
+
   return jsonResponse_({ error: 'Unknown vendor action' }, 400);
 }
 

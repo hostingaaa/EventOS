@@ -630,6 +630,58 @@ export async function fetchVendorWorkspace(vendorToken: string): Promise<VendorW
   );
 }
 
+/**
+ * Write helper for the public vendor portal — deliberately separate from
+ * post()/buildUrl(), which always inject the real API_TOKEN. This page is
+ * unauthenticated and public, so the admin token must never appear in its
+ * network requests; only vendorToken is ever sent.
+ */
+async function vendorPost<T>(vendorToken: string, action: string, body: Record<string, unknown>): Promise<T> {
+  const fullBody = { action, vendorToken, ...body };
+  const payloadJson = JSON.stringify(fullBody);
+
+  if (payloadJson.length <= PAYLOAD_GET_LIMIT) {
+    const url = `${API_URL}?action=${encodeURIComponent(action)}&vendorToken=${encodeURIComponent(vendorToken)}&payload=${encodeURIComponent(payloadJson)}`;
+    return parseJson<T>(await fetch(url));
+  }
+
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: payloadJson,
+  });
+  return parseJson<T>(res);
+}
+
+export async function vendorCreateCostItem(
+  vendorToken: string,
+  payload: { description: string; quantity: number; unitRate: number; currency?: string; notes?: string },
+): Promise<CostItem> {
+  return vendorPost(vendorToken, 'vendorCostItemCreate', payload);
+}
+
+export async function vendorUpdateCostItem(
+  vendorToken: string,
+  costItemId: string,
+  updates: Partial<Pick<CostItem, 'description' | 'quantity' | 'unitRate' | 'currency' | 'notes'>>,
+): Promise<CostItem> {
+  return vendorPost(vendorToken, 'vendorCostItemUpdate', { costItemId, updates });
+}
+
+export async function vendorUploadFile(vendorToken: string, taskId: string, file: File): Promise<TaskFile> {
+  const dataBase64 = await fileToBase64(file);
+  return vendorPost(vendorToken, 'vendorFileUpload', {
+    taskId,
+    fileName: file.name,
+    mimeType: file.type,
+    dataBase64,
+  });
+}
+
+export async function vendorUpdateTaskStatus(vendorToken: string, taskId: string, status: TaskStatus): Promise<Task> {
+  return vendorPost(vendorToken, 'vendorTaskStatusUpdate', { taskId, status });
+}
+
 export const TASK_STATUSES: { value: TaskStatus; label: string }[] = [
   { value: 'todo', label: 'To do' },
   { value: 'in_progress', label: 'In progress' },
