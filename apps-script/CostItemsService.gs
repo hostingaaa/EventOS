@@ -145,7 +145,7 @@ function updateCostItem_(costItemId, updates, actorEmail) {
   return findCostItem_(costItemId);
 }
 
-/** Permanently removes a single cost item row. Admin-only (checked by caller). */
+/** Permanently removes a single cost item row. Open to any signed-in team member, matching deleteFile_. */
 function deleteCostItem_(costItemId, actorEmail) {
   var item = findCostItem_(costItemId);
   if (!item) throw new Error('Cost item not found');
