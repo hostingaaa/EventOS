@@ -166,6 +166,13 @@ export async function fetchDashboardHealth(): Promise<Record<string, EventHealth
   }
 }
 
+/** Every cost item across every event, for the admin reporting dashboard. */
+export async function fetchAllCostItems(): Promise<CostItem[]> {
+  if (useMockData()) return [];
+  const res = await parseJson<{ costItems: CostItem[] }>(await fetch(buildUrl('costItemsList')));
+  return Array.isArray(res.costItems) ? res.costItems : [];
+}
+
 export interface CreateEventInput {
   code: string;
   location?: string;

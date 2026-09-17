@@ -1,0 +1,65 @@
+.trend-chart {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.trend-chart__legend {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.trend-chart__legend-item {
+  position: relative;
+  padding-left: 1rem;
+  color: var(--muted);
+}
+
+.trend-chart__legend-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 999px;
+}
+
+.trend-chart__legend-item--revenue::before { background: var(--primary); }
+.trend-chart__legend-item--cost::before { background: var(--danger); }
+.trend-chart__legend-item--profit::before { background: var(--accent); }
+
+.trend-chart__empty {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.trend-chart__svg {
+  width: 100%;
+  height: auto;
+}
+
+.trend-chart__zero-line {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.trend-chart__line {
+  fill: none;
+  stroke-width: 2.5;
+}
+
+.trend-chart__line--revenue { stroke: var(--primary); }
+.trend-chart__line--cost { stroke: var(--danger); }
+.trend-chart__line--profit { stroke: var(--accent); }
+
+.trend-chart__month-label {
+  font-size: 9px;
+  fill: var(--muted-light);
+}

@@ -1,0 +1,133 @@
+.reports {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.reports__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.reports__header h1 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.reports__header select {
+  padding: 0.5rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  background: var(--surface);
+}
+
+.reports__kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+.reports__kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.1rem 1.25rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.reports__kpi-figure {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.reports__kpi-card--negative .reports__kpi-figure {
+  color: var(--danger);
+}
+
+.reports__kpi-label {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-top: 0.2rem;
+}
+
+.reports__breakdowns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.reports__table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow-x: auto;
+}
+
+.reports__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.reports__table th {
+  text-align: left;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.reports__table th:hover {
+  color: var(--ink-secondary);
+}
+
+.reports__table td {
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--ink-secondary);
+  white-space: nowrap;
+}
+
+.reports__profit-negative {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.reports__table-empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 2rem !important;
+}
+
+.reports__denied {
+  text-align: center;
+  padding: 3.5rem 2rem;
+  color: var(--muted);
+}
+
+.reports__msg {
+  color: var(--muted);
+  padding: 3rem;
+  text-align: center;
+}
+
+.reports__msg--err {
+  color: var(--danger);
+}
+
+@media (max-width: 720px) {
+  .reports__kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
