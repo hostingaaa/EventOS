@@ -72,6 +72,7 @@ var CONFIG = {
     LAST_REMINDER: 'Last Reminder',
     ROW_ID: 'Row ID',
     DRIVE_FOLDER_URL: 'Drive Folder URL',
+    AWARDED: 'Awarded',
   },
 
   REMINDER_DAYS: [30, 14, 7, 1],

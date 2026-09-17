@@ -22,6 +22,8 @@ export interface Event {
   maxGroundTransport?: string;
   /** Google Drive folder URL created automatically when the event is set up. */
   driveFolderUrl?: string;
+  /** "Yes" once an admin marks the event's contract as secured; empty otherwise. */
+  awarded?: string;
 }
 
 export interface EventsResponse {
@@ -30,7 +32,7 @@ export interface EventsResponse {
 }
 
 export type EventUpdates = Partial<
-  Pick<Event, 'lem' | 'av' | 'interpreters' | 'venue' | 'psaCldp' | 'sow' | 'notes' | 'ownerEmail' | 'perDiemRate' | 'maxVisaAllowance' | 'maxGroundTransport'>
+  Pick<Event, 'lem' | 'av' | 'interpreters' | 'venue' | 'psaCldp' | 'sow' | 'notes' | 'ownerEmail' | 'perDiemRate' | 'maxVisaAllowance' | 'maxGroundTransport' | 'awarded'>
 >;
 
 export type TaskStatus = 'todo' | 'in_progress' | 'blocked' | 'done';

@@ -44,3 +44,8 @@ export function isEventCompleted(ev: Event, archivedCodes: Set<string>): boolean
   if (!end) return false;
   return Math.floor((todayAtNoon().getTime() - end.getTime()) / 86_400_000) > COMPLETED_THRESHOLD_DAYS;
 }
+
+/** Real, admin-set backend field (unlike archiving) — "Yes" once awarded. */
+export function isEventAwarded(ev: Event): boolean {
+  return (ev.awarded ?? '').trim().toLowerCase() === 'yes';
+}

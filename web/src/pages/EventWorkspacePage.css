@@ -62,6 +62,32 @@
   color: var(--ink);
 }
 
+.workspace__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.workspace__title-sep {
+  color: var(--muted-light);
+  font-weight: 400;
+}
+
+.workspace__awarded-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: #2f9e5f;
+  color: #fff;
+  white-space: nowrap;
+}
+
 .workspace__header-sub {
   margin: 0.35rem 0 0;
   color: var(--muted);
@@ -137,7 +163,43 @@
   white-space: nowrap;
 }
 
-/* ─── Admin-only lifecycle actions (archive / delete) ───────────────────── */
+/* ─── Admin-only lifecycle actions (awarded / archive / delete) ──────────── */
+
+.workspace__awarded-btn {
+  display: inline-flex;
+  align-items: center;
+  background: #fff;
+  color: #1e6f43;
+  border: 1.5px solid #a9dcbc;
+  padding: 0.42rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.83rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.workspace__awarded-btn:hover:not(:disabled) {
+  background: #e9f7ee;
+  border-color: #2f9e5f;
+}
+
+.workspace__awarded-btn--on {
+  background: #2f9e5f;
+  color: #fff;
+  border-color: #2f9e5f;
+}
+
+.workspace__awarded-btn--on:hover:not(:disabled) {
+  background: #1e6f43;
+  border-color: #1e6f43;
+}
+
+.workspace__awarded-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 
 .workspace__archive-btn {
   display: inline-flex;
