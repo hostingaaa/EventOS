@@ -27,8 +27,37 @@ struct EventWorkspaceView: View {
             }
         }
         .background(Theme.bg)
-        .navigationTitle(vm.eventCode)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                HStack(spacing: 8) {
+                    Text(vm.eventCode).font(.headline).foregroundStyle(Theme.textPrimary)
+                    if vm.isAwarded {
+                        Text("AWARDED")
+                            .font(.caption2.weight(.bold))
+                            .padding(.horizontal, 8).padding(.vertical, 3)
+                            .background(Theme.green.opacity(0.18))
+                            .foregroundStyle(Theme.green)
+                            .clipShape(Capsule())
+                    }
+                }
+            }
+            if session.user?.isAdmin == true, vm.data != nil {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        Task { await vm.toggleAwarded(actorEmail: session.user?.email ?? "") }
+                    } label: {
+                        if vm.savingAwarded {
+                            ProgressView().tint(Theme.green)
+                        } else {
+                            Image(systemName: vm.isAwarded ? "checkmark.seal.fill" : "seal")
+                                .foregroundStyle(Theme.green)
+                        }
+                    }
+                    .disabled(vm.savingAwarded)
+                }
+            }
+        }
         .task { await vm.load() }
     }
 

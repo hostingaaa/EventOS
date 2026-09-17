@@ -10,6 +10,7 @@ final class WorkspaceViewModel: ObservableObject {
     @Published var newCommentBody = ""
     @Published var newTaskTitle = ""
     @Published var busyTaskId: String?
+    @Published var savingAwarded = false
 
     init(eventCode: String) {
         self.eventCode = eventCode
@@ -77,6 +78,27 @@ final class WorkspaceViewModel: ObservableObject {
             current.comments.append(comment)
             data = current
             newCommentBody = ""
+        } catch {
+            self.error = error.localizedDescription
+        }
+    }
+
+    var isAwarded: Bool {
+        (data?.event.awarded ?? "").trimmingCharacters(in: .whitespaces).lowercased() == "yes"
+    }
+
+    func toggleAwarded(actorEmail: String) async {
+        guard let event = data?.event else { return }
+        savingAwarded = true
+        defer { savingAwarded = false }
+        do {
+            let updated = try await EventOSService.updateEvent(
+                rowId: event.rowId, code: event.code,
+                updates: ["awarded": isAwarded ? "" : "Yes"], actorEmail: actorEmail
+            )
+            guard var current = data else { return }
+            current.event = updated
+            data = current
         } catch {
             self.error = error.localizedDescription
         }

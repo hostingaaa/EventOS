@@ -47,6 +47,10 @@ enum EventOSService {
         try await APIClient.post("taskUpdate", ["taskId": taskId, "updates": updates, "actorEmail": actorEmail])
     }
 
+    static func updateEvent(rowId: String, code: String, updates: [String: Any], actorEmail: String) async throws -> Event {
+        try await APIClient.post("update", ["rowId": rowId, "code": code, "updates": updates, "actorEmail": actorEmail])
+    }
+
     static func createTask(eventCode: String, eventRowId: String, title: String, category: String, createdBy: String) async throws -> EventTask {
         try await APIClient.post("taskCreate", [
             "eventCode": eventCode, "eventRowId": eventRowId, "title": title,
