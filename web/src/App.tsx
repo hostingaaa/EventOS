@@ -18,6 +18,7 @@ import { DesignsPage } from './pages/DesignsPage';
 import { DesignWorkspacePage } from './pages/DesignWorkspacePage';
 import { AdminPanelPage } from './pages/AdminPanelPage';
 import { CalendarPage } from './pages/CalendarPage';
+import { ReportsPage } from './pages/ReportsPage';
 
 // Must match VITE_BASE_URL so client-side routing works on GitHub Pages
 const basename = import.meta.env.BASE_URL ?? '/';
@@ -45,6 +46,7 @@ export default function App() {
             <Route path="sow-generator" element={<SOWGeneratorPage />} />
             <Route path="calendar" element={<CalendarPage />} />
             <Route path="admin" element={<AdminPanelPage />} />
+            <Route path="reports" element={<ReportsPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

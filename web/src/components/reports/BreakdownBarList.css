@@ -1,0 +1,61 @@
+.breakdown-bars {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.breakdown-bars h3 {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.breakdown-bars__empty {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.breakdown-bars__row {
+  display: grid;
+  grid-template-columns: 100px 1fr 90px;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.55rem;
+}
+
+.breakdown-bars__label {
+  font-size: 0.82rem;
+  color: var(--ink-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.breakdown-bars__track {
+  background: var(--border-subtle);
+  border-radius: 999px;
+  height: 10px;
+  overflow: hidden;
+}
+
+.breakdown-bars__fill {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 999px;
+  min-width: 3px;
+}
+
+.breakdown-bars__fill--negative {
+  background: var(--danger);
+}
+
+.breakdown-bars__value {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink);
+  text-align: right;
+  white-space: nowrap;
+}
