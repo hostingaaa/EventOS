@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { fetchVendorWorkspace } from '../api/client';
-import type { VendorWorkspaceData } from '../types';
+import { fetchVendorWorkspace, vendorUpdateTaskStatus, vendorUploadFile } from '../api/client';
+import type { CostItem, VendorWorkspaceData } from '../types';
+import { VendorCostItemsPanel } from '../components/vendor/VendorCostItemsPanel';
 import './VendorPortalPage.css';
 
 export function VendorPortalPage() {
@@ -10,6 +11,8 @@ export function VendorPortalPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
+  const [busyTaskId, setBusyTaskId] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) {
@@ -42,10 +45,49 @@ export function VendorPortalPage() {
   }
 
   const { event, tasks, files, vendorCategory, vendorName, permission } = data;
+  const costItems = data.costItems ?? [];
+  const canCollaborate = permission === 'collaborate';
   const scopeLabel = vendorCategory ? `${vendorCategory} portal` : 'Vendor portal';
   const scopeNote = vendorCategory
-    ? `Read-only access to ${vendorCategory} tasks for ${event.code} only.`
-    : `Read-only access for ${event.code} only. You will only see tasks and files related to this specific project.`;
+    ? `${canCollaborate ? 'Access' : 'Read-only access'} to ${vendorCategory} tasks for ${event.code} only.`
+    : `${canCollaborate ? 'Access' : 'Read-only access'} for ${event.code} only. You will only see tasks and files related to this specific project.`;
+
+  async function handleToggleComplete(taskId: string, currentStatus: string) {
+    if (!token) return;
+    setBusyTaskId(taskId);
+    try {
+      const updated = await vendorUpdateTaskStatus(token, taskId, currentStatus === 'done' ? 'in_progress' : 'done');
+      setData((d) => (d ? { ...d, tasks: d.tasks.map((t) => (t.taskId === taskId ? { ...t, status: updated.status } : t)) } : d));
+    } catch (e) {
+      setUploadError(e instanceof Error ? e.message : 'Failed to update task');
+    } finally {
+      setBusyTaskId(null);
+    }
+  }
+
+  async function handleUpload(taskId: string, file: File) {
+    if (!token) return;
+    setBusyTaskId(taskId);
+    setUploadError(null);
+    try {
+      const uploaded = await vendorUploadFile(token, taskId, file);
+      setData((d) => (d ? { ...d, files: [...d.files, { fileId: uploaded.fileId, taskId, fileName: uploaded.fileName, mimeType: uploaded.mimeType, driveUrl: uploaded.driveUrl, sizeBytes: uploaded.sizeBytes }] } : d));
+    } catch (e) {
+      setUploadError(e instanceof Error ? e.message : 'Failed to upload file');
+    } finally {
+      setBusyTaskId(null);
+    }
+  }
+
+  function handleCostItemAdded(item: CostItem) {
+    setData((d) => (d ? { ...d, costItems: [...d.costItems, item] } : d));
+  }
+
+  function handleCostItemUpdated(item: CostItem) {
+    setData((d) =>
+      d ? { ...d, costItems: d.costItems.map((c) => (c.costItemId === item.costItemId ? item : c)) } : d,
+    );
+  }
 
   return (
     <div className="vendor-portal" data-event={event.code} data-scope={vendorCategory || 'full'}>
@@ -65,7 +107,7 @@ export function VendorPortalPage() {
         </p>
         <p className="vendor-portal__note">
           {scopeNote}
-          {permission === 'collaborate' && ' You can upload files and mark tasks complete.'}
+          {permission === 'collaborate' && ' You can submit rates, upload files, and mark tasks complete.'}
         </p>
       </header>
 
@@ -118,12 +160,50 @@ export function VendorPortalPage() {
                           </ul>
                         </div>
                       )}
+                      {canCollaborate && (
+                        <div className="vendor-portal__collab-actions">
+                          <button
+                            type="button"
+                            className="vendor-portal__complete-btn"
+                            onClick={() => handleToggleComplete(task.taskId, task.status)}
+                            disabled={busyTaskId === task.taskId}
+                          >
+                            {task.status === 'done' ? '↩ Reopen' : '✓ Mark complete'}
+                          </button>
+                          <label className="vendor-portal__upload-btn">
+                            {busyTaskId === task.taskId ? 'Uploading…' : '+ Upload receipt/report'}
+                            <input
+                              type="file"
+                              hidden
+                              disabled={busyTaskId === task.taskId}
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleUpload(task.taskId, file);
+                                e.target.value = '';
+                              }}
+                            />
+                          </label>
+                        </div>
+                      )}
                     </div>
                   )}
                 </li>
               );
             })}
           </ul>
+        )}
+
+        {canCollaborate && (
+          <section className="vendor-portal__rates">
+            <h2>Your rates</h2>
+            {uploadError && <p className="vendor-portal__upload-error">{uploadError}</p>}
+            <VendorCostItemsPanel
+              vendorToken={token || ''}
+              costItems={costItems}
+              onCostItemAdded={handleCostItemAdded}
+              onCostItemUpdated={handleCostItemUpdated}
+            />
+          </section>
         )}
       </main>
     </div>

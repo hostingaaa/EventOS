@@ -242,6 +242,7 @@ export interface VendorWorkspaceData {
   event: VendorEvent;
   tasks: VendorTask[];
   files: VendorFile[];
+  costItems: CostItem[];
   linkLabel: string;
   vendorName?: string;
   vendorCategory?: string;

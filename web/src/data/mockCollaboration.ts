@@ -184,6 +184,7 @@ export function getMockVendorWorkspace(token: string): VendorWorkspaceData {
       driveUrl: f.driveUrl,
       sizeBytes: f.sizeBytes,
     })),
+    costItems: [],
     linkLabel: link.label || 'Vendor portal',
     vendorCategory: link.vendorCategory,
     vendorName: link.vendorName,
