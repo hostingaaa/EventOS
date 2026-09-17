@@ -5,7 +5,7 @@ import { useUser } from '../context/UserContext';
 import type { Event, EventHealth } from '../types';
 import { NewProjectModal } from '../components/NewProjectModal';
 import { getEventDateRange, parseIsoDate, todayAtNoon } from '../utils/calendarDates';
-import { getArchivedCodes, isEventCompleted } from '../utils/eventLifecycle';
+import { getArchivedCodes, isEventAwarded, isEventCompleted } from '../utils/eventLifecycle';
 import './DashboardPage.css';
 
 type Filter = 'all' | 'attention' | 'behind' | 'missing-sow' | 'missing-venue';
@@ -126,12 +126,6 @@ function isHappening(ev: Event): boolean {
   if (s > t) return false;
   if (e && e < t) return false;
   return true;
-}
-
-/** SOW secured — reused as the "Awarded" badge on each row. */
-function isAwarded(ev: Event): boolean {
-  const sow = ev.sow?.trim().toLowerCase();
-  return Boolean(sow) && sow !== '??';
 }
 
 /** Task-completion percentage backing the readiness dots and status label. */
@@ -259,7 +253,7 @@ function EventRow({ ev, health, isCompleted: done }: RowProps) {
   const happening = isHappening(ev);
   const showTag = !done && days !== null && days >= 0 && days <= IMMINENT_DAYS;
   const { city, country } = splitLocation(ev.location);
-  const awarded = isAwarded(ev);
+  const awarded = isEventAwarded(ev);
   const { label: statusLabel, tone } = statusInfo(ev, health, happening);
   const pct = pctOf(health);
   const filledDots = Math.min(5, Math.max(0, Math.round(pct / 20)));
@@ -427,6 +421,11 @@ export function DashboardPage() {
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [activeEvents]);
 
+  const awardedCount = useMemo(
+    () => activeEvents.filter(isEventAwarded).length,
+    [activeEvents],
+  );
+
   // Per-filter counts, independent of which tab is currently selected
   const filterCounts = useMemo(() => {
     const counts = {} as Record<Filter, number>;
@@ -497,8 +496,8 @@ export function DashboardPage() {
           <div className="dashboard__stat-label">Active events</div>
         </div>
         <div className="dashboard__stat-card">
-          <div className="dashboard__stat-figure">{filterCounts.attention}</div>
-          <div className="dashboard__stat-label">Need action</div>
+          <div className="dashboard__stat-figure">{awardedCount}</div>
+          <div className="dashboard__stat-label">Awarded</div>
         </div>
         <div className="dashboard__stat-card">
           <div className="dashboard__stat-figure">{completedEvents.length}</div>
