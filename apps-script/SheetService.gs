@@ -104,6 +104,7 @@ function getEventsSheet_() {
       CONFIG.COLS.ROW_ID,
       CONFIG.COLS.DRIVE_FOLDER_URL,
       CONFIG.COLS.AWARDED,
+      CONFIG.COLS.REVENUE,
     ];
     sheet.appendRow(headers);
     sheet.setFrozenRows(1);
@@ -205,6 +206,7 @@ function rowToEvent_(row, rowNum, map) {
     lastReminder: cell(CONFIG.COLS.LAST_REMINDER),
     driveFolderUrl: cell(CONFIG.COLS.DRIVE_FOLDER_URL),
     awarded: cell(CONFIG.COLS.AWARDED),
+    revenue: cell(CONFIG.COLS.REVENUE),
   };
 }
 
@@ -291,6 +293,7 @@ function updateEventFields_(rowNumber, updates) {
     dates: CONFIG.COLS.DATES,
     driveFolderUrl: CONFIG.COLS.DRIVE_FOLDER_URL,
     awarded: CONFIG.COLS.AWARDED,
+    revenue: CONFIG.COLS.REVENUE,
   };
 
   Object.keys(updates).forEach(function (key) {

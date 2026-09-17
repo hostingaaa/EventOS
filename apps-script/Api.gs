@@ -97,6 +97,12 @@ function handleRequest_(e, method) {
           403,
         );
       }
+      if (updates.revenue !== undefined && !isAdmin_(actorEmail)) {
+        return jsonResponse_(
+          { error: 'Permission denied: only admins can change Revenue' },
+          403,
+        );
+      }
       updateEventFields_(target.rowNumber, updates);
       return jsonResponse_(findEventRow_(target.rowId, target.code));
     }
@@ -132,6 +138,7 @@ function handleRequest_(e, method) {
         files: listFiles_(event.code, null),
         activity: listActivity_(event.code, 50),
         vendorLink: getActiveVendorLinkForEvent_(event.code),
+        costItems: listCostItems_(event.code, event.rowId),
       });
     }
 
@@ -253,6 +260,25 @@ function handleRequest_(e, method) {
 
     if (action === 'taskUpdate' && acceptsWrite_(method, e)) {
       return jsonResponse_(updateTask_(body.taskId, body.updates || {}, actorEmail));
+    }
+
+    // ——— Cost items (event financials) ———
+    if (action === 'costItemsList') {
+      return jsonResponse_({
+        costItems: listCostItems_(e.parameter.eventCode || body.eventCode, e.parameter.eventRowId || body.eventRowId),
+      });
+    }
+
+    if (action === 'costItemCreate' && acceptsWrite_(method, e)) {
+      return jsonResponse_(createCostItem_(body));
+    }
+
+    if (action === 'costItemUpdate' && acceptsWrite_(method, e)) {
+      return jsonResponse_(updateCostItem_(body.costItemId, body.updates || {}, actorEmail));
+    }
+
+    if (action === 'costItemDelete' && method === 'POST') {
+      return jsonResponse_(deleteCostItem_(body.costItemId, actorEmail));
     }
 
     // ——— Comments ———

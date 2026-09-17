@@ -50,6 +50,7 @@ var CONFIG = {
   TEMPLATES_SHEET: 'Task Templates',
   TEMPLATE_FILES_SHEET: 'Template Files',
   VENDOR_LINKS_SHEET: 'Vendor Links',
+  COST_ITEMS_SHEET: 'Cost Items',
   HEADER_ROW: 1,
   MAX_UPLOAD_BYTES: 10485760,
 
@@ -73,6 +74,7 @@ var CONFIG = {
     ROW_ID: 'Row ID',
     DRIVE_FOLDER_URL: 'Drive Folder URL',
     AWARDED: 'Awarded',
+    REVENUE: 'Revenue',
   },
 
   REMINDER_DAYS: [30, 14, 7, 1],
