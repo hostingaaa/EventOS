@@ -45,6 +45,7 @@ export function getMockWorkspace(eventCode: string, eventRowId: string): Workspa
     files,
     activity: getActivityFor(event.code),
     vendorLink: getVendorLinkByEvent(event.code),
+    costItems: [],
   };
 }
 

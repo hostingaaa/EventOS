@@ -24,6 +24,27 @@ export interface Event {
   driveFolderUrl?: string;
   /** "Yes" once an admin marks the event's contract as secured; empty otherwise. */
   awarded?: string;
+  /** Total contract/quote value paid by the client. Admin-only to view or edit. */
+  revenue?: string;
+}
+
+export interface CostItem {
+  costItemId: string;
+  eventCode: string;
+  eventRowId: string;
+  category: string;
+  description: string;
+  quantity: number;
+  unitRate: number;
+  currency: string;
+  /** Computed server-side as quantity * unitRate — not stored directly. */
+  total: number;
+  vendorName?: string;
+  notes?: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt?: string;
+  rowNumber?: number;
 }
 
 export interface EventsResponse {
@@ -32,7 +53,7 @@ export interface EventsResponse {
 }
 
 export type EventUpdates = Partial<
-  Pick<Event, 'lem' | 'av' | 'interpreters' | 'venue' | 'psaCldp' | 'sow' | 'notes' | 'ownerEmail' | 'perDiemRate' | 'maxVisaAllowance' | 'maxGroundTransport' | 'awarded'>
+  Pick<Event, 'lem' | 'av' | 'interpreters' | 'venue' | 'psaCldp' | 'sow' | 'notes' | 'ownerEmail' | 'perDiemRate' | 'maxVisaAllowance' | 'maxGroundTransport' | 'awarded' | 'revenue'>
 >;
 
 export type TaskStatus = 'todo' | 'in_progress' | 'blocked' | 'done';
@@ -139,6 +160,7 @@ export interface WorkspaceData {
   files: TaskFile[];
   activity: ActivityItem[];
   vendorLink?: VendorLink | null;
+  costItems: CostItem[];
 }
 
 export interface TaskTemplate {
