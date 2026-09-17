@@ -137,9 +137,10 @@ export async function fetchEvents(): Promise<EventsResponse> {
 /**
  * Returns per-event health summaries for the dashboard. In mock mode this
  * pulls task/file data from the local store; in real mode it hits a
- * lightweight `dashboardHealth` endpoint on the backend.
+ * lightweight `dashboardHealth` endpoint on the backend for bulk task/file
+ * data and computes health client-side with `computeEventHealth`.
  */
-export async function fetchDashboardHealth(): Promise<Record<string, EventHealth>> {
+export async function fetchDashboardHealth(events: Event[]): Promise<Record<string, EventHealth>> {
   if (useMockData()) {
     const [{ mockEventsResponse }, { getMockState }] = await Promise.all([
       import('../data/mockEvents'),
@@ -157,10 +158,17 @@ export async function fetchDashboardHealth(): Promise<Record<string, EventHealth
     return map;
   }
   try {
-    const res = await parseJson<{ health: Record<string, EventHealth> }>(
-      await fetch(buildUrl('dashboardHealth')),
-    );
-    return res.health;
+    const res = await parseJson<{
+      tasksByEvent: Record<string, Pick<Task, 'status' | 'dueDate'>[]>;
+      fileCountByEvent: Record<string, number>;
+    }>(await fetch(buildUrl('dashboardHealth')));
+    const map: Record<string, EventHealth> = {};
+    events.forEach((ev) => {
+      const tasks = (res.tasksByEvent[ev.code] || []) as unknown as Task[];
+      const fileCount = res.fileCountByEvent[ev.code] || 0;
+      map[ev.code] = computeEventHealth(ev, tasks, new Array(fileCount) as TaskFile[]);
+    });
+    return map;
   } catch {
     return {};
   }

@@ -383,8 +383,10 @@ export function DashboardPage() {
     setLoading(true);
     setError(null);
     try {
-      const [data, health] = await Promise.all([fetchEvents(), fetchDashboardHealth()]);
-      setEvents(data.events ?? []);
+      const data = await fetchEvents();
+      const loadedEvents = data.events ?? [];
+      setEvents(loadedEvents);
+      const health = await fetchDashboardHealth(loadedEvents);
       setHealthByCode(health);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load');
