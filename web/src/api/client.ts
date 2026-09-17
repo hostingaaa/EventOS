@@ -1,5 +1,6 @@
 import type {
   Comment,
+  CostItem,
   Event,
   EventHealth,
   EventsResponse,
@@ -282,6 +283,35 @@ export async function createTask(payload: {
     });
   }
   return post('taskCreate', payload);
+}
+
+// ——— Cost items (event financials) ———
+
+export async function createCostItem(payload: {
+  eventCode: string;
+  eventRowId: string;
+  category: string;
+  description: string;
+  quantity: number;
+  unitRate: number;
+  currency?: string;
+  vendorName?: string;
+  notes?: string;
+  createdBy: string;
+}): Promise<CostItem> {
+  return post('costItemCreate', payload);
+}
+
+export async function updateCostItem(
+  costItemId: string,
+  updates: Partial<Pick<CostItem, 'category' | 'description' | 'quantity' | 'unitRate' | 'currency' | 'vendorName' | 'notes'>>,
+  actorEmail: string,
+): Promise<CostItem> {
+  return post('costItemUpdate', { costItemId, updates, actorEmail });
+}
+
+export async function deleteCostItem(costItemId: string, actorEmail: string): Promise<void> {
+  await post('costItemDelete', { costItemId, actorEmail });
 }
 
 // ——— Comments ———

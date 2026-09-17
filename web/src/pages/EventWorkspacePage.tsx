@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { deleteEvent, fetchWorkspace, updateEvent, updateTask } from '../api/client';
 import { useUser } from '../context/UserContext';
-import type { Comment, Task, TaskFile, WorkspaceData } from '../types';
+import type { Comment, CostItem, Task, TaskFile, WorkspaceData } from '../types';
 import { OpsTaskList } from '../components/tasks/OpsTaskList';
 import { TaskPanel } from '../components/tasks/TaskPanel';
 import { ActivityFeed } from '../components/collaboration/ActivityFeed';
@@ -10,11 +10,12 @@ import { CommentThread } from '../components/collaboration/CommentThread';
 import { EventDetail } from '../components/EventDetail';
 import { ApplyTemplatesModal } from '../components/templates/ApplyTemplatesModal';
 import { VendorSharePanel } from '../components/vendor/VendorSharePanel';
+import { FinancialsPanel } from '../components/FinancialsPanel';
 import { formatEventHeaderDates } from '../utils/calendarDates';
 import { archiveEvent, getArchivedCodes, isEventAwarded, isEventCompleted, unarchiveEvent } from '../utils/eventLifecycle';
 import './EventWorkspacePage.css';
 
-type Tab = 'tasks' | 'overview' | 'activity';
+type Tab = 'tasks' | 'overview' | 'financials' | 'activity';
 
 export function EventWorkspacePage() {
   const { eventCode } = useParams<{ eventCode: string }>();
@@ -84,6 +85,20 @@ export function EventWorkspacePage() {
     setData((d) => (d ? { ...d, files: d.files.filter((f) => f.fileId !== fileId) } : d));
   };
 
+  const handleCostItemAdded = (item: CostItem) => {
+    setData((d) => (d ? { ...d, costItems: [...d.costItems, item] } : d));
+  };
+
+  const handleCostItemUpdated = (item: CostItem) => {
+    setData((d) =>
+      d ? { ...d, costItems: d.costItems.map((c) => (c.costItemId === item.costItemId ? item : c)) } : d,
+    );
+  };
+
+  const handleCostItemDeleted = (costItemId: string) => {
+    setData((d) => (d ? { ...d, costItems: d.costItems.filter((c) => c.costItemId !== costItemId) } : d));
+  };
+
   const handleToggleComplete = async (task: Task) => {
     if (!user) return;
     const newStatus = task.status === 'done' ? 'in_progress' : 'done';
@@ -103,7 +118,9 @@ export function EventWorkspacePage() {
   }
 
   const { event, tasks, comments, files, activity } = data;
+  const costItems = data.costItems ?? [];
   const eventComments = comments.filter((c) => !c.taskId);
+  const taskCategories = Array.from(new Set(tasks.map((t) => t.category).filter(Boolean)));
   const canDelete = can('events.delete');
   const completed = isEventCompleted(event, archivedCodes);
   const awarded = isEventAwarded(event);
@@ -277,6 +294,7 @@ export function EventWorkspacePage() {
           [
             ['tasks', 'Operational tasks'],
             ['overview', 'Event details'],
+            ['financials', 'Financials'],
             ['activity', 'Activity log'],
           ] as const
         ).map(([id, label]) => (
@@ -343,6 +361,20 @@ export function EventWorkspacePage() {
             />
           </section>
         </div>
+      )}
+
+      {tab === 'financials' && user && (
+        <FinancialsPanel
+          event={event}
+          costItems={costItems}
+          categoriesInUse={taskCategories}
+          isAdmin={isAdmin}
+          actorEmail={user.email}
+          onEventUpdated={handleEventUpdated}
+          onCostItemAdded={handleCostItemAdded}
+          onCostItemUpdated={handleCostItemUpdated}
+          onCostItemDeleted={handleCostItemDeleted}
+        />
       )}
 
       {tab === 'activity' && (
