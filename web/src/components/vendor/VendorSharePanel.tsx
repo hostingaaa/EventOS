@@ -248,7 +248,7 @@ export function VendorSharePanel({ eventCode, eventRowId, actorEmail, tasks }: P
               >
                 <option value="view">View only (read-only)</option>
                 <option value="collaborate">
-                  Collaborator (upload files, mark complete) — coming soon
+                  Collaborator (submit rates, upload files, mark complete)
                 </option>
               </select>
             </label>

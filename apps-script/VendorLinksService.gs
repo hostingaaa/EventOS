@@ -232,6 +232,13 @@ function getVendorWorkspace_(token) {
       };
     });
 
+  // Cost items scoped the same way tasks are — by vendor category, when set.
+  var allCostItems = listCostItems_(event.code, event.rowId);
+  var costItems = allCostItems.filter(function (c) {
+    if (category && String(c.category || '').toLowerCase() !== category) return false;
+    return true;
+  });
+
   return {
     event: {
       code: event.code,
@@ -242,9 +249,24 @@ function getVendorWorkspace_(token) {
     },
     tasks: tasks,
     files: files,
+    costItems: costItems,
     linkLabel: link.label,
     vendorCategory: link.vendorCategory || '',
     vendorName: link.vendorName || '',
     permission: link.permission || 'view',
   };
+}
+
+/** True for a task in this vendor link's visible-task set (same rule getVendorWorkspace_ uses). */
+function isTaskVisibleToVendorLink_(task, link) {
+  if (!task || task.eventCode !== link.eventCode) return false;
+  if (!isVendorVisibleTask_(task)) return false;
+  var category = String(link.vendorCategory || '').toLowerCase();
+  if (category && String(task.category || '').toLowerCase() !== category) return false;
+  return true;
+}
+
+/** Identifying label written to Created By / Uploaded By for anything a vendor submits. */
+function vendorActorLabel_(link) {
+  return 'vendor:' + (link.vendorName || link.vendorCategory || 'unknown');
 }

@@ -168,3 +168,54 @@
 .vendor-portal__empty {
   color: var(--muted);
 }
+
+.vendor-portal__collab-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.vendor-portal__complete-btn,
+.vendor-portal__upload-btn {
+  display: inline-flex;
+  align-items: center;
+  background: #fff;
+  color: var(--primary);
+  border: 1.5px solid var(--border);
+  padding: 0.42rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.vendor-portal__complete-btn:disabled,
+.vendor-portal__upload-btn:has(input:disabled) {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.vendor-portal__rates {
+  margin-top: 2rem;
+}
+
+.vendor-portal__rates h2 {
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 1rem;
+}
+
+.vendor-portal__upload-error {
+  color: #b91c1c;
+  background: #fee2e2;
+  padding: 0.5rem 0.8rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  margin-bottom: 0.75rem;
+}
