@@ -8,13 +8,16 @@
 
 .templates-page header h1 {
   margin: 0;
-  font-size: 1.75rem;
-  color: var(--ink);
+  font-family: 'Archivo', sans-serif;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--eo-text, var(--ink));
 }
 
 .templates-page header p {
   margin: 0.35rem 0 0;
-  color: var(--muted);
+  color: var(--eo-muted, var(--muted));
   max-width: 480px;
 }
 
@@ -25,18 +28,18 @@
 }
 
 .template-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  background: var(--eo-surface, var(--surface));
+  border: none;
+  border-radius: 16px;
   padding: 1.2rem;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--eo-shadow-sm, var(--shadow-sm));
 }
 
 .template-card__cat {
   font-size: 0.65rem;
   text-transform: uppercase;
   font-weight: 700;
-  color: var(--primary);
+  color: var(--eo-accent, var(--primary));
 }
 
 .template-card h2 {
@@ -46,14 +49,14 @@
 
 .template-card__instructions {
   font-size: 0.85rem;
-  color: var(--muted);
+  color: var(--eo-muted, var(--muted));
   line-height: 1.5;
   margin: 0 0 0.5rem;
 }
 
 .template-card__meta {
   font-size: 0.8rem;
-  color: var(--muted-light);
+  color: var(--eo-muted, var(--muted-light));
 }
 
 .template-card__files {
@@ -66,7 +69,7 @@
 .template-card__upload {
   display: inline-block;
   font-size: 0.8rem;
-  color: var(--primary);
+  color: var(--eo-accent, var(--primary));
   font-weight: 600;
   cursor: pointer;
   margin: 0.5rem 0;
@@ -81,17 +84,23 @@
 }
 
 .template-card__actions button {
-  border: 1px solid var(--border);
-  background: var(--surface);
-  padding: 0.35rem 0.7rem;
-  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--eo-surface, var(--surface));
+  box-shadow: var(--eo-shadow-sm);
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
   cursor: pointer;
   font-size: 0.8rem;
+  font-weight: 600;
+  transition: box-shadow 0.15s;
+}
+
+.template-card__actions button:hover {
+  box-shadow: var(--eo-shadow-md);
 }
 
 .template-card__actions button.danger {
   color: var(--danger);
-  border-color: #fecaca;
 }
 
 .template-editor {

@@ -1,20 +1,20 @@
 .breakdown-bars {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  background: var(--eo-surface, var(--surface));
+  border: none;
+  border-radius: 16px;
   padding: 1.25rem;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--eo-shadow-sm, var(--shadow-sm));
 }
 
 .breakdown-bars h3 {
   margin: 0 0 1rem;
   font-size: 0.95rem;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--eo-text, var(--ink));
 }
 
 .breakdown-bars__empty {
-  color: var(--muted);
+  color: var(--eo-muted, var(--muted));
   font-size: 0.85rem;
 }
 
@@ -43,7 +43,7 @@
 
 .breakdown-bars__fill {
   height: 100%;
-  background: var(--primary);
+  background: var(--eo-accent, var(--primary));
   border-radius: 999px;
   min-width: 3px;
 }
@@ -55,7 +55,7 @@
 .breakdown-bars__value {
   font-size: 0.8rem;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--eo-text, var(--ink));
   text-align: right;
   white-space: nowrap;
 }

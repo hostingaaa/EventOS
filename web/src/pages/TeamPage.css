@@ -1,13 +1,14 @@
 .team header h1 {
   margin: 0;
-  font-size: 1.75rem;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  color: var(--ink);
+  font-family: 'Archivo', sans-serif;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--eo-text, var(--ink));
 }
 
 .team header p {
-  color: var(--muted);
+  color: var(--eo-muted, var(--muted));
   margin: 0.4rem 0 1.75rem;
 }
 
@@ -19,27 +20,28 @@
 }
 
 .team__stat {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  background: var(--eo-surface, var(--surface));
+  border: none;
+  border-radius: 16px;
   padding: 1.15rem 1.5rem;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--eo-shadow-sm, var(--shadow-sm));
   min-width: 130px;
   flex: 1;
 }
 
 .team__stat strong {
   display: block;
+  font-family: 'Archivo', sans-serif;
   font-size: 2rem;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  color: var(--primary);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--eo-accent, var(--primary));
   line-height: 1.1;
 }
 
 .team__stat span {
   font-size: 0.8rem;
-  color: var(--muted);
+  color: var(--eo-muted, var(--muted));
   font-weight: 500;
 }
 
@@ -50,24 +52,24 @@
 }
 
 .team__card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  background: var(--eo-surface, var(--surface));
+  border: none;
+  border-radius: 16px;
   padding: 1.25rem;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--eo-shadow-sm, var(--shadow-sm));
 }
 
 .team__card h2 {
   margin: 0;
   font-size: 1.05rem;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--eo-text, var(--ink));
 }
 
 .team__email {
   margin: 0.2rem 0 0.85rem;
   font-size: 0.8rem;
-  color: var(--muted);
+  color: var(--eo-muted, var(--muted));
 }
 
 .team__card ul {
@@ -92,7 +94,7 @@
 }
 
 .team__card a:hover {
-  color: var(--primary);
+  color: var(--eo-accent, var(--primary));
 }
 
 .team__status {
@@ -122,14 +124,14 @@
 }
 
 .team__msg {
-  color: var(--muted);
+  color: var(--eo-muted, var(--muted));
 }
 
 .team__section-title {
   margin: 0 0 1rem;
   font-size: 1.05rem;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--eo-text, var(--ink));
 }
 
 .team__disclosure {
@@ -141,15 +143,15 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  background: var(--eo-surface, var(--surface));
+  border: none;
+  border-radius: 16px;
   padding: 0.9rem 1.15rem;
   font-size: 0.95rem;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--eo-text, var(--ink));
   cursor: pointer;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--eo-shadow-sm, var(--shadow-sm));
 }
 
 .team__disclosure-right {
@@ -160,12 +162,12 @@
 
 .team__disclosure-count {
   font-weight: 500;
-  color: var(--muted);
+  color: var(--eo-muted, var(--muted));
 }
 
 .team__disclosure-chevron {
   display: inline-block;
-  color: var(--muted);
+  color: var(--eo-muted, var(--muted));
   transform: rotate(90deg);
   transition: transform 0.15s ease;
 }
@@ -215,7 +217,7 @@
   height: 36px;
   flex-shrink: 0;
   border-radius: 50%;
-  background: var(--primary);
+  background: var(--eo-accent, var(--primary));
   color: #fff;
   font-weight: 700;
   font-size: 0.9rem;
@@ -231,16 +233,16 @@
 
 .team__account-counts strong {
   font-size: 0.82rem;
-  color: var(--primary);
+  color: var(--eo-accent, var(--primary));
 }
 
 .team__account-counts span {
   font-size: 0.75rem;
-  color: var(--muted);
+  color: var(--eo-muted, var(--muted));
 }
 
 .team__no-tasks {
-  color: var(--muted);
+  color: var(--eo-muted, var(--muted));
   font-size: 0.85rem;
   margin: 0;
 }

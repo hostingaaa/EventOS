@@ -1,9 +1,9 @@
 .trend-chart {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  background: var(--eo-surface, var(--surface));
+  border: none;
+  border-radius: 16px;
   padding: 1.25rem;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--eo-shadow-sm, var(--shadow-sm));
 }
 
 .trend-chart__legend {
@@ -17,7 +17,7 @@
 .trend-chart__legend-item {
   position: relative;
   padding-left: 1rem;
-  color: var(--muted);
+  color: var(--eo-muted, var(--muted));
 }
 
 .trend-chart__legend-item::before {
@@ -36,7 +36,7 @@
 .trend-chart__legend-item--profit::before { background: var(--accent); }
 
 .trend-chart__empty {
-  color: var(--muted);
+  color: var(--eo-muted, var(--muted));
   font-size: 0.85rem;
 }
 
