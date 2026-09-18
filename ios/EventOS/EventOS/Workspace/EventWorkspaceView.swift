@@ -4,9 +4,15 @@ struct EventWorkspaceView: View {
     @EnvironmentObject private var session: SessionStore
     @StateObject private var vm: WorkspaceViewModel
     @State private var tab: Tab = .tasks
+    @State private var revenueInput: String = ""
+    @State private var costDescription = ""
+    @State private var costCategory = ""
+    @State private var costQuantity = "1"
+    @State private var costUnitRate = ""
+    @State private var costCurrency = "USD"
 
     enum Tab: String, CaseIterable, Identifiable {
-        case tasks = "Tasks", overview = "Overview", activity = "Activity"
+        case tasks = "Tasks", overview = "Overview", financials = "Financials", activity = "Activity"
         var id: String { rawValue }
     }
 
@@ -73,6 +79,7 @@ struct EventWorkspaceView: View {
                     switch tab {
                     case .tasks: taskList(data)
                     case .overview: overview(data)
+                    case .financials: financialsTab(data)
                     case .activity: activityLog(data)
                     }
                 }
@@ -230,6 +237,113 @@ struct EventWorkspaceView: View {
         }
     }
 
+    // MARK: Financials tab
+
+    private func financialsTab(_ data: WorkspaceData) -> some View {
+        let f = vm.financials
+        return VStack(alignment: .leading, spacing: 20) {
+            if session.user?.isAdmin == true {
+                VStack(alignment: .leading, spacing: 10) {
+                    SectionHeaderRow(icon: "dollarsign.circle.fill", title: "Revenue")
+                    HStack(spacing: 10) {
+                        TextField("Contract value", text: $revenueInput)
+                            .keyboardType(.decimalPad)
+                            .textFieldStyle(.plain)
+                            .padding(12)
+                            .background(Theme.cardAlt)
+                            .foregroundStyle(Theme.textPrimary)
+                            .clipShape(RoundedRectangle(cornerRadius: Theme.cornerSmall, style: .continuous))
+                        Button(vm.savingRevenue ? "Saving…" : "Save") {
+                            Task { await vm.saveRevenue(revenueInput, actorEmail: session.user?.email ?? "") }
+                        }
+                        .buttonStyle(StakePrimaryButtonStyle())
+                        .fixedSize()
+                        .disabled(vm.savingRevenue)
+                    }
+                    if let profit = f.profit {
+                        Text("Profit: \(formatMoney(profit))")
+                            .font(.subheadline.bold())
+                            .foregroundStyle(profit < 0 ? Theme.statusRisk : Theme.statusGood)
+                    }
+                }
+                .cardStyle()
+                .onAppear { revenueInput = data.event.revenue ?? "" }
+            }
+
+            VStack(alignment: .leading, spacing: 12) {
+                SectionHeaderRow(icon: "list.bullet.rectangle", title: "Cost items")
+
+                if data.costItems.isEmpty {
+                    Text("No cost items recorded yet.").foregroundStyle(Theme.textSecondary)
+                }
+
+                VStack(spacing: 10) {
+                    ForEach(data.costItems) { item in
+                        CostItemCard(item: item, busy: vm.busyCostItemId == item.costItemId) {
+                            Task { await vm.deleteCostItem(item, actorEmail: session.user?.email ?? "") }
+                        }
+                    }
+                }
+
+                if !f.totalsByCurrency.isEmpty {
+                    HStack(spacing: 10) {
+                        ForEach(f.totalsByCurrency.sorted(by: { $0.key < $1.key }), id: \.key) { currency, total in
+                            Text("Total: \(formatMoney(total, currency: currency))")
+                                .font(.caption.weight(.bold))
+                                .padding(.horizontal, 10).padding(.vertical, 5)
+                                .background(Theme.green.opacity(0.15))
+                                .foregroundStyle(Theme.green)
+                                .clipShape(Capsule())
+                        }
+                    }
+                }
+
+                Divider().background(Theme.border).padding(.vertical, 4)
+
+                VStack(spacing: 8) {
+                    HStack(spacing: 8) {
+                        formField("Description", text: $costDescription)
+                        formField("Category", text: $costCategory)
+                    }
+                    HStack(spacing: 8) {
+                        formField("Qty", text: $costQuantity).keyboardType(.decimalPad)
+                        formField("Unit rate", text: $costUnitRate).keyboardType(.decimalPad)
+                        formField("Currency", text: $costCurrency)
+                    }
+                    Button("+ Add cost item") {
+                        Task {
+                            await vm.addCostItem(
+                                description: costDescription, category: costCategory,
+                                quantity: Double(costQuantity) ?? 1, unitRate: Double(costUnitRate) ?? 0,
+                                currency: costCurrency.isEmpty ? "USD" : costCurrency,
+                                createdBy: session.user?.email ?? ""
+                            )
+                            costDescription = ""; costCategory = ""; costQuantity = "1"; costUnitRate = ""
+                        }
+                    }
+                    .buttonStyle(StakePrimaryButtonStyle())
+                    .frame(maxWidth: .infinity)
+                    .disabled(costDescription.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+            .cardStyle()
+        }
+    }
+
+    private func formField(_ placeholder: String, text: Binding<String>) -> some View {
+        TextField(placeholder, text: text)
+            .textFieldStyle(.plain)
+            .padding(10)
+            .background(Theme.cardAlt)
+            .foregroundStyle(Theme.textPrimary)
+            .clipShape(RoundedRectangle(cornerRadius: Theme.cornerSmall, style: .continuous))
+    }
+
+    private func formatMoney(_ amount: Double, currency: String = "USD") -> String {
+        let formatted = amount.formatted(.number.precision(.fractionLength(2)))
+        return "\(formatted) \(currency)"
+    }
+
     // MARK: Activity tab
 
     private func activityLog(_ data: WorkspaceData) -> some View {
@@ -368,6 +482,48 @@ private struct StatusBadge: View {
             .background(color.opacity(0.18))
             .foregroundStyle(color)
             .clipShape(Capsule())
+    }
+}
+
+private struct CostItemCard: View {
+    let item: CostItem
+    let busy: Bool
+    let onDelete: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(item.description).foregroundStyle(Theme.textPrimary)
+                HStack(spacing: 6) {
+                    if !item.category.isEmpty {
+                        Text(item.category).font(.caption2).foregroundStyle(Theme.textSecondary)
+                    }
+                    if let vendorName = item.vendorName, !vendorName.isEmpty {
+                        Text("• \(vendorName)").font(.caption2).foregroundStyle(Theme.textSecondary)
+                    }
+                    Text("• \(item.quantity.formatted()) × \(item.unitRate.formatted())")
+                        .font(.caption2).foregroundStyle(Theme.textSecondary)
+                }
+            }
+
+            Spacer()
+
+            Text("\(item.total.formatted(.number.precision(.fractionLength(2)))) \(item.currency)")
+                .font(.subheadline.bold())
+                .foregroundStyle(Theme.textPrimary)
+
+            Button(action: onDelete) {
+                Image(systemName: "xmark.circle.fill")
+                    .foregroundStyle(Theme.statusRisk.opacity(0.7))
+            }
+            .buttonStyle(.plain)
+            .disabled(busy)
+        }
+        .padding(12)
+        .background(Theme.card)
+        .clipShape(RoundedRectangle(cornerRadius: Theme.cornerSmall, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Theme.cornerSmall, style: .continuous).stroke(Theme.border, lineWidth: 1))
+        .opacity(busy ? 0.5 : 1)
     }
 }
 

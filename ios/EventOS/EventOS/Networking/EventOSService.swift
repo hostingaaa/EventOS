@@ -51,6 +51,30 @@ enum EventOSService {
         try await APIClient.post("update", ["rowId": rowId, "code": code, "updates": updates, "actorEmail": actorEmail])
     }
 
+    static func createCostItem(
+        eventCode: String, eventRowId: String, category: String, description: String,
+        quantity: Double, unitRate: Double, currency: String, vendorName: String? = nil,
+        notes: String? = nil, createdBy: String
+    ) async throws -> CostItem {
+        var payload: [String: Any] = [
+            "eventCode": eventCode, "eventRowId": eventRowId, "category": category,
+            "description": description, "quantity": quantity, "unitRate": unitRate,
+            "currency": currency, "createdBy": createdBy,
+        ]
+        if let vendorName { payload["vendorName"] = vendorName }
+        if let notes { payload["notes"] = notes }
+        return try await APIClient.post("costItemCreate", payload)
+    }
+
+    static func updateCostItem(costItemId: String, updates: [String: Any], actorEmail: String) async throws -> CostItem {
+        try await APIClient.post("costItemUpdate", ["costItemId": costItemId, "updates": updates, "actorEmail": actorEmail])
+    }
+
+    static func deleteCostItem(costItemId: String, actorEmail: String) async throws {
+        struct OkResponse: Codable { var ok: Bool }
+        let _: OkResponse = try await APIClient.post("costItemDelete", ["costItemId": costItemId, "actorEmail": actorEmail])
+    }
+
     static func createTask(eventCode: String, eventRowId: String, title: String, category: String, createdBy: String) async throws -> EventTask {
         try await APIClient.post("taskCreate", [
             "eventCode": eventCode, "eventRowId": eventRowId, "title": title,

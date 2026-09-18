@@ -23,6 +23,7 @@ struct Event: Codable, Identifiable, Equatable {
     var maxGroundTransport: String?
     var driveFolderUrl: String?
     var awarded: String?
+    var revenue: String?
 
     var id: String { rowId }
 }

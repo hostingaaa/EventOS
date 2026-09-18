@@ -90,6 +90,26 @@ struct VendorLink: Codable, Equatable {
     var active: String
 }
 
+struct CostItem: Codable, Identifiable, Equatable {
+    var costItemId: String
+    var eventCode: String
+    var eventRowId: String
+    var category: String
+    var description: String
+    var quantity: Double
+    var unitRate: Double
+    var currency: String
+    var total: Double
+    var vendorName: String?
+    var notes: String?
+    var createdBy: String
+    var createdAt: String
+    var updatedAt: String?
+    var rowNumber: Int?
+
+    var id: String { costItemId }
+}
+
 struct WorkspaceData: Codable {
     var event: Event
     var tasks: [EventTask]
@@ -97,4 +117,5 @@ struct WorkspaceData: Codable {
     var files: [TaskFile]
     var activity: [ActivityItem]
     var vendorLink: VendorLink?
+    var costItems: [CostItem]
 }
