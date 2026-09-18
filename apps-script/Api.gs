@@ -393,16 +393,19 @@ function handleRequest_(e, method) {
     }
 
     if (action === 'membersUpsert' && acceptsWrite_(method, e)) {
+      requireAdmin_(actorEmail);
       return jsonResponse_(upsertMember_(body.member));
     }
 
     if (action === 'membersDeactivate' && method === 'POST') {
+      requireAdmin_(actorEmail);
       deactivateMember_(body.id);
       return jsonResponse_({ ok: true });
     }
 
     // ——— Role capabilities ———
     if (action === 'capsList') {
+      requireAdmin_(actorEmail);
       return jsonResponse_({ matrix: getCapMatrixFromSheet_() });
     }
 
