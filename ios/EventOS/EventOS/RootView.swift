@@ -17,6 +17,8 @@ struct RootView: View {
 }
 
 struct RootTabView: View {
+    @EnvironmentObject private var session: SessionStore
+
     var body: some View {
         TabView {
             NavigationStack {
@@ -28,6 +30,13 @@ struct RootTabView: View {
                 TeamView()
             }
             .tabItem { Label("Team", systemImage: "person.2.fill") }
+
+            if session.user?.isAdmin == true {
+                NavigationStack {
+                    ReportsView()
+                }
+                .tabItem { Label("Reports", systemImage: "chart.bar.fill") }
+            }
         }
         .tint(Theme.green)
     }

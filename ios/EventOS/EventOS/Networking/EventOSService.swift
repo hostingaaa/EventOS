@@ -86,6 +86,13 @@ enum EventOSService {
         let _: OkResponse = try await APIClient.post("costItemDelete", ["costItemId": costItemId, "actorEmail": actorEmail])
     }
 
+    /// Every cost item across every event, for the admin Reports dashboard.
+    static func fetchAllCostItems() async throws -> [CostItem] {
+        struct Response: Codable { var costItems: [CostItem] }
+        let res: Response = try await APIClient.get("costItemsList")
+        return res.costItems
+    }
+
     static func createTask(eventCode: String, eventRowId: String, title: String, category: String, createdBy: String) async throws -> EventTask {
         try await APIClient.post("taskCreate", [
             "eventCode": eventCode, "eventRowId": eventRowId, "title": title,
