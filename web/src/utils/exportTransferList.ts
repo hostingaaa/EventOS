@@ -174,6 +174,17 @@ function groupDepartures(travelers: TravelerEntry[]): DepartureGroup[] {
   });
 }
 
+/** Tally vehicle types needed across all arrival + departure flight groups (one vehicle per group). */
+export function computeVehicleCounts(travelers: TravelerEntry[]): Record<string, number> {
+  const counts: Record<string, number> = {};
+  const groups: { members: TravelerEntry[] }[] = [...groupArrivals(travelers), ...groupDepartures(travelers)];
+  for (const g of groups) {
+    const vehicle = vehicleForCount(g.members.length);
+    counts[vehicle] = (counts[vehicle] ?? 0) + 1;
+  }
+  return counts;
+}
+
 // ─── sheet builders ────────────────────────────────────────────────────────
 
 const ARR_COLS = 9;

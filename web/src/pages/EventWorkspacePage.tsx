@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { deleteEvent, fetchWorkspace, updateEvent, updateTask } from '../api/client';
 import { useUser } from '../context/UserContext';
 import type { Comment, CostItem, Task, TaskFile, WorkspaceData } from '../types';
@@ -22,8 +22,13 @@ export function EventWorkspacePage() {
   const code = decodeURIComponent(eventCode || '');
   const navigate = useNavigate();
 
+  const [searchParams] = useSearchParams();
+  const validTabs: Tab[] = ['tasks', 'overview', 'financials', 'activity'];
+  const requestedTab = searchParams.get('tab');
+  const initialTab: Tab = validTabs.includes(requestedTab as Tab) ? (requestedTab as Tab) : 'tasks';
+
   const [data, setData] = useState<WorkspaceData | null>(null);
-  const [tab, setTab] = useState<Tab>('tasks');
+  const [tab, setTab] = useState<Tab>(initialTab);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
