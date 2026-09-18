@@ -12,17 +12,21 @@
 
 .reports__header h1 {
   margin: 0;
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: var(--ink);
+  font-family: 'Archivo', sans-serif;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--eo-text, var(--ink));
 }
 
 .reports__header select {
-  padding: 0.5rem 0.8rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  padding: 0.55rem 1rem;
+  border: none;
+  border-radius: 999px;
   font-size: 0.9rem;
-  background: var(--surface);
+  font-weight: 700;
+  background: var(--eo-surface, var(--surface));
+  box-shadow: var(--eo-shadow-sm, var(--shadow-sm));
 }
 
 .reports__kpis {
@@ -32,17 +36,18 @@
 }
 
 .reports__kpi-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  background: var(--eo-surface, var(--surface));
+  border: none;
+  border-radius: 16px;
   padding: 1.1rem 1.25rem;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--eo-shadow-sm, var(--shadow-sm));
 }
 
 .reports__kpi-figure {
-  font-size: 1.6rem;
+  font-family: 'Archivo', sans-serif;
+  font-size: 1.7rem;
   font-weight: 800;
-  color: var(--ink);
+  color: var(--eo-text, var(--ink));
 }
 
 .reports__kpi-card--negative .reports__kpi-figure {
@@ -51,7 +56,7 @@
 
 .reports__kpi-label {
   font-size: 0.78rem;
-  color: var(--muted);
+  color: var(--eo-muted, var(--muted));
   margin-top: 0.2rem;
 }
 
@@ -62,10 +67,10 @@
 }
 
 .reports__table-wrap {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  background: var(--eo-surface, var(--surface));
+  border: none;
+  border-radius: 16px;
+  box-shadow: var(--eo-shadow-sm, var(--shadow-sm));
   overflow-x: auto;
 }
 
@@ -80,7 +85,7 @@
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--muted);
+  color: var(--eo-muted, var(--muted));
   padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--border);
   cursor: pointer;
@@ -89,7 +94,7 @@
 }
 
 .reports__table th:hover {
-  color: var(--ink-secondary);
+  color: var(--eo-text, var(--ink-secondary));
 }
 
 .reports__table td {
@@ -106,18 +111,18 @@
 
 .reports__table-empty {
   text-align: center;
-  color: var(--muted);
+  color: var(--eo-muted, var(--muted));
   padding: 2rem !important;
 }
 
 .reports__denied {
   text-align: center;
   padding: 3.5rem 2rem;
-  color: var(--muted);
+  color: var(--eo-muted, var(--muted));
 }
 
 .reports__msg {
-  color: var(--muted);
+  color: var(--eo-muted, var(--muted));
   padding: 3rem;
   text-align: center;
 }
