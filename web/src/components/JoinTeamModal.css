@@ -3,7 +3,7 @@
 .login-overlay {
   position: fixed;
   inset: 0;
-  background: #f0f4f8;
+  background: var(--eo-bg, #f0f4f8);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -14,15 +14,13 @@
 /* ── Card ────────────────────────────────────────────────────────────────── */
 
 .login-card {
-  background: #fff;
-  border-radius: 18px;
+  background: var(--eo-surface, #fff);
+  border-radius: 20px;
   padding: 2.75rem 2.5rem 2.5rem;
   width: 100%;
   max-width: 420px;
-  box-shadow:
-    0 4px 6px -1px rgba(0,0,0,.07),
-    0 20px 60px -8px rgba(0,0,0,.15);
-  border: 1px solid rgba(0,0,0,.05);
+  box-shadow: var(--eo-shadow-md, 0 20px 60px -8px rgba(0,0,0,.15));
+  border: none;
 }
 
 /* ── Brand / logo ────────────────────────────────────────────────────────── */
@@ -45,10 +43,11 @@
 /* ── Typography ──────────────────────────────────────────────────────────── */
 
 .login-title {
-  font-size: 1.45rem;
-  font-weight: 700;
-  letter-spacing: -0.025em;
-  color: #0f172a;
+  font-family: 'Archivo', inherit;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--eo-text, #0f172a);
   margin: 0 0 0.5rem;
   text-align: center;
 }
@@ -69,13 +68,13 @@
 .login-email-chip {
   display: inline-flex;
   align-items: center;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
+  background: var(--eo-accent-100, #f1f5f9);
+  border: none;
   border-radius: 999px;
   padding: 0.28rem 0.85rem;
   font-size: 0.82rem;
-  color: #475569;
-  font-weight: 500;
+  color: var(--eo-accent-700, #475569);
+  font-weight: 700;
   margin: 0 auto 1.75rem;
   max-width: 100%;
   overflow: hidden;
@@ -87,7 +86,7 @@
 }
 
 .login-email-inline {
-  color: #203864;
+  color: var(--eo-accent, #203864);
 }
 
 /* ── Form fields ─────────────────────────────────────────────────────────── */
@@ -124,8 +123,8 @@
 }
 
 .login-field input:focus {
-  border-color: #203864;
-  box-shadow: 0 0 0 3px rgba(32, 56, 100, 0.12);
+  border-color: var(--eo-accent, #203864);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--eo-accent, #203864) 15%, transparent);
 }
 
 /* Password wrapper with show/hide toggle */
@@ -159,24 +158,27 @@
 .login-btn {
   display: block;
   width: 100%;
-  padding: 0.78rem 1rem;
-  border-radius: 10px;
+  padding: 0.8rem 1rem;
+  border-radius: 999px;
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 800;
+  font-family: 'Archivo', inherit;
   cursor: pointer;
   border: none;
-  transition: background 0.15s, opacity 0.15s, transform 0.1s;
+  transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
   margin-top: 0.5rem;
   letter-spacing: 0.01em;
+  box-shadow: var(--eo-shadow-sm);
 }
 
 .login-btn--primary {
-  background: #203864;
+  background: var(--eo-accent, #203864);
   color: #fff;
 }
 
 .login-btn--primary:hover:not(:disabled) {
-  background: #162847;
+  background: var(--eo-accent-700, #162847);
+  box-shadow: var(--eo-shadow-md);
 }
 
 .login-btn--primary:active:not(:disabled) {
@@ -238,7 +240,6 @@
 
   .login-card {
     background: #1e293b;
-    border-color: rgba(255,255,255,.07);
   }
 
   .login-logo--light { display: none; }
@@ -266,9 +267,9 @@
   }
 
   .login-btn--primary {
-    background: #3b5ea6;
+    background: var(--eo-accent, #3b5ea6);
   }
   .login-btn--primary:hover:not(:disabled) {
-    background: #2d4a8a;
+    background: var(--eo-accent-700, #2d4a8a);
   }
 }

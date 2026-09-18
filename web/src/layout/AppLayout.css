@@ -48,7 +48,7 @@
   min-width: 0; /* allow nested horizontal scroll regions */
   padding: 1.75rem 2rem 2.5rem;
   overflow-x: hidden;
-  background: var(--bg-subtle);
+  background: var(--eo-bg, var(--bg-subtle));
   min-height: 100dvh;
   transition: margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
