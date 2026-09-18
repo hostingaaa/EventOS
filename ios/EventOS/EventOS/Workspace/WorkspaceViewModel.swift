@@ -160,6 +160,24 @@ final class WorkspaceViewModel: ObservableObject {
         }
     }
 
+    @Published var applyingTemplates = false
+
+    func applyTemplates(templateIds: [String], actorEmail: String) async -> Bool {
+        guard let event = data?.event, !templateIds.isEmpty else { return false }
+        applyingTemplates = true
+        defer { applyingTemplates = false }
+        do {
+            let tasks = try await EventOSService.applyTemplates(eventCode: event.code, eventRowId: event.rowId, templateIds: templateIds, actorEmail: actorEmail)
+            guard var current = data else { return false }
+            current.tasks.append(contentsOf: tasks)
+            data = current
+            return true
+        } catch {
+            self.error = error.localizedDescription
+            return false
+        }
+    }
+
     func createTask(createdBy: String) async {
         let title = newTaskTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty, let event = data?.event else { return }

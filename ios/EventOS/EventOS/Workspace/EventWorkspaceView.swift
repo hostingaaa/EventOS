@@ -4,6 +4,7 @@ struct EventWorkspaceView: View {
     @EnvironmentObject private var session: SessionStore
     @StateObject private var vm: WorkspaceViewModel
     @State private var tab: Tab = .tasks
+    @State private var showApplyTemplates = false
     @State private var revenueInput: String = ""
     @State private var costDescription = ""
     @State private var costCategory = ""
@@ -65,6 +66,17 @@ struct EventWorkspaceView: View {
             }
         }
         .task { await vm.load() }
+        .sheet(isPresented: $showApplyTemplates) {
+            ApplyTemplatesSheet(applying: vm.applyingTemplates) { templateIds in
+                Task {
+                    if await vm.applyTemplates(templateIds: templateIds, actorEmail: session.user?.email ?? "") {
+                        showApplyTemplates = false
+                    }
+                }
+            } onCancel: {
+                showApplyTemplates = false
+            }
+        }
     }
 
     @ViewBuilder
@@ -152,6 +164,13 @@ struct EventWorkspaceView: View {
 
     private func taskList(_ data: WorkspaceData) -> some View {
         VStack(alignment: .leading, spacing: 12) {
+            Button {
+                showApplyTemplates = true
+            } label: {
+                Label("Add from templates", systemImage: "doc.on.doc.fill").frame(maxWidth: .infinity)
+            }
+            .buttonStyle(StakeSecondaryButtonStyle())
+
             HStack(spacing: 10) {
                 TextField("New task title", text: $vm.newTaskTitle)
                     .textFieldStyle(.plain)
@@ -541,5 +560,108 @@ private struct CommentCard: View {
             Text(comment.body).font(.subheadline).foregroundStyle(Theme.textSecondary)
         }
         .cardStyle(padding: 12, corner: Theme.cornerSmall)
+    }
+}
+
+/// Lets the user pick which reusable task templates to instantiate for this
+/// event in one batch — mirrors web/src/components/templates/ApplyTemplatesModal.tsx.
+private struct ApplyTemplatesSheet: View {
+    let applying: Bool
+    let onApply: ([String]) -> Void
+    let onCancel: () -> Void
+
+    @State private var templates: [TaskTemplateWithFiles] = []
+    @State private var selected: Set<String> = []
+    @State private var loading = true
+    @State private var error: String?
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if loading {
+                    ProgressView("Loading templates…").tint(Theme.green)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if let error {
+                    Text(error).foregroundStyle(Theme.statusRisk)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if templates.isEmpty {
+                    Text("No task templates yet.").foregroundStyle(Theme.textSecondary)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    ScrollView {
+                        VStack(spacing: 10) {
+                            ForEach(templates) { item in
+                                templateRow(item)
+                            }
+                        }
+                        .padding(16)
+                    }
+                }
+            }
+            .background(Theme.bg)
+            .navigationTitle("Add tasks from templates")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel", action: onCancel).foregroundStyle(Theme.textSecondary)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(applying ? "Adding…" : "Add \(selected.count) task(s)") {
+                        onApply(Array(selected))
+                    }
+                    .foregroundStyle(Theme.green)
+                    .disabled(selected.isEmpty || applying)
+                }
+            }
+        }
+        .task {
+            do {
+                templates = try await EventOSService.fetchTemplatesWithFiles()
+                selected = Set(templates.map { $0.template.templateId })
+            } catch {
+                self.error = error.localizedDescription
+            }
+            loading = false
+        }
+    }
+
+    private func templateRow(_ item: TaskTemplateWithFiles) -> some View {
+        let template = item.template
+        let isSelected = selected.contains(template.templateId)
+        return Button {
+            if isSelected { selected.remove(template.templateId) } else { selected.insert(template.templateId) }
+        } label: {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(isSelected ? Theme.green : Theme.textTertiary)
+                    .font(.title3)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(template.title).font(.subheadline.bold()).foregroundStyle(Theme.textPrimary)
+                        Text(template.category.isEmpty ? "General" : template.category)
+                            .font(.caption2.weight(.semibold))
+                            .padding(.horizontal, 6).padding(.vertical, 2)
+                            .background(Theme.green.opacity(0.18))
+                            .foregroundStyle(Theme.green)
+                            .clipShape(Capsule())
+                    }
+                    if !template.instructions.isEmpty {
+                        Text(template.instructions).font(.caption).foregroundStyle(Theme.textSecondary)
+                    }
+                    if !item.files.isEmpty {
+                        Text("\(item.files.count) attached file(s)").font(.caption2).foregroundStyle(Theme.textTertiary)
+                    }
+                    if !template.defaultAssigneeName.isEmpty {
+                        Text("Default assignee: \(template.defaultAssigneeName)").font(.caption2).foregroundStyle(Theme.textTertiary)
+                    }
+                }
+                Spacer()
+            }
+        }
+        .buttonStyle(.plain)
+        .padding(12)
+        .background(Theme.card)
+        .clipShape(RoundedRectangle(cornerRadius: Theme.cornerSmall, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: Theme.cornerSmall, style: .continuous).stroke(Theme.border, lineWidth: 1))
     }
 }
