@@ -36,6 +36,11 @@ struct RootTabView: View {
                     ReportsView()
                 }
                 .tabItem { Label("Reports", systemImage: "chart.bar.fill") }
+
+                NavigationStack {
+                    AdminPanelView()
+                }
+                .tabItem { Label("Admin", systemImage: "person.badge.key.fill") }
             }
         }
         .tint(Theme.green)

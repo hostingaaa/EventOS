@@ -118,6 +118,31 @@ enum EventOSService {
         return res.members
     }
 
+    static func upsertMember(_ member: OrgMember, actorEmail: String) async throws -> OrgMember {
+        let memberDict: [String: Any] = [
+            "id": member.id, "name": member.name, "email": member.email,
+            "role": member.role, "status": member.status,
+            "createdAt": member.createdAt, "invitedBy": member.invitedBy,
+        ]
+        return try await APIClient.post("membersUpsert", ["member": memberDict, "actorEmail": actorEmail])
+    }
+
+    static func deactivateMember(id: String, actorEmail: String) async throws {
+        struct Ack: Codable { var ok: Bool }
+        let _: Ack = try await APIClient.post("membersDeactivate", ["id": id, "actorEmail": actorEmail])
+    }
+
+    static func fetchCapMatrix(actorEmail: String) async throws -> CapMatrix? {
+        struct Response: Codable { var matrix: CapMatrix? }
+        let res: Response = try await APIClient.get("capsList", ["actorEmail": actorEmail])
+        return res.matrix
+    }
+
+    static func saveCapMatrix(_ matrix: CapMatrix, actorEmail: String) async throws {
+        struct Ack: Codable { var ok: Bool }
+        let _: Ack = try await APIClient.post("capsSave", ["matrix": matrix, "actorEmail": actorEmail])
+    }
+
     // MARK: Task templates
 
     static func fetchTemplatesWithFiles() async throws -> [TaskTemplateWithFiles] {
