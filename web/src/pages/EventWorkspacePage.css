@@ -1,65 +1,102 @@
+/* ─── Design tokens (scoped to this page) ────────────────────────────────────
+ * Mirrors .dashboard's local token layer (DashboardPage.css) with the same
+ * values, so the event workspace page reads as the same visual family as the
+ * main events list: soft surface, shadow-elevated borderless cards, pill
+ * buttons/tabs, bold Archivo display type. */
+
+.workspace {
+  --eo-bg: #f1f4f7;
+  --eo-surface: #ffffff;
+  --eo-text: #14212b;
+
+  --eo-accent: #0f7d69;
+  --eo-accent-100: #e6f4f1;
+  --eo-accent-700: #0b6a5b;
+
+  --eo-award: #2f9e5f;
+  --eo-award-100: #e9f7ee;
+  --eo-award-300: #a9dcbc;
+
+  --eo-muted: color-mix(in srgb, var(--eo-text) 55%, transparent);
+
+  --eo-shadow-sm: 0 1px 2px rgba(20, 33, 43, 0.05), 0 1px 3px rgba(20, 33, 43, 0.04);
+  --eo-shadow-md: 0 4px 14px rgba(20, 33, 43, 0.08);
+
+  max-width: 1280px;
+  margin: 0 auto;
+  color: var(--eo-text);
+  font-family: 'Archivo', 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+.workspace button {
+  font-family: inherit;
+}
+
+/* ─── Card chrome, shared by every card-like container on the page ────────── */
+
+.workspace .vendor-share,
+.workspace .financials__revenue,
+.workspace .financials__items,
+.workspace .detail,
+.workspace .task-panel,
+.workspace__board-wrap,
+.workspace__readiness,
+.workspace__event-comments,
+.workspace__activity,
+.workspace__empty-tasks {
+  border: none;
+  border-radius: 16px;
+  box-shadow: var(--eo-shadow-sm);
+  background: var(--eo-surface);
+}
+
+/* ─── Breadcrumb ──────────────────────────────────────────────────────────── */
+
 .workspace__breadcrumb {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.85rem;
-  margin-bottom: 1rem;
-  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 14px;
+  color: var(--eo-muted);
 }
 
 .workspace__breadcrumb a {
-  color: var(--primary);
-  font-weight: 500;
+  color: var(--eo-accent);
+  font-weight: 600;
 }
 
 .workspace__meta {
   margin-left: auto;
-  color: var(--muted-light);
+  color: var(--eo-muted);
 }
+
+/* ─── Header ──────────────────────────────────────────────────────────────── */
 
 .workspace__header {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-start;
   gap: 1rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 20px;
 }
 
 .workspace__header-actions {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 10px;
   flex-shrink: 0;
   flex-wrap: wrap;
 }
 
-.workspace__drive-link {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.42rem 0.85rem;
-  background: #fff;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 0.83rem;
-  font-weight: 600;
-  color: #1a73e8;
-  text-decoration: none;
-  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
-  white-space: nowrap;
-}
-
-.workspace__drive-link:hover {
-  background: #f0f7ff;
-  border-color: #1a73e8;
-  box-shadow: 0 1px 4px rgba(26,115,232,0.15);
-}
-
 .workspace__header h1 {
   margin: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  color: var(--ink);
+  font-family: 'Archivo', sans-serif;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--eo-text);
 }
 
 .workspace__title {
@@ -70,130 +107,80 @@
 }
 
 .workspace__title-sep {
-  color: var(--muted-light);
+  color: var(--eo-muted);
   font-weight: 400;
 }
 
 .workspace__awarded-badge {
   display: inline-flex;
   align-items: center;
-  font-size: 0.62rem;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  padding: 0.15rem 0.5rem;
+  padding: 3px 10px;
   border-radius: 999px;
-  background: #2f9e5f;
+  background: var(--eo-award);
   color: #fff;
   white-space: nowrap;
 }
 
 .workspace__header-sub {
-  margin: 0.35rem 0 0;
-  color: var(--muted);
+  margin: 6px 0 0;
+  color: var(--eo-muted);
+  font-size: 14px;
 }
 
-/* ─── Operational readiness bar ─────────────────────────────────────────── */
+/* ─── Pill buttons (header actions) ─────────────────────────────────────── */
 
-.workspace__readiness {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 0.9rem 1.15rem;
-  margin-bottom: 0.85rem;
-  box-shadow: var(--shadow-sm);
-}
-
-.workspace__readiness-label {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--muted);
-  margin-bottom: 0.4rem;
-}
-
-.workspace__readiness-label strong {
-  font-size: 0.9rem;
-  color: var(--primary);
-}
-
-.workspace__readiness-track {
-  height: 6px;
-  background: var(--border-subtle);
-  border-radius: 999px;
-  overflow: hidden;
-  margin-bottom: 0.55rem;
-}
-
-.workspace__readiness-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--primary), #2dd4bf);
-  border-radius: 999px;
-  transition: width 0.5s ease;
-  min-width: 4px;
-}
-
-.workspace__readiness-stats {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.ws-stat {
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--muted);
-}
-
-.ws-stat--done    { color: #047857; }
-.ws-stat--blocked { color: #b91c1c; }
-.ws-stat--overdue { color: #c2410c; }
-
-.workspace__add-tasks {
-  background: var(--primary);
-  color: white;
-  border: none;
-  padding: 0.55rem 1rem;
-  border-radius: var(--radius-sm);
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-/* ─── Admin-only lifecycle actions (awarded / archive / delete) ──────────── */
-
-.workspace__awarded-btn {
+.workspace__drive-link,
+.workspace__add-tasks,
+.workspace__awarded-btn,
+.workspace__archive-btn,
+.workspace__delete-btn {
   display: inline-flex;
   align-items: center;
-  background: #fff;
-  color: #1e6f43;
-  border: 1.5px solid #a9dcbc;
-  padding: 0.42rem 0.85rem;
-  border-radius: 8px;
-  font-size: 0.83rem;
-  font-weight: 600;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.15s, border-color 0.15s;
+  box-shadow: var(--eo-shadow-sm);
+  transition: box-shadow 0.15s, background 0.15s;
 }
 
-.workspace__awarded-btn:hover:not(:disabled) {
-  background: #e9f7ee;
-  border-color: #2f9e5f;
+.workspace__drive-link:hover,
+.workspace__archive-btn:hover,
+.workspace__awarded-btn:hover:not(:disabled),
+.workspace__delete-btn:hover:not(:disabled) {
+  box-shadow: var(--eo-shadow-md);
+}
+
+.workspace__drive-link {
+  background: var(--eo-surface);
+  color: #1a73e8;
+  text-decoration: none;
+}
+
+.workspace__add-tasks {
+  background: var(--eo-accent);
+  color: #fff;
+}
+
+.workspace__add-tasks:hover {
+  background: var(--eo-accent-700);
+}
+
+.workspace__awarded-btn {
+  background: var(--eo-surface);
+  color: var(--eo-award);
 }
 
 .workspace__awarded-btn--on {
-  background: #2f9e5f;
+  background: var(--eo-award);
   color: #fff;
-  border-color: #2f9e5f;
-}
-
-.workspace__awarded-btn--on:hover:not(:disabled) {
-  background: #1e6f43;
-  border-color: #1e6f43;
 }
 
 .workspace__awarded-btn:disabled {
@@ -202,43 +189,13 @@
 }
 
 .workspace__archive-btn {
-  display: inline-flex;
-  align-items: center;
-  background: #fff;
-  color: var(--primary);
-  border: 1.5px solid var(--border);
-  padding: 0.42rem 0.85rem;
-  border-radius: 8px;
-  font-size: 0.83rem;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-.workspace__archive-btn:hover {
-  background: var(--primary-soft, #ccfbf1);
-  border-color: var(--primary);
+  background: var(--eo-surface);
+  color: var(--eo-accent);
 }
 
 .workspace__delete-btn {
-  display: inline-flex;
-  align-items: center;
-  background: #fff;
+  background: var(--eo-surface);
   color: #b91c1c;
-  border: 1.5px solid #fecaca;
-  padding: 0.42rem 0.85rem;
-  border-radius: 8px;
-  font-size: 0.83rem;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-.workspace__delete-btn:hover:not(:disabled) {
-  background: #fef2f2;
-  border-color: #b91c1c;
 }
 
 .workspace__delete-btn:disabled {
@@ -246,13 +203,70 @@
   cursor: not-allowed;
 }
 
+/* ─── Operational readiness bar ─────────────────────────────────────────── */
+
+.workspace__readiness {
+  padding: 18px 22px;
+  margin-bottom: 14px;
+}
+
+.workspace__readiness-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: var(--eo-muted);
+  margin-bottom: 8px;
+}
+
+.workspace__readiness-label strong {
+  font-size: 15px;
+  font-family: 'Archivo', sans-serif;
+  font-weight: 800;
+  color: var(--eo-accent);
+}
+
+.workspace__readiness-track {
+  height: 6px;
+  background: var(--eo-accent-100);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.workspace__readiness-fill {
+  height: 100%;
+  background: var(--eo-accent);
+  border-radius: 999px;
+  transition: width 0.5s ease;
+  min-width: 4px;
+}
+
+.workspace__readiness-stats {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.ws-stat {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--eo-muted);
+}
+
+.ws-stat--done    { color: var(--eo-award); }
+.ws-stat--blocked { color: #b91c1c; }
+.ws-stat--overdue { color: #c2410c; }
+
+/* ─── Empty tasks state ──────────────────────────────────────────────────── */
+
 .workspace__empty-tasks {
   text-align: center;
-  padding: 3.5rem 2rem;
-  background: var(--surface);
-  border: 1px dashed var(--border);
-  border-radius: var(--radius-lg);
-  margin-bottom: 1rem;
+  padding: 56px 32px;
+  margin-bottom: 14px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -267,92 +281,90 @@
 
 .workspace__empty-tasks strong {
   font-size: 1rem;
-  color: var(--ink-secondary);
+  color: var(--eo-text);
 }
 
 .workspace__empty-tasks p {
-  color: var(--muted);
+  color: var(--eo-muted);
   margin: 0 0 1rem;
   max-width: 360px;
   font-size: 0.88rem;
   line-height: 1.5;
 }
 
+/* ─── Vendor share panel: compact empty state ───────────────────────────── */
+
+.workspace .vendor-share__empty {
+  border: none;
+  background: none;
+  padding: 6px 0 0;
+  margin: 0;
+}
+
+/* ─── Tabs ───────────────────────────────────────────────────────────────── */
+
 .workspace__tabs {
   display: flex;
-  gap: 0.25rem;
-  margin-bottom: 1.5rem;
-  padding: 0.25rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  gap: 8px;
+  margin-bottom: 20px;
   width: fit-content;
-  box-shadow: var(--shadow-sm);
 }
 
 .workspace__tabs button {
   border: none;
-  background: transparent;
-  padding: 0.55rem 1.1rem;
+  background: var(--eo-surface);
+  box-shadow: var(--eo-shadow-sm);
+  padding: 10px 18px;
   cursor: pointer;
-  font-weight: 600;
-  font-size: 0.875rem;
-  color: var(--muted);
-  border-radius: var(--radius);
-  transition: background 0.15s, color 0.15s;
+  font-family: 'Archivo', sans-serif;
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--eo-text);
+  border-radius: 999px;
+  transition: box-shadow 0.15s, background 0.15s, color 0.15s;
 }
 
 .workspace__tabs button:hover {
-  color: var(--ink-secondary);
+  box-shadow: var(--eo-shadow-md);
 }
 
 .workspace__tabs button.active {
-  background: var(--primary);
-  color: white;
+  background: var(--eo-accent);
+  color: #fff;
 }
+
+/* ─── Tab content layout ─────────────────────────────────────────────────── */
 
 .workspace__tasks-layout {
   display: grid;
   grid-template-columns: 1fr minmax(320px, 380px);
-  gap: 1.25rem;
+  gap: 20px;
   align-items: start;
 }
 
 .workspace__board-wrap {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 1.25rem;
-  box-shadow: var(--shadow-sm);
+  padding: 20px;
 }
 
 .workspace__overview {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1.25rem;
+  gap: 20px;
 }
 
 .workspace__event-comments {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 1.35rem;
-  box-shadow: var(--shadow-sm);
+  padding: 22px;
 }
 
 .workspace__event-comments h3 {
   margin: 0 0 1rem;
   font-size: 0.95rem;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--eo-text);
 }
 
 .workspace__activity {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 1.35rem;
-  box-shadow: var(--shadow-sm);
+  padding: 22px;
   max-width: 560px;
 }
 
@@ -360,11 +372,11 @@
   margin: 0 0 1rem;
   font-size: 0.95rem;
   font-weight: 700;
-  color: var(--ink);
+  color: var(--eo-text);
 }
 
 .workspace__msg {
-  color: var(--muted);
+  color: var(--eo-muted);
   padding: 3rem;
   text-align: center;
 }
@@ -385,5 +397,15 @@
   .workspace__tabs {
     width: 100%;
     flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 640px) {
+  .workspace__header h1 {
+    font-size: 24px;
+  }
+
+  .workspace__header-actions {
+    width: 100%;
   }
 }
