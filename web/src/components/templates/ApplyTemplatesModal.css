@@ -11,10 +11,10 @@
 }
 
 .modal-card {
-  background: var(--surface);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-lg);
+  background: var(--eo-surface, var(--surface));
+  border-radius: 16px;
+  border: none;
+  box-shadow: var(--eo-shadow-md, var(--shadow-lg));
   max-height: 90vh;
   overflow: hidden;
   display: flex;
@@ -114,13 +114,21 @@
 }
 
 .btn-primary {
-  background: var(--primary);
+  background: var(--eo-accent, var(--primary));
   color: white;
   border: none;
-  padding: 0.55rem 1.1rem;
-  border-radius: var(--radius-sm);
-  font-weight: 600;
+  padding: 0.6rem 1.2rem;
+  border-radius: 999px;
+  font-weight: 800;
+  font-family: 'Archivo', inherit;
   cursor: pointer;
+  box-shadow: var(--eo-shadow-sm);
+  transition: box-shadow 0.15s, background 0.15s;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--eo-accent-700, var(--primary-hover));
+  box-shadow: var(--eo-shadow-md);
 }
 
 .btn-primary:disabled {
@@ -128,12 +136,19 @@
 }
 
 .btn-secondary {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  padding: 0.55rem 1rem;
-  border-radius: var(--radius-sm);
+  background: var(--eo-surface, var(--surface));
+  border: none;
+  padding: 0.6rem 1.15rem;
+  border-radius: 999px;
   cursor: pointer;
-  color: var(--ink-secondary);
+  color: var(--eo-text, var(--ink-secondary));
+  font-weight: 700;
+  box-shadow: var(--eo-shadow-sm);
+  transition: box-shadow 0.15s;
+}
+
+.btn-secondary:hover {
+  box-shadow: var(--eo-shadow-md);
 }
 
 .apply-modal__msg {
