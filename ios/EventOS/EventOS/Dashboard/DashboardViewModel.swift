@@ -55,12 +55,10 @@ final class DashboardViewModel: ObservableObject {
     func load() async {
         loading = true
         error = nil
-        async let eventsResult = EventOSService.fetchEvents()
-        async let healthResult = EventOSService.fetchDashboardHealth()
         do {
-            let (data, health) = try await (eventsResult, healthResult)
+            let data = try await EventOSService.fetchEvents()
             events = data.events
-            healthByCode = health
+            healthByCode = await EventOSService.fetchDashboardHealth(events: data.events)
         } catch {
             self.error = error.localizedDescription
         }

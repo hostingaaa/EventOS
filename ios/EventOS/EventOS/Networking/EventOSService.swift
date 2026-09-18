@@ -31,10 +31,21 @@ enum EventOSService {
         try await APIClient.get("list")
     }
 
-    static func fetchDashboardHealth() async -> [String: EventHealth] {
-        struct Response: Codable { var health: [String: EventHealth] }
+    /// The backend only hands back bulk per-event task/file data; health itself is computed
+    /// client-side with `computeEventHealth`, mirroring web/src/api/client.ts.
+    static func fetchDashboardHealth(events: [Event]) async -> [String: EventHealth] {
+        struct Response: Codable {
+            var tasksByEvent: [String: [DashboardHealthTask]]
+            var fileCountByEvent: [String: Int]
+        }
         guard let res: Response = try? await APIClient.get("dashboardHealth") else { return [:] }
-        return res.health
+        var map: [String: EventHealth] = [:]
+        for event in events {
+            let tasks = res.tasksByEvent[event.code] ?? []
+            let fileCount = res.fileCountByEvent[event.code] ?? 0
+            map[event.code] = computeEventHealth(event: event, tasks: tasks, fileCount: fileCount)
+        }
+        return map
     }
 
     // MARK: Workspace / Tasks / Comments
