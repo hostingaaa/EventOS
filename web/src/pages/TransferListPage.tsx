@@ -12,6 +12,8 @@ import { exportTransferList, transferListFilename, transferListToArrayBuffer, ve
 import { saveTransferList, loadTransferList } from '../utils/transferListStore';
 import { fetchEvents, saveTransferListToDrive } from '../api/client';
 import { parseTicketPdf } from '../utils/parseTicketPdf';
+import { buildTransferCostLines } from '../utils/transferFinancialsSync';
+import { syncGeneratorCostItems } from '../utils/generatorFinancialsSync';
 import { useUser } from '../context/UserContext';
 import type { Event } from '../types';
 import { DateInput } from '../components/DateInput';
@@ -67,6 +69,7 @@ export function computePickupTime(departureTime: string, offsetMins: number): st
 
 export interface TransferSetup {
   eventCode:        string;
+  eventRowId:       string;
   eventCity:        string;
   eventDates:       string;
   hotel:            string;
@@ -433,6 +436,7 @@ export function TransferListPage() {
 
   const [setup, setSetup] = useState<TransferSetup>({
     eventCode:        sp.get('code')     ?? '',
+    eventRowId:       '',
     eventCity:        sp.get('city')     ?? '',
     eventDates:       sp.get('dates')    ?? '',
     hotel:            sp.get('hotel')    ?? '',
@@ -455,6 +459,7 @@ export function TransferListPage() {
   const [driveFileId, setDriveFileId] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [financialsSyncError, setFinancialsSyncError] = useState<string | null>(null);
   const [restoreBanner, setRestoreBanner] = useState<{ setup: TransferSetup; travelers: TravelerEntry[]; savedAt: string; savedBy: string; driveUrl?: string; driveFileId?: string } | null>(null);
   const [parsing, setParsing] = useState(false);
   const [parseErrors, setParseErrors] = useState<string[]>([]);
@@ -481,6 +486,7 @@ export function TransferListPage() {
     setSetup((s) => ({
       ...s,
       eventCode: ev.code,
+      eventRowId: ev.rowId ?? '',
       eventCity: ev.location || '',
       eventDates: ev.dates || '',
     }));
@@ -532,6 +538,7 @@ export function TransferListPage() {
     if (!setup.eventCode) return;
     setSaving(true);
     setSaveError(null);
+    setFinancialsSyncError(null);
     const now = new Date().toISOString();
     const name = user?.name ?? 'Unknown';
     const email = user?.email ?? '';
@@ -569,6 +576,13 @@ export function TransferListPage() {
     });
     setSavedAt(now);
     setSavedBy(name);
+
+    try {
+      await syncGeneratorCostItems(setup.eventCode, setup.eventRowId, buildTransferCostLines(travelers), email);
+    } catch (e) {
+      setFinancialsSyncError(e instanceof Error ? e.message : 'Could not sync to Financials');
+    }
+
     setTimeout(() => setSaving(false), 800);
   }
 
@@ -873,8 +887,16 @@ export function TransferListPage() {
                 ✓ Saved{savedBy ? ` by ${savedBy}` : ''} · {new Date(savedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
               </div>
             )}
+            {savedAt && setup.eventCode && (
+              <Link className="tl-financials-link" to={`/event/${setup.eventCode}?tab=financials`}>
+                View in Financials →
+              </Link>
+            )}
             {saveError && (
               <p className="tl-save-error">⚠ {saveError}</p>
+            )}
+            {financialsSyncError && (
+              <p className="tl-save-error">⚠ Financials sync failed: {financialsSyncError}</p>
             )}
             <div className="tl-export-row">
               <button

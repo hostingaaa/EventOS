@@ -587,6 +587,19 @@
   margin: 0;
 }
 
+.tl-financials-link {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #2563eb;
+  text-decoration: none;
+  width: fit-content;
+  margin-bottom: 0.5rem;
+}
+
+.tl-financials-link:hover {
+  text-decoration: underline;
+}
+
 /* "Saved ✓" timestamp chip */
 .tl-saved-chip {
   font-size: 0.76rem;

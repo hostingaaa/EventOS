@@ -15,6 +15,8 @@ import {
   exportAVEquipment,
 } from '../utils/exportAVEquipment';
 import { loadAVEquipment, saveAVEquipment } from '../utils/avEquipmentStore';
+import { buildAVCostLines } from '../utils/avFinancialsSync';
+import { syncGeneratorCostItems } from '../utils/generatorFinancialsSync';
 import { useUser } from '../context/UserContext';
 import type { Event } from '../types';
 import { formatIsoDate } from '../utils/dateFormat';
@@ -24,6 +26,7 @@ import './AVEquipmentPage.css';
 
 export interface AVSetup {
   eventCode:  string;
+  eventRowId: string;
   eventCity:  string;
   eventDate:  string;
   setupStyle: string;
@@ -170,6 +173,7 @@ export function AVEquipmentPage() {
 
   const [setup, setSetup] = useState<AVSetup>({
     eventCode:  sp.get('code') ?? '',
+    eventRowId: '',
     eventCity:  sp.get('city') ?? '',
     eventDate:  sp.get('dates') ?? '',
     setupStyle: 'Classroom',
@@ -190,6 +194,7 @@ export function AVEquipmentPage() {
   const [driveFileId, setDriveFileId] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [financialsSyncError, setFinancialsSyncError] = useState<string | null>(null);
   const [events, setEvents]       = useState<Event[]>([]);
 
   useEffect(() => {
@@ -233,6 +238,7 @@ export function AVEquipmentPage() {
     setSetup((s) => ({
       ...s,
       eventCode: ev.code ?? '',
+      eventRowId: ev.rowId ?? '',
       eventCity: ev.location ?? '',
       eventDate: ev.startDate ? formatEventDate(ev.startDate) : '',
     }));
@@ -294,6 +300,7 @@ export function AVEquipmentPage() {
     if (!setup.eventCode) return;
     setSaving(true);
     setSaveError(null);
+    setFinancialsSyncError(null);
     const now = new Date().toISOString();
     const name = user?.name ?? 'Unknown';
     const email = user?.email ?? '';
@@ -332,6 +339,13 @@ export function AVEquipmentPage() {
     });
     setSavedAt(now);
     setSavedBy(name);
+
+    try {
+      await syncGeneratorCostItems(setup.eventCode, setup.eventRowId, buildAVCostLines(items, supplies), email);
+    } catch (e) {
+      setFinancialsSyncError(e instanceof Error ? e.message : 'Could not sync to Financials');
+    }
+
     setTimeout(() => setSaving(false), 800);
   }
 
@@ -721,7 +735,13 @@ export function AVEquipmentPage() {
                 ✓ Saved{savedBy ? ` by ${savedBy}` : ''} · {new Date(savedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
               </div>
             )}
+            {savedAt && setup.eventCode && (
+              <Link className="av-financials-link" to={`/event/${setup.eventCode}?tab=financials`}>
+                View in Financials →
+              </Link>
+            )}
             {saveError && <p className="av-save-error">⚠ {saveError}</p>}
+            {financialsSyncError && <p className="av-save-error">⚠ Financials sync failed: {financialsSyncError}</p>}
             <div className="av-export-row">
               <button
                 className="av-btn av-btn--export"
@@ -862,7 +882,7 @@ export function AVEquipmentPage() {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function resolvePreviewAmount(item: AVItemState): number {
+export function resolvePreviewAmount(item: AVItemState): number {
   switch (item.id) {
     case 'sound':        return 1;
     case 'lcd':          return item.amount ?? 1;
