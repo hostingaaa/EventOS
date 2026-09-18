@@ -399,8 +399,12 @@ function handleRequest_(e, method) {
     }
 
     // ——— Role capabilities ———
+    // Intentionally NOT admin-gated: every signed-in user's client (web's
+    // initAuthStore, iOS's AdminPanelViewModel) fetches this matrix to
+    // evaluate their OWN can(role, cap) checks, not just to view the Admin
+    // Panel. The matrix data itself isn't sensitive; only writing it
+    // (capsSave, below) is admin-only.
     if (action === 'capsList') {
-      requireAdmin_(actorEmail);
       return jsonResponse_({ matrix: getCapMatrixFromSheet_() });
     }
 
