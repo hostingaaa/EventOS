@@ -19,9 +19,9 @@
   margin-bottom: 1.4rem;
 }
 .dw-breadcrumb a {
-  color: var(--primary, #0d9488);
+  color: var(--eo-accent, var(--primary, #0d9488));
   text-decoration: none;
-  font-weight: 500;
+  font-weight: 600;
 }
 .dw-breadcrumb a:hover { text-decoration: underline; }
 .dw-breadcrumb__event {
@@ -32,29 +32,27 @@
 /* ─── Tabs ──────────────────────────────────────────────────────────── */
 .dw-tabs {
   display: flex;
-  gap: 0.3rem;
-  border-bottom: 2px solid var(--border, #e2e8f0);
+  gap: 0.5rem;
   margin-bottom: 1.8rem;
 }
 .dw-tab {
-  background: none;
+  background: var(--eo-surface, #fff);
   border: none;
+  border-radius: 999px;
   padding: 0.6rem 1.1rem;
   font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--text-secondary, #64748b);
+  font-weight: 600;
+  color: var(--eo-muted, var(--text-secondary, #64748b));
   cursor: pointer;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-  border-radius: 6px 6px 0 0;
-  transition: color 0.12s, border-color 0.12s;
+  box-shadow: var(--eo-shadow-sm);
+  transition: box-shadow 0.12s, background 0.12s, color 0.12s;
   white-space: nowrap;
 }
-.dw-tab:hover { color: var(--text-primary, #0f172a); }
+.dw-tab:hover { box-shadow: var(--eo-shadow-md); }
 .dw-tab.active {
-  color: var(--primary, #0d9488);
-  border-bottom-color: var(--primary, #0d9488);
-  font-weight: 600;
+  color: #fff;
+  background: var(--eo-accent, var(--primary, #0d9488));
+  font-weight: 700;
 }
 
 /* ─── Panel ─────────────────────────────────────────────────────────── */
@@ -392,16 +390,17 @@
   grid-template-rows: auto auto;
   gap: 0 0.6rem;
   align-items: center;
-  background: var(--surface-1, #fff);
-  border: 1.5px solid var(--border, #e2e8f0);
-  border-radius: 10px;
+  background: var(--eo-surface, var(--surface-1, #fff));
+  border: none;
+  border-radius: 16px;
+  box-shadow: var(--eo-shadow-sm);
   padding: 0.75rem 1rem;
   cursor: pointer;
-  transition: border-color 0.12s;
+  transition: box-shadow 0.12s, background 0.12s;
 }
 .dw-gen-check:has(input:checked) {
-  border-color: var(--primary, #0d9488);
-  background: color-mix(in srgb, var(--primary, #0d9488) 4%, white);
+  box-shadow: 0 0 0 2px var(--eo-accent, var(--primary, #0d9488)), var(--eo-shadow-sm);
+  background: color-mix(in srgb, var(--eo-accent, var(--primary, #0d9488)) 4%, white);
 }
 .dw-gen-check input { grid-row: 1; }
 .dw-gen-check span { font-weight: 600; font-size: 0.92rem; }
@@ -422,9 +421,10 @@
   gap: 0.4rem;
 }
 .dw-sheet-btn {
-  border: 1.5px solid var(--border, #e2e8f0);
-  background: var(--surface-1, #fff);
-  border-radius: 6px;
+  border: none;
+  background: var(--eo-surface, var(--surface-1, #fff));
+  box-shadow: var(--eo-shadow-sm);
+  border-radius: 999px;
   padding: 0.3rem 0.9rem;
   font-size: 0.85rem;
   font-weight: 600;
@@ -432,8 +432,7 @@
   transition: all 0.12s;
 }
 .dw-sheet-btn.active {
-  background: var(--primary, #0d9488);
-  border-color: var(--primary, #0d9488);
+  background: var(--eo-accent, var(--primary, #0d9488));
   color: #fff;
 }
 
@@ -483,43 +482,44 @@
   justify-content: center;
   gap: 0.4rem;
   border: none;
-  border-radius: 8px;
+  border-radius: 999px;
   cursor: pointer;
-  font-weight: 600;
+  font-family: 'Archivo', inherit;
+  font-weight: 700;
   font-size: 0.92rem;
   padding: 0.55rem 1.1rem;
   text-decoration: none;
-  transition: background 0.13s, opacity 0.13s;
+  box-shadow: var(--eo-shadow-sm);
+  transition: background 0.13s, box-shadow 0.13s, opacity 0.13s;
   white-space: nowrap;
 }
 .dw-btn--primary {
-  background: var(--primary, #0d9488);
+  background: var(--eo-accent, var(--primary, #0d9488));
   color: #fff;
 }
-.dw-btn--primary:hover:not(:disabled) { background: var(--primary-dark, #0f766e); }
+.dw-btn--primary:hover:not(:disabled) { background: var(--eo-accent-700, var(--primary-dark, #0f766e)); box-shadow: var(--eo-shadow-md); }
 .dw-btn--primary:disabled { opacity: 0.5; cursor: not-allowed; }
 .dw-btn--secondary {
-  background: var(--surface-2, #f1f5f9);
-  color: var(--text-primary, #1e293b);
-  border: 1px solid var(--border, #e2e8f0);
+  background: var(--eo-surface, var(--surface-2, #f1f5f9));
+  color: var(--eo-text, var(--text-primary, #1e293b));
+  border: none;
 }
-.dw-btn--secondary:hover { background: var(--border, #e2e8f0); }
+.dw-btn--secondary:hover { box-shadow: var(--eo-shadow-md); }
 .dw-btn--ghost {
-  background: transparent;
-  color: var(--primary, #0d9488);
-  border: 1px solid var(--primary, #0d9488);
+  background: var(--eo-surface, transparent);
+  color: var(--eo-accent, var(--primary, #0d9488));
+  border: none;
 }
-.dw-btn--ghost:hover { background: color-mix(in srgb, var(--primary, #0d9488) 8%, transparent); }
+.dw-btn--ghost:hover { box-shadow: var(--eo-shadow-md); }
 .dw-btn--danger {
-  background: transparent;
+  background: var(--eo-surface, transparent);
   color: var(--color-danger, #ef4444);
-  border: 1px solid transparent;
+  border: none;
 }
-.dw-btn--danger:hover { background: #fef2f2; border-color: #fca5a5; }
+.dw-btn--danger:hover { box-shadow: var(--eo-shadow-md); }
 .dw-btn--sm {
   font-size: 0.79rem;
   padding: 0.3rem 0.65rem;
-  border-radius: 6px;
 }
 .dw-btn--lg {
   font-size: 1rem;

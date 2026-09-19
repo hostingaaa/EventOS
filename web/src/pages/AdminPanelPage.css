@@ -14,14 +14,16 @@
 }
 
 .ap-header h1 {
-  font-size: 1.65rem;
-  font-weight: 700;
-  color: var(--color-text, #0f172a);
+  font-family: 'Archivo', sans-serif;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--eo-text, #0f172a);
   margin: 0 0 0.25rem;
 }
 
 .ap-header p {
-  color: var(--color-muted, #64748b);
+  color: var(--eo-muted, #64748b);
   margin: 0;
   font-size: 0.92rem;
 }
@@ -29,37 +31,37 @@
 /* ── Tabs ───────────────────────────────────────────────────────────────── */
 .ap-tabs {
   display: flex;
-  gap: 0.25rem;
-  border-bottom: 2px solid var(--color-border, #e2e8f0);
+  gap: 0.5rem;
   margin-bottom: 1.75rem;
 }
 
 .ap-tab {
   padding: 0.55rem 1.1rem;
   border: none;
-  background: none;
+  border-radius: 999px;
+  background: var(--eo-surface, #fff);
+  box-shadow: var(--eo-shadow-sm);
   font-size: 0.92rem;
-  font-weight: 500;
-  color: var(--color-muted, #64748b);
+  font-weight: 600;
+  color: var(--eo-muted, #64748b);
   cursor: pointer;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-  transition: color 0.15s, border-color 0.15s;
+  transition: box-shadow 0.15s, background 0.15s, color 0.15s;
   display: flex;
   align-items: center;
   gap: 0.4rem;
 }
 
-.ap-tab:hover { color: var(--color-text, #0f172a); }
+.ap-tab:hover { box-shadow: var(--eo-shadow-md); }
 
 .ap-tab--active {
-  color: var(--color-accent, #203864);
-  border-bottom-color: var(--color-accent, #203864);
-  font-weight: 600;
+  background: var(--eo-accent, #203864);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: var(--eo-shadow-sm);
 }
 
 .ap-tab__badge {
-  background: var(--color-accent, #203864);
+  background: rgba(255, 255, 255, 0.25);
   color: #fff;
   border-radius: 999px;
   padding: 0.05rem 0.45rem;
@@ -67,8 +69,18 @@
   font-weight: 600;
 }
 
+.ap-tab:not(.ap-tab--active) .ap-tab__badge {
+  background: var(--eo-accent-100, #e6f4f1);
+  color: var(--eo-accent, #203864);
+}
+
 /* ── Section ────────────────────────────────────────────────────────────── */
-.ap-section {}
+.ap-section {
+  background: var(--eo-surface, #fff);
+  border-radius: 16px;
+  box-shadow: var(--eo-shadow-sm);
+  padding: 1.5rem;
+}
 
 .ap-section__head {
   display: flex;
@@ -76,46 +88,45 @@
   justify-content: space-between;
   margin-bottom: 1.25rem;
   font-size: 0.88rem;
-  color: var(--color-muted, #64748b);
+  color: var(--eo-muted, #64748b);
 }
 
 /* ── Buttons ────────────────────────────────────────────────────────────── */
 .ap-btn {
   padding: 0.45rem 1rem;
-  border-radius: 7px;
-  border: 1.5px solid transparent;
+  border-radius: 999px;
+  border: none;
   font-size: 0.85rem;
-  font-weight: 500;
+  font-weight: 700;
+  font-family: 'Archivo', inherit;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  box-shadow: var(--eo-shadow-sm);
+  transition: box-shadow 0.15s, background 0.15s, color 0.15s;
 }
 
 .ap-btn--primary {
-  background: var(--color-accent, #203864);
+  background: var(--eo-accent, #203864);
   color: #fff;
-  border-color: var(--color-accent, #203864);
 }
-.ap-btn--primary:hover { opacity: 0.88; }
+.ap-btn--primary:hover { background: var(--eo-accent-700, #203864); box-shadow: var(--eo-shadow-md); }
 
 .ap-btn--ghost {
-  background: transparent;
-  color: var(--color-muted, #64748b);
-  border-color: var(--color-border, #e2e8f0);
+  background: var(--eo-surface, transparent);
+  color: var(--eo-muted, #64748b);
 }
-.ap-btn--ghost:hover { background: var(--color-surface, #f8fafc); }
+.ap-btn--ghost:hover { box-shadow: var(--eo-shadow-md); }
 
 .ap-btn--danger-ghost {
-  background: transparent;
+  background: var(--eo-surface, transparent);
   color: #b91c1c;
-  border-color: #fecaca;
 }
-.ap-btn--danger-ghost:hover { background: #fef2f2; }
+.ap-btn--danger-ghost:hover { box-shadow: var(--eo-shadow-md); }
 
 .ap-btn--success {
   background: #16a34a;
   color: #fff;
-  border-color: #16a34a;
 }
+.ap-btn--success:hover { box-shadow: var(--eo-shadow-md); }
 
 .ap-btn--sm {
   padding: 0.3rem 0.7rem;
@@ -135,7 +146,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--color-muted, #64748b);
+  color: var(--eo-muted, #64748b);
   padding: 0 0.75rem 0.65rem;
   border-bottom: 1.5px solid var(--color-border, #e2e8f0);
 }
@@ -157,18 +168,18 @@
 .ap-member strong {
   display: block;
   font-size: 0.9rem;
-  color: var(--color-text, #0f172a);
+  color: var(--eo-text, #0f172a);
 }
 
 .ap-member small {
   font-size: 0.78rem;
-  color: var(--color-muted, #64748b);
+  color: var(--eo-muted, #64748b);
 }
 
 .ap-self {
   font-weight: 400;
   font-size: 0.78rem;
-  color: var(--color-muted, #64748b);
+  color: var(--eo-muted, #64748b);
 }
 
 .ap-avatar {
@@ -212,7 +223,7 @@
 
 .ap-date {
   font-size: 0.78rem;
-  color: var(--color-muted, #64748b);
+  color: var(--eo-muted, #64748b);
   white-space: nowrap;
 }
 
@@ -220,7 +231,6 @@
 .ap-perms-wrap {
   overflow-x: auto;
   border-radius: 10px;
-  border: 1px solid var(--color-border, #e2e8f0);
 }
 
 .ap-perms-table {
@@ -235,7 +245,7 @@
   font-size: 0.82rem;
   font-weight: 700;
   border-bottom: 2px solid var(--color-border, #e2e8f0);
-  background: var(--color-surface, #f8fafc);
+  background: var(--eo-bg, #f8fafc);
 }
 
 .ap-perms-table__cap {
@@ -243,7 +253,7 @@
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--color-muted, #64748b);
+  color: var(--eo-muted, #64748b);
   min-width: 220px;
 }
 
@@ -254,24 +264,24 @@
 .ap-perms-table__lock {
   font-size: 0.7rem;
   font-weight: 500;
-  color: var(--color-muted, #64748b);
+  color: var(--eo-muted, #64748b);
   margin-top: 0.2rem;
 }
 
 .ap-perms-table__group td {
-  background: var(--color-surface, #f8fafc);
+  background: var(--eo-bg, #f8fafc);
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   font-weight: 700;
-  color: var(--color-muted, #64748b);
+  color: var(--eo-muted, #64748b);
   padding: 0.45rem 1.2rem;
   border-top: 1px solid var(--color-border, #e2e8f0);
 }
 
 .ap-perms-table__label {
   padding: 0.6rem 1.2rem;
-  color: var(--color-text, #0f172a);
+  color: var(--eo-text, #0f172a);
 }
 
 .ap-perms-table__name {
@@ -284,7 +294,7 @@
   margin-top: 0.2rem;
   font-size: 0.75rem;
   line-height: 1.35;
-  color: var(--color-muted, #64748b);
+  color: var(--eo-muted, #64748b);
   max-width: 28rem;
 }
 
@@ -297,7 +307,7 @@
 .ap-perms-note {
   margin-top: 1rem;
   font-size: 0.8rem;
-  color: var(--color-muted, #64748b);
+  color: var(--eo-muted, #64748b);
   text-align: right;
 }
 
@@ -334,7 +344,7 @@
 }
 
 .ap-toggle input:checked + .ap-toggle__track {
-  background: var(--color-accent, #203864);
+  background: var(--eo-accent, #203864);
 }
 
 .ap-toggle input:checked + .ap-toggle__track::after {
@@ -360,19 +370,19 @@
 }
 
 .ap-modal {
-  background: #fff;
-  border-radius: 14px;
+  background: var(--eo-surface, #fff);
+  border-radius: 16px;
   padding: 2rem;
   width: 100%;
   max-width: 420px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  box-shadow: var(--eo-shadow-md, 0 20px 60px rgba(0,0,0,0.2));
 }
 
 .ap-modal h3 {
   font-size: 1.15rem;
   font-weight: 700;
   margin: 0 0 1.5rem;
-  color: var(--color-text, #0f172a);
+  color: var(--eo-text, #0f172a);
 }
 
 .ap-modal label {
@@ -382,7 +392,7 @@
   margin-bottom: 1rem;
   font-size: 0.85rem;
   font-weight: 500;
-  color: var(--color-text, #0f172a);
+  color: var(--eo-text, #0f172a);
 }
 
 .ap-modal input,
@@ -391,8 +401,8 @@
   border-radius: 7px;
   border: 1.5px solid var(--color-border, #e2e8f0);
   font-size: 0.9rem;
-  background: var(--color-surface, #f8fafc);
-  color: var(--color-text, #0f172a);
+  background: var(--eo-bg, #f8fafc);
+  color: var(--eo-text, #0f172a);
   width: 100%;
   box-sizing: border-box;
   transition: border-color 0.15s;
@@ -401,7 +411,7 @@
 .ap-modal input:focus,
 .ap-modal select:focus {
   outline: none;
-  border-color: var(--color-accent, #203864);
+  border-color: var(--eo-accent, #203864);
   background: #fff;
 }
 
@@ -422,13 +432,13 @@
 .ap-denied {
   text-align: center;
   padding: 5rem 2rem;
-  color: var(--color-muted, #64748b);
+  color: var(--eo-muted, #64748b);
 }
 
 .ap-denied h2 {
   font-size: 1.4rem;
   margin-bottom: 0.5rem;
-  color: var(--color-text, #0f172a);
+  color: var(--eo-text, #0f172a);
 }
 
 /* ── Dark mode ──────────────────────────────────────────────────────────── */
