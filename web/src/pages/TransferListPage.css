@@ -4,7 +4,7 @@
   display: flex;
   flex-direction: column;
   min-height: 100dvh;
-  background: var(--bg);
+  background: var(--eo-bg, var(--bg));
   font-family: var(--font-sans, system-ui, sans-serif);
 }
 
@@ -13,33 +13,35 @@
   align-items: center;
   gap: 1rem;
   padding: 0.75rem 1.5rem;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
+  background: var(--eo-surface, var(--surface));
+  box-shadow: var(--eo-shadow-sm);
   font-size: 0.85rem;
   flex-shrink: 0;
 }
 
 .tl-nav a {
-  color: var(--primary);
-  font-weight: 500;
+  color: var(--eo-accent, var(--primary));
+  font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
 }
 
 .tl-nav__title {
-  font-weight: 700;
-  color: var(--ink-secondary);
+  font-family: 'Archivo', sans-serif;
+  font-weight: 800;
+  color: var(--eo-text, var(--ink-secondary));
   white-space: nowrap;
 }
 
 .tl-nav__event {
   margin-left: auto;
   font-size: 0.78rem;
-  color: var(--muted);
-  background: var(--surface-hover);
+  color: var(--eo-muted, var(--muted));
+  background: var(--eo-surface, var(--surface-hover));
   padding: 0.25rem 0.65rem;
   border-radius: 999px;
-  border: 1px solid var(--border);
+  border: none;
+  box-shadow: var(--eo-shadow-sm);
 }
 
 .tl-body {
@@ -214,19 +216,21 @@
 /* ─── Add traveler button ─────────────────────────────────────────────────── */
 
 .tl-btn-add {
-  background: var(--primary);
+  background: var(--eo-accent, var(--primary));
   color: white;
   border: none;
   padding: 0.4rem 0.85rem;
-  border-radius: var(--radius-sm);
+  border-radius: 999px;
+  font-family: 'Archivo', inherit;
   font-size: 0.82rem;
-  font-weight: 600;
+  font-weight: 800;
   cursor: pointer;
-  transition: background 0.15s;
+  box-shadow: var(--eo-shadow-sm);
+  transition: box-shadow 0.15s, background 0.15s;
   white-space: nowrap;
 }
 
-.tl-btn-add:hover { background: var(--primary-dark, color-mix(in srgb, var(--primary) 85%, black)); }
+.tl-btn-add:hover { background: var(--eo-accent-700, var(--primary-dark)); box-shadow: var(--eo-shadow-md); }
 
 /* ─── Traveler cards ──────────────────────────────────────────────────────── */
 
@@ -241,15 +245,16 @@
 }
 
 .tl-traveler {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border: none;
+  border-radius: 16px;
   overflow: hidden;
-  background: var(--surface);
-  transition: border-color 0.15s;
+  background: var(--eo-surface, var(--surface));
+  box-shadow: var(--eo-shadow-sm);
+  transition: box-shadow 0.15s;
 }
 
 .tl-traveler--open {
-  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--eo-accent, var(--primary)), var(--eo-shadow-sm);
 }
 
 .tl-traveler__head {
@@ -525,60 +530,66 @@
 }
 
 .tl-export-btn {
-  background: var(--primary);
+  background: var(--eo-accent, var(--primary));
   color: white;
   border: none;
   padding: 0.75rem 1.25rem;
-  border-radius: var(--radius, 8px);
+  border-radius: 999px;
+  font-family: 'Archivo', inherit;
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 800;
   cursor: pointer;
-  transition: background 0.15s;
+  box-shadow: var(--eo-shadow-sm);
+  transition: box-shadow 0.15s, background 0.15s;
   flex: 1;
   letter-spacing: 0.01em;
 }
 
-.tl-export-btn:hover:not(:disabled) { background: var(--primary-hover); }
+.tl-export-btn:hover:not(:disabled) { background: var(--eo-accent-700, var(--primary-hover)); box-shadow: var(--eo-shadow-md); }
 .tl-export-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .tl-save-btn {
-  background: white;
-  color: var(--primary);
-  border: 2px solid var(--primary);
+  background: var(--eo-surface, white);
+  color: var(--eo-accent, var(--primary));
+  border: none;
   padding: 0.75rem 1.1rem;
-  border-radius: var(--radius, 8px);
+  border-radius: 999px;
+  font-family: 'Archivo', inherit;
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 800;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  box-shadow: var(--eo-shadow-sm);
+  transition: box-shadow 0.15s;
   white-space: nowrap;
   letter-spacing: 0.01em;
   flex-shrink: 0;
 }
 
 .tl-save-btn:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--primary) 8%, white);
+  box-shadow: var(--eo-shadow-md);
 }
 
 .tl-save-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .tl-link-btn {
-  background: white;
-  color: var(--primary);
-  border: 2px solid var(--primary);
+  background: var(--eo-surface, white);
+  color: var(--eo-accent, var(--primary));
+  border: none;
   padding: 0.75rem 0.9rem;
-  border-radius: var(--radius, 8px);
+  border-radius: 999px;
+  font-family: 'Archivo', inherit;
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 800;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  box-shadow: var(--eo-shadow-sm);
+  transition: box-shadow 0.15s;
   white-space: nowrap;
   letter-spacing: 0.01em;
   flex-shrink: 0;
 }
 
 .tl-link-btn:hover {
-  background: color-mix(in srgb, var(--primary) 8%, white);
+  box-shadow: var(--eo-shadow-md);
 }
 
 .tl-save-error {
@@ -604,12 +615,13 @@
 .tl-saved-chip {
   font-size: 0.76rem;
   font-weight: 600;
-  color: #059669;
-  background: #ecfdf5;
-  border: 1px solid #6ee7b7;
-  border-radius: 6px;
+  color: var(--eo-award, #059669);
+  background: var(--eo-award-100, #ecfdf5);
+  border: none;
+  border-radius: 999px;
   padding: 0.3rem 0.65rem;
   margin-bottom: 0.5rem;
+  width: fit-content;
 }
 
 .tl-save-hint {

@@ -78,7 +78,7 @@ export function PerDiemFormPage() {
     <div className="pdform-page">
       {/* ── Back link (hidden on print) ── */}
       <nav className="pdform-nav no-print">
-        <Link to="/">← Back to Events</Link>
+        <Link to="/generators" className="pdform-nav__back">← Generators</Link>
         <span className="pdform-nav__title">Per Diem Form Generator</span>
       </nav>
 
