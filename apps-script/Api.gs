@@ -319,6 +319,12 @@ function handleRequest_(e, method) {
       return jsonResponse_(uploadAVEquipment_(body));
     }
 
+    if (action === 'serviceReportSave' && acceptsWrite_(method, e)) {
+      body.uploadedBy = actorEmail || body.uploadedBy || '';
+      body.actorEmail = actorEmail;
+      return jsonResponse_(uploadServiceReport_(body));
+    }
+
     // ——— Team ———
     if (action === 'activity') {
       return jsonResponse_({

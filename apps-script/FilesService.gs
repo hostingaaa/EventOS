@@ -63,6 +63,7 @@ function getOrCreateEventFolder_(eventCode, location) {
 
 var TRANSFER_LISTS_SUBFOLDER_ = 'Transfer Lists';
 var AV_EQUIPMENT_SUBFOLDER_ = 'AV Equipment';
+var SERVICE_REPORT_SUBFOLDER_ = 'LEM';
 
 function getEventSubfolder_(eventCode, location, subfolderName) {
   var eventFolder = getOrCreateEventFolder_(eventCode, location || '');
@@ -155,6 +156,11 @@ function uploadTransferList_(payload) {
 /** Upload (or update in place) an AV equipment list .xlsx in the AV Equipment folder. */
 function uploadAVEquipment_(payload) {
   return uploadEventSpreadsheet_(payload, AV_EQUIPMENT_SUBFOLDER_, 'av_equipment_saved');
+}
+
+/** Upload (or update in place) a service report .xlsx in the event's LEM folder. */
+function uploadServiceReport_(payload) {
+  return uploadEventSpreadsheet_(payload, SERVICE_REPORT_SUBFOLDER_, 'service_report_saved');
 }
 
 /** Find an existing Drive file to update — by ID first, then by name in folder. */

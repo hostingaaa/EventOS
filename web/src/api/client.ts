@@ -430,6 +430,29 @@ export async function saveAVEquipmentToDrive(payload: {
   });
 }
 
+export async function saveServiceReportToDrive(payload: {
+  eventCode: string;
+  fileName: string;
+  dataBase64: string;
+  uploadedBy: string;
+  actorEmail: string;
+  eventLocation?: string;
+  driveFileId?: string;
+}): Promise<TransferListSaveResult> {
+  if (useMockData()) {
+    const id = payload.driveFileId || 'mock-service-report-' + payload.eventCode;
+    return {
+      driveFileId: id,
+      driveUrl: `https://drive.google.com/file/d/${id}/view?usp=sharing`,
+      fileName: payload.fileName,
+    };
+  }
+  return post<TransferListSaveResult>('serviceReportSave', {
+    ...payload,
+    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+}
+
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

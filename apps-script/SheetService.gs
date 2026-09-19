@@ -207,6 +207,10 @@ function rowToEvent_(row, rowNum, map) {
     driveFolderUrl: cell(CONFIG.COLS.DRIVE_FOLDER_URL),
     awarded: cell(CONFIG.COLS.AWARDED),
     revenue: cell(CONFIG.COLS.REVENUE),
+    serviceReportDriveUrl: cell(CONFIG.COLS.SERVICE_REPORT_DRIVE_URL),
+    serviceReportDriveFileId: cell(CONFIG.COLS.SERVICE_REPORT_DRIVE_FILE_ID),
+    serviceReportSavedAt: cell(CONFIG.COLS.SERVICE_REPORT_SAVED_AT),
+    serviceReportSavedBy: cell(CONFIG.COLS.SERVICE_REPORT_SAVED_BY),
   };
 }
 
@@ -294,6 +298,10 @@ function updateEventFields_(rowNumber, updates) {
     driveFolderUrl: CONFIG.COLS.DRIVE_FOLDER_URL,
     awarded: CONFIG.COLS.AWARDED,
     revenue: CONFIG.COLS.REVENUE,
+    serviceReportDriveUrl: CONFIG.COLS.SERVICE_REPORT_DRIVE_URL,
+    serviceReportDriveFileId: CONFIG.COLS.SERVICE_REPORT_DRIVE_FILE_ID,
+    serviceReportSavedAt: CONFIG.COLS.SERVICE_REPORT_SAVED_AT,
+    serviceReportSavedBy: CONFIG.COLS.SERVICE_REPORT_SAVED_BY,
   };
 
   Object.keys(updates).forEach(function (key) {
