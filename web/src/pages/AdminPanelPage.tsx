@@ -222,70 +222,72 @@ export function AdminPanelPage() {
             </button>
           </div>
 
-          <table className="ap-table">
-            <thead>
-              <tr>
-                <th>Member</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th>Joined</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {members.map((m) => {
-                const roleStyle = ROLE_COLORS[m.role];
-                const isSelf = m.email.toLowerCase() === user?.email?.toLowerCase();
-                return (
-                  <tr key={m.id} className={m.status === 'inactive' ? 'ap-table__row--inactive' : ''}>
-                    <td>
-                      <div className="ap-member">
-                        <span
-                          className="ap-avatar"
-                          style={{ background: roleStyle.bg, color: roleStyle.color }}
-                        >
-                          {initials(m.name)}
-                        </span>
-                        <div>
-                          <strong>{m.name} {isSelf && <span className="ap-self">(you)</span>}</strong>
-                          <small>{m.email}</small>
+          <div className="ap-table-wrap">
+            <table className="ap-table">
+              <thead>
+                <tr>
+                  <th>Member</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>Joined</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {members.map((m) => {
+                  const roleStyle = ROLE_COLORS[m.role];
+                  const isSelf = m.email.toLowerCase() === user?.email?.toLowerCase();
+                  return (
+                    <tr key={m.id} className={m.status === 'inactive' ? 'ap-table__row--inactive' : ''}>
+                      <td>
+                        <div className="ap-member">
+                          <span
+                            className="ap-avatar"
+                            style={{ background: roleStyle.bg, color: roleStyle.color }}
+                          >
+                            {initials(m.name)}
+                          </span>
+                          <div>
+                            <strong>{m.name} {isSelf && <span className="ap-self">(you)</span>}</strong>
+                            <small>{m.email}</small>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td>
-                      <select
-                        className="ap-role-select"
-                        value={m.role}
-                        disabled={isSelf}
-                        onChange={(e) => handleRoleChange(m.id, e.target.value as AppRole)}
-                        style={{ borderColor: roleStyle.bg, color: roleStyle.color }}
-                      >
-                        {ROLES.map((r) => (
-                          <option key={r} value={r}>{ROLE_LABELS[r]}</option>
-                        ))}
-                      </select>
-                    </td>
-                    <td>
-                      <span className={`ap-status ap-status--${m.status}`}>
-                        {m.status === 'invited' ? 'Invited' : m.status === 'inactive' ? 'Inactive' : 'Active'}
-                      </span>
-                    </td>
-                    <td className="ap-date">{m.createdAt}</td>
-                    <td>
-                      {!isSelf && (
-                        <button
-                          className={`ap-btn ap-btn--sm ${m.status === 'inactive' ? 'ap-btn--ghost' : 'ap-btn--danger-ghost'}`}
-                          onClick={() => handleStatusToggle(m.id)}
+                      </td>
+                      <td>
+                        <select
+                          className="ap-role-select"
+                          value={m.role}
+                          disabled={isSelf}
+                          onChange={(e) => handleRoleChange(m.id, e.target.value as AppRole)}
+                          style={{ borderColor: roleStyle.bg, color: roleStyle.color }}
                         >
-                          {m.status === 'inactive' ? 'Activate' : 'Deactivate'}
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                          {ROLES.map((r) => (
+                            <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td>
+                        <span className={`ap-status ap-status--${m.status}`}>
+                          {m.status === 'invited' ? 'Invited' : m.status === 'inactive' ? 'Inactive' : 'Active'}
+                        </span>
+                      </td>
+                      <td className="ap-date">{m.createdAt}</td>
+                      <td>
+                        {!isSelf && (
+                          <button
+                            className={`ap-btn ap-btn--sm ${m.status === 'inactive' ? 'ap-btn--ghost' : 'ap-btn--danger-ghost'}`}
+                            onClick={() => handleStatusToggle(m.id)}
+                          >
+                            {m.status === 'inactive' ? 'Activate' : 'Deactivate'}
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </section>
       )}
 
