@@ -185,4 +185,12 @@ final class DashboardViewModel: ObservableObject {
         let active = events.filter { !isCompleted($0) }.filter(matchesFilter)
         return active.filter { $0.rowId != featuredEvent?.rowId }.prefix(4).map { $0 }
     }
+
+    /// Mirrors web's dashboard stat cards (Active events / Awarded / Completed) — unlike
+    /// `activeCount`, these are not affected by the filter tabs.
+    var lifecycleStats: (active: Int, awarded: Int, completed: Int) {
+        let active = events.filter { !isCompleted($0) }
+        let awarded = active.filter { ($0.awarded ?? "").trimmingCharacters(in: .whitespaces).lowercased() == "yes" }
+        return (active.count, awarded.count, events.filter(isCompleted).count)
+    }
 }

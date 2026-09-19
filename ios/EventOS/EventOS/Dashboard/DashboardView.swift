@@ -37,6 +37,10 @@ struct DashboardView: View {
                         } else if let error = vm.error {
                             Text(error).foregroundStyle(Theme.statusRisk)
                         } else {
+                            if !vm.events.isEmpty {
+                                lifecycleStatsCard
+                            }
+
                             if let featured = vm.featuredEvent {
                                 featuredCard(featured)
                             }
@@ -118,6 +122,30 @@ struct DashboardView: View {
         .padding(.top, 8)
         .padding(.bottom, 24)
         .background(Theme.headerGradient)
+    }
+
+    // MARK: Lifecycle stats (Active events / Awarded / Completed)
+
+    private var lifecycleStatsCard: some View {
+        let s = vm.lifecycleStats
+        return HStack(spacing: 10) {
+            lifecycleStatPill("\(s.active)", "Active events")
+            lifecycleStatPill("\(s.awarded)", "Awarded")
+            lifecycleStatPill("\(s.completed)", "Completed")
+        }
+        .cardStyle()
+    }
+
+    private func lifecycleStatPill(_ value: String, _ label: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(value).font(.headline).foregroundStyle(Theme.textPrimary)
+            Text(label).font(.caption2).foregroundStyle(Theme.textSecondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 10)
+        .padding(.horizontal, 12)
+        .background(Theme.cardAlt)
+        .clipShape(RoundedRectangle(cornerRadius: Theme.cornerSmall, style: .continuous))
     }
 
     // MARK: Featured event hero card
