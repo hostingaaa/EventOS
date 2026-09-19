@@ -26,6 +26,11 @@ export interface Event {
   awarded?: string;
   /** Total contract/quote value paid by the client. Admin-only to view or edit. */
   revenue?: string;
+  /** Set when the Service Report generator saves a report for this event. */
+  serviceReportDriveUrl?: string;
+  serviceReportDriveFileId?: string;
+  serviceReportSavedAt?: string;
+  serviceReportSavedBy?: string;
 }
 
 export interface CostItem {
@@ -53,7 +58,7 @@ export interface EventsResponse {
 }
 
 export type EventUpdates = Partial<
-  Pick<Event, 'lem' | 'av' | 'interpreters' | 'venue' | 'psaCldp' | 'sow' | 'notes' | 'ownerEmail' | 'perDiemRate' | 'maxVisaAllowance' | 'maxGroundTransport' | 'awarded' | 'revenue'>
+  Pick<Event, 'lem' | 'av' | 'interpreters' | 'venue' | 'psaCldp' | 'sow' | 'notes' | 'ownerEmail' | 'perDiemRate' | 'maxVisaAllowance' | 'maxGroundTransport' | 'awarded' | 'revenue' | 'serviceReportDriveUrl' | 'serviceReportDriveFileId' | 'serviceReportSavedAt' | 'serviceReportSavedBy'>
 >;
 
 export type TaskStatus = 'todo' | 'in_progress' | 'blocked' | 'done';

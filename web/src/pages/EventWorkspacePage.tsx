@@ -230,6 +230,17 @@ export function EventWorkspacePage() {
               Drive Folder
             </a>
           )}
+          {event.serviceReportDriveUrl && (
+            <a
+              href={event.serviceReportDriveUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="workspace__drive-link"
+              title="Open the saved Service Report"
+            >
+              📊 Service Report
+            </a>
+          )}
           {user && (
             <button type="button" className="workspace__add-tasks" onClick={() => setShowApplyModal(true)}>
               + Add from templates

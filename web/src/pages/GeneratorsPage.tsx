@@ -71,6 +71,26 @@ const GENERATORS: GeneratorCard[] = [
     bg:    '#f0fdf4',
     label: 'Open Generator',
   },
+  {
+    title: 'Service Report Generator',
+    description:
+      'Report the services provided for a program across 8 cost categories — ' +
+      'Labor, Conference Equipment, Catering, Supplies, Printing, Photography, ' +
+      'Transportation, Funds Distribution. Only pick the categories that applied, ' +
+      'add each service with its amount and cost, and export a styled .xlsx.',
+    detail: [
+      'Check off only the categories a program actually used',
+      'Per-category subtotals + grand total, computed live',
+      'Saves to the event\'s Drive folder and syncs to Financials',
+      'Admins/directors see a link right on the event page',
+      'Exports: {code}_{city}_{date}_Service_Report.xlsx',
+    ],
+    href:  '/service-report',
+    icon:  '🧾',
+    color: '#b45309',
+    bg:    '#fffbeb',
+    label: 'Open Generator',
+  },
 ];
 
 const SOW_GENERATOR: GeneratorCard = {

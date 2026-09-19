@@ -33,6 +33,7 @@ var EVENT_SUBFOLDERS = [
   'AV Equipment',
   'Transfer Lists',
   'Per Diem Forms',
+  'LEM',
   'Presentations',
   'Evaluation',
   'Templates',
@@ -75,6 +76,10 @@ var CONFIG = {
     DRIVE_FOLDER_URL: 'Drive Folder URL',
     AWARDED: 'Awarded',
     REVENUE: 'Revenue',
+    SERVICE_REPORT_DRIVE_URL: 'Service Report Drive URL',
+    SERVICE_REPORT_DRIVE_FILE_ID: 'Service Report Drive File Id',
+    SERVICE_REPORT_SAVED_AT: 'Service Report Saved At',
+    SERVICE_REPORT_SAVED_BY: 'Service Report Saved By',
   },
 
   REMINDER_DAYS: [30, 14, 7, 1],

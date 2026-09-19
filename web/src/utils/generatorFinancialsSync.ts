@@ -1,10 +1,14 @@
 /**
  * Shared create-or-update (never delete) reconciliation used by generator
- * pages (AV Equipment, Transfer List) to sync their current selection into
- * the event's Financials cost items. Each synced item is tagged via its
- * `notes` field (never rendered in FinancialsPanel) so a later re-sync can
- * find and update it instead of creating a duplicate. Unit rate is never
- * touched by the sync, so a team member's entered rate always survives.
+ * pages (AV Equipment, Transfer List, Service Report) to sync their current
+ * selection into the event's Financials cost items. Each synced item is
+ * tagged via its `notes` field (never rendered in FinancialsPanel) so a
+ * later re-sync can find and update it instead of creating a duplicate.
+ *
+ * `unitRate` is optional: AV Equipment/Transfer List omit it, so a team
+ * member's manually-entered real rate in Financials always survives their
+ * re-saves. Service Report supplies it, since its own price *is* the
+ * authoritative source for that line.
  */
 import { fetchAllCostItems, createCostItem, updateCostItem } from '../api/client';
 
@@ -13,6 +17,7 @@ export interface DesiredCostLine {
   category: string;
   description: string;
   quantity: number;
+  unitRate?: number;
 }
 
 export async function syncGeneratorCostItems(
@@ -27,8 +32,13 @@ export async function syncGeneratorCostItems(
   for (const line of lines) {
     const match = byTag.get(line.tag);
     if (match) {
-      if (match.description !== line.description || match.quantity !== line.quantity) {
-        await updateCostItem(match.costItemId, { description: line.description, quantity: line.quantity }, createdBy);
+      const patch: { category?: string; description?: string; quantity?: number; unitRate?: number } = {};
+      if (match.category !== line.category) patch.category = line.category;
+      if (match.description !== line.description) patch.description = line.description;
+      if (match.quantity !== line.quantity) patch.quantity = line.quantity;
+      if (line.unitRate !== undefined && match.unitRate !== line.unitRate) patch.unitRate = line.unitRate;
+      if (Object.keys(patch).length > 0) {
+        await updateCostItem(match.costItemId, patch, createdBy);
       }
     } else {
       await createCostItem({
@@ -37,7 +47,7 @@ export async function syncGeneratorCostItems(
         category: line.category,
         description: line.description,
         quantity: line.quantity,
-        unitRate: 0,
+        unitRate: line.unitRate ?? 0,
         currency: 'USD',
         notes: line.tag,
         createdBy,
