@@ -37,10 +37,6 @@ struct DashboardView: View {
                         } else if let error = vm.error {
                             Text(error).foregroundStyle(Theme.statusRisk)
                         } else {
-                            if !vm.events.isEmpty {
-                                lifecycleStatsCard
-                            }
-
                             if let featured = vm.featuredEvent {
                                 featuredCard(featured)
                             }
@@ -98,24 +94,35 @@ struct DashboardView: View {
     // MARK: Header (green gradient zone)
 
     private var header: some View {
-        HStack {
-            Label("Home", systemImage: "house.fill")
-                .font(.title2.bold())
-                .foregroundStyle(.white)
-            Spacer()
-            Button { Task { await vm.load() } } label: {
-                Image(systemName: "arrow.clockwise")
+        VStack(spacing: 20) {
+            HStack {
+                Label("Home", systemImage: "house.fill")
+                    .font(.title2.bold())
                     .foregroundStyle(.white)
-                    .padding(10)
-                    .background(.white.opacity(0.15))
-                    .clipShape(Circle())
+                Spacer()
+                Button { Task { await vm.load() } } label: {
+                    Image(systemName: "arrow.clockwise")
+                        .foregroundStyle(.white)
+                        .padding(10)
+                        .background(.white.opacity(0.15))
+                        .clipShape(Circle())
+                }
+                Button { showSignOut = true } label: {
+                    Image(systemName: "person.fill")
+                        .foregroundStyle(.white)
+                        .padding(10)
+                        .background(.white.opacity(0.15))
+                        .clipShape(Circle())
+                }
             }
-            Button { showSignOut = true } label: {
-                Image(systemName: "person.fill")
-                    .foregroundStyle(.white)
-                    .padding(10)
-                    .background(.white.opacity(0.15))
-                    .clipShape(Circle())
+
+            if !vm.events.isEmpty {
+                let s = vm.lifecycleStats
+                HStack(spacing: 10) {
+                    headerStatPill("\(s.active)", "Active events")
+                    headerStatPill("\(s.awarded)", "Awarded")
+                    headerStatPill("\(s.completed)", "Completed")
+                }
             }
         }
         .padding(.horizontal, 20)
@@ -124,27 +131,15 @@ struct DashboardView: View {
         .background(Theme.headerGradient)
     }
 
-    // MARK: Lifecycle stats (Active events / Awarded / Completed)
-
-    private var lifecycleStatsCard: some View {
-        let s = vm.lifecycleStats
-        return HStack(spacing: 10) {
-            lifecycleStatPill("\(s.active)", "Active events")
-            lifecycleStatPill("\(s.awarded)", "Awarded")
-            lifecycleStatPill("\(s.completed)", "Completed")
-        }
-        .cardStyle()
-    }
-
-    private func lifecycleStatPill(_ value: String, _ label: String) -> some View {
+    private func headerStatPill(_ value: String, _ label: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(value).font(.headline).foregroundStyle(Theme.textPrimary)
-            Text(label).font(.caption2).foregroundStyle(Theme.textSecondary)
+            Text(value).font(.headline).foregroundStyle(.white)
+            Text(label).font(.caption2).foregroundStyle(.white.opacity(0.75))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, 10)
         .padding(.horizontal, 12)
-        .background(Theme.cardAlt)
+        .background(.white.opacity(0.14))
         .clipShape(RoundedRectangle(cornerRadius: Theme.cornerSmall, style: .continuous))
     }
 
