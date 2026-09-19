@@ -5,7 +5,7 @@
   grid-template-columns: 380px 1fr;
   grid-template-rows: auto 1fr;
   min-height: 100dvh;
-  background: var(--bg);
+  background: var(--eo-bg, var(--bg));
 }
 
 .pdform-nav {
@@ -14,20 +14,21 @@
   align-items: center;
   gap: 1rem;
   padding: 0.75rem 1.5rem;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
+  background: var(--eo-surface, var(--surface));
+  box-shadow: var(--eo-shadow-sm);
   font-size: 0.85rem;
 }
 
 .pdform-nav a {
-  color: var(--primary);
-  font-weight: 500;
+  color: var(--eo-accent, var(--primary));
+  font-weight: 600;
   text-decoration: none;
 }
 
 .pdform-nav__title {
-  font-weight: 700;
-  color: var(--ink-secondary);
+  font-family: 'Archivo', sans-serif;
+  font-weight: 800;
+  color: var(--eo-text, var(--ink-secondary));
 }
 
 /* ─── Inputs panel ───────────────────────────────────────────────────────── */
@@ -161,36 +162,40 @@
 }
 
 .pdform-print-btn {
-  background: var(--primary);
+  background: var(--eo-accent, var(--primary));
   color: white;
   border: none;
   padding: 0.55rem 1.15rem;
-  border-radius: var(--radius, 8px);
-  font-weight: 600;
+  border-radius: 999px;
+  font-family: 'Archivo', inherit;
+  font-weight: 800;
   font-size: 0.95rem;
   cursor: pointer;
-  transition: background 0.15s;
+  box-shadow: var(--eo-shadow-sm);
+  transition: box-shadow 0.15s, background 0.15s;
   letter-spacing: 0.01em;
 }
 
 .pdform-print-btn:hover {
-  background: var(--primary-hover);
+  background: var(--eo-accent-700, var(--primary-hover));
+  box-shadow: var(--eo-shadow-md);
 }
 
 .pdform-edit-btn {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--muted);
+  background: var(--eo-surface, transparent);
+  border: none;
+  color: var(--eo-muted, var(--muted));
   padding: 0.5rem 0.85rem;
-  border-radius: var(--radius-sm);
+  border-radius: 999px;
   font-size: 0.82rem;
   cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
+  box-shadow: var(--eo-shadow-sm);
+  transition: box-shadow 0.15s, color 0.15s;
 }
 
 .pdform-edit-btn:hover {
-  border-color: var(--primary);
-  color: var(--primary);
+  color: var(--eo-accent, var(--primary));
+  box-shadow: var(--eo-shadow-md);
 }
 
 /* ─── The document ───────────────────────────────────────────────────────── */

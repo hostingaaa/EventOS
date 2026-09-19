@@ -4,7 +4,7 @@
   display: flex;
   flex-direction: column;
   min-height: 100dvh;
-  background: var(--bg, #f4f5f7);
+  background: var(--eo-bg, #f4f5f7);
   font-family: var(--font-sans, system-ui, sans-serif);
   font-size: 0.875rem;
 }
@@ -14,22 +14,24 @@
   align-items: center;
   gap: 1rem;
   padding: 0.75rem 1.5rem;
-  background: var(--surface, #fff);
-  border-bottom: 1px solid var(--border, #e2e8f0);
+  background: var(--eo-surface, #fff);
+  box-shadow: var(--eo-shadow-sm);
   flex-shrink: 0;
 }
 
 .av-nav__back {
   font-size: 0.8rem;
-  color: var(--accent, #4f46e5);
+  font-weight: 600;
+  color: var(--eo-accent, #4f46e5);
   text-decoration: none;
 }
 .av-nav__back:hover { text-decoration: underline; }
 
 .av-nav__title {
-  font-weight: 700;
+  font-family: 'Archivo', sans-serif;
+  font-weight: 800;
   font-size: 0.95rem;
-  color: var(--text, #1e293b);
+  color: var(--eo-text, #1e293b);
 }
 
 .av-body {
@@ -49,9 +51,10 @@
 /* ─── Panels ──────────────────────────────────────────────────────────────── */
 
 .av-panel {
-  background: var(--surface, #fff);
-  border: 1px solid var(--border, #e2e8f0);
-  border-radius: 12px;
+  background: var(--eo-surface, #fff);
+  border: none;
+  border-radius: 16px;
+  box-shadow: var(--eo-shadow-sm);
   overflow: hidden;
 }
 
@@ -246,20 +249,21 @@
 
 .av-supply-add__btn {
   flex-shrink: 0;
-  padding: 0.42rem 0.85rem;
-  border: 2px solid var(--primary);
-  border-radius: 6px;
-  background: white;
-  color: var(--primary);
+  padding: 0.42rem 0.9rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--eo-surface, white);
+  box-shadow: var(--eo-shadow-sm);
+  color: var(--eo-accent, var(--primary));
   font-size: 0.8rem;
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.15s;
+  transition: box-shadow 0.15s;
 }
 
 .av-supply-add__btn:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--primary) 8%, white);
+  box-shadow: var(--eo-shadow-md);
 }
 
 .av-supply-add__btn:disabled {
@@ -347,12 +351,13 @@
 
 .av-saved-chip {
   font-size: 0.76rem;
-  font-weight: 600;
-  color: #059669;
-  background: #ecfdf5;
-  border: 1px solid #6ee7b7;
-  border-radius: 6px;
-  padding: 0.3rem 0.65rem;
+  font-weight: 700;
+  color: var(--eo-award, #059669);
+  background: var(--eo-award-100, #ecfdf5);
+  border: none;
+  border-radius: 999px;
+  padding: 0.3rem 0.75rem;
+  width: fit-content;
 }
 
 .av-save-error {
@@ -384,34 +389,38 @@
   min-width: 160px;
   padding: 0.75rem 1.2rem;
   border: none;
-  border-radius: var(--radius, 8px);
-  background: var(--primary);
+  border-radius: 999px;
+  background: var(--eo-accent, var(--primary));
   color: white;
+  font-family: 'Archivo', inherit;
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 800;
   cursor: pointer;
-  transition: background 0.15s;
+  box-shadow: var(--eo-shadow-sm);
+  transition: background 0.15s, box-shadow 0.15s;
   letter-spacing: 0.01em;
 }
 
 .av-btn--save,
 .av-btn--link {
-  background: white;
-  color: var(--primary);
-  border: 2px solid var(--primary);
-  padding: 0.75rem 1rem;
-  border-radius: var(--radius, 8px);
+  background: var(--eo-surface, white);
+  color: var(--eo-accent, var(--primary));
+  border: none;
+  padding: 0.75rem 1.1rem;
+  border-radius: 999px;
+  font-family: 'Archivo', inherit;
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 800;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  box-shadow: var(--eo-shadow-sm);
+  transition: box-shadow 0.15s;
   white-space: nowrap;
   flex-shrink: 0;
 }
 
 .av-btn--save:hover:not(:disabled),
 .av-btn--link:hover {
-  background: color-mix(in srgb, var(--primary) 8%, white);
+  box-shadow: var(--eo-shadow-md);
 }
 
 .av-btn--save:disabled {
@@ -419,7 +428,7 @@
   cursor: not-allowed;
 }
 
-.av-btn--export:hover:not(:disabled) { background: var(--primary-hover); }
+.av-btn--export:hover:not(:disabled) { background: var(--eo-accent-700, var(--primary-hover)); }
 .av-btn--export:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .av-export-hint {

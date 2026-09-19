@@ -703,7 +703,7 @@ export function TransferListPage() {
     <div className="tl-page">
       {/* ── Nav ── */}
       <nav className="tl-nav">
-        <Link to="/">← Back to Events</Link>
+        <Link to="/generators" className="tl-nav__back">← Generators</Link>
         <span className="tl-nav__title">Transfer List Generator</span>
         {(setup.eventCode || setup.eventCity) && (
           <span className="tl-nav__event">
