@@ -1,6 +1,6 @@
 .vendor-portal {
   min-height: 100dvh;
-  background: var(--bg-subtle);
+  background: var(--eo-bg, var(--bg-subtle));
   padding: 2rem 1.25rem 3rem;
   max-width: 720px;
   margin: 0 auto;
@@ -27,10 +27,11 @@
 }
 
 .vendor-portal__header {
-  background: var(--sidebar);
+  background: var(--eo-accent, var(--sidebar));
   color: white;
   padding: 1.75rem 1.5rem;
-  border-radius: var(--radius-lg);
+  border-radius: 20px;
+  box-shadow: var(--eo-shadow-md);
   margin-bottom: 2rem;
 }
 
@@ -43,6 +44,8 @@
 
 .vendor-portal__header h1 {
   margin: 0.35rem 0 0;
+  font-family: 'Archivo', sans-serif;
+  font-weight: 800;
   font-size: 1.75rem;
 }
 
@@ -91,12 +94,12 @@
 }
 
 .vendor-portal__tasks > li {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  background: var(--eo-surface, var(--surface));
+  border: none;
+  border-radius: 16px;
   margin-bottom: 0.65rem;
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--eo-shadow-sm);
 }
 
 .vendor-portal__task-btn {
@@ -116,7 +119,7 @@
   font-size: 0.65rem;
   text-transform: uppercase;
   font-weight: 700;
-  color: var(--primary);
+  color: var(--eo-accent, var(--primary));
   grid-column: 1 / -1;
 }
 
@@ -182,15 +185,23 @@
 .vendor-portal__upload-btn {
   display: inline-flex;
   align-items: center;
-  background: #fff;
-  color: var(--primary);
-  border: 1.5px solid var(--border);
+  background: var(--eo-surface, #fff);
+  color: var(--eo-accent, var(--primary));
+  border: none;
   padding: 0.42rem 0.85rem;
-  border-radius: 8px;
+  border-radius: 999px;
+  font-family: 'Archivo', inherit;
   font-size: 0.82rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
+  box-shadow: var(--eo-shadow-sm);
+  transition: box-shadow 0.15s;
   white-space: nowrap;
+}
+
+.vendor-portal__complete-btn:hover:not(:disabled),
+.vendor-portal__upload-btn:hover {
+  box-shadow: var(--eo-shadow-md);
 }
 
 .vendor-portal__complete-btn:disabled,
