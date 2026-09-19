@@ -94,61 +94,30 @@ struct DashboardView: View {
     // MARK: Header (green gradient zone)
 
     private var header: some View {
-        VStack(spacing: 20) {
-            HStack {
-                Label("Home", systemImage: "house.fill")
-                    .font(.title2.bold())
+        HStack {
+            Label("Home", systemImage: "house.fill")
+                .font(.title2.bold())
+                .foregroundStyle(.white)
+            Spacer()
+            Button { Task { await vm.load() } } label: {
+                Image(systemName: "arrow.clockwise")
                     .foregroundStyle(.white)
-                Spacer()
-                Button { Task { await vm.load() } } label: {
-                    Image(systemName: "arrow.clockwise")
-                        .foregroundStyle(.white)
-                        .padding(10)
-                        .background(.white.opacity(0.15))
-                        .clipShape(Circle())
-                }
-                Button { showSignOut = true } label: {
-                    Image(systemName: "person.fill")
-                        .foregroundStyle(.white)
-                        .padding(10)
-                        .background(.white.opacity(0.15))
-                        .clipShape(Circle())
-                }
+                    .padding(10)
+                    .background(.white.opacity(0.15))
+                    .clipShape(Circle())
             }
-
-            if vm.summary.total > 0 {
-                VStack(alignment: .leading, spacing: 14) {
-                    HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Text("Portfolio completion").font(.subheadline).foregroundStyle(.white.opacity(0.85))
-                        Spacer()
-                        Text("\(vm.summary.total) active").font(.caption).foregroundStyle(.white.opacity(0.7))
-                    }
-                    Text("\(vm.summary.avgCompletion)%").font(.system(size: 40, weight: .bold)).foregroundStyle(.white)
-
-                    HStack(spacing: 10) {
-                        headerStatPill("\(vm.summary.onTrack)", "On track")
-                        headerStatPill("\(vm.summary.attention)", "Attention")
-                        headerStatPill("\(vm.summary.atRisk + vm.summary.critical)", "At risk")
-                    }
-                }
+            Button { showSignOut = true } label: {
+                Image(systemName: "person.fill")
+                    .foregroundStyle(.white)
+                    .padding(10)
+                    .background(.white.opacity(0.15))
+                    .clipShape(Circle())
             }
         }
         .padding(.horizontal, 20)
         .padding(.top, 8)
         .padding(.bottom, 24)
         .background(Theme.headerGradient)
-    }
-
-    private func headerStatPill(_ value: String, _ label: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(value).font(.headline).foregroundStyle(.white)
-            Text(label).font(.caption2).foregroundStyle(.white.opacity(0.75))
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.vertical, 10)
-        .padding(.horizontal, 12)
-        .background(.white.opacity(0.14))
-        .clipShape(RoundedRectangle(cornerRadius: Theme.cornerSmall, style: .continuous))
     }
 
     // MARK: Featured event hero card

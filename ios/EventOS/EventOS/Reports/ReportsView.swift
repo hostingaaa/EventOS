@@ -25,6 +25,7 @@ struct ReportsView: View {
     private var content: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
+                portfolioCompletionCard
                 yearPicker
                 kpiRow
                 trendChart
@@ -35,6 +36,32 @@ struct ReportsView: View {
             }
             .padding(16)
         }
+    }
+
+    private var portfolioCompletionCard: some View {
+        let s = vm.portfolioSummary
+        return VStack(alignment: .leading, spacing: 14) {
+            SectionHeaderRow(icon: "chart.pie.fill", title: "Portfolio completion", trailing: "\(s.total) active")
+            Text("\(s.avgCompletion)%").font(.system(size: 40, weight: .bold)).foregroundStyle(Theme.textPrimary)
+            HStack(spacing: 10) {
+                portfolioStatPill("\(s.onTrack)", "On track")
+                portfolioStatPill("\(s.attention)", "Attention")
+                portfolioStatPill("\(s.atRisk + s.critical)", "At risk")
+            }
+        }
+        .cardStyle()
+    }
+
+    private func portfolioStatPill(_ value: String, _ label: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(value).font(.headline).foregroundStyle(Theme.textPrimary)
+            Text(label).font(.caption2).foregroundStyle(Theme.textSecondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 10)
+        .padding(.horizontal, 12)
+        .background(Theme.cardAlt)
+        .clipShape(RoundedRectangle(cornerRadius: Theme.cornerSmall, style: .continuous))
     }
 
     private var yearPicker: some View {

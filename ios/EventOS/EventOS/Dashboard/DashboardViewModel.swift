@@ -185,17 +185,4 @@ final class DashboardViewModel: ObservableObject {
         let active = events.filter { !isCompleted($0) }.filter(matchesFilter)
         return active.filter { $0.rowId != featuredEvent?.rowId }.prefix(4).map { $0 }
     }
-
-    var summary: (total: Int, avgCompletion: Int, onTrack: Int, attention: Int, atRisk: Int, critical: Int) {
-        let healths = events.filter { !isCompleted($0) }.compactMap { healthByCode[$0.code] }
-        guard !healths.isEmpty else { return (0, 0, 0, 0, 0, 0) }
-        let avg = Int(healths.map(\.completion).reduce(0, +) / healths.count)
-        return (
-            healths.count, avg,
-            healths.filter { $0.tier == "on-track" }.count,
-            healths.filter { $0.tier == "attention" }.count,
-            healths.filter { $0.tier == "at-risk" }.count,
-            healths.filter { $0.tier == "critical" }.count
-        )
-    }
 }

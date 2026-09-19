@@ -32,12 +32,14 @@ enum ReportSortColumn: String, CaseIterable, Identifiable {
 }
 
 private let monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+private let reportsCompletedThresholdDays = 15
 
 @MainActor
 final class ReportsViewModel: ObservableObject {
     @Published var events: [Event] = []
     @Published var costItems: [CostItem] = []
     @Published var orgMembers: [OrgMember] = []
+    @Published var healthByCode: [String: EventHealth] = [:]
     @Published var loading = true
     @Published var error: String?
     @Published var selectedYear: Int = Calendar.current.component(.year, from: Date())
@@ -55,10 +57,32 @@ final class ReportsViewModel: ObservableObject {
             events = eventsRes.events
             costItems = costItemsRes
             orgMembers = membersRes
+            healthByCode = await EventOSService.fetchDashboardHealth(events: eventsRes.events)
         } catch {
             self.error = error.localizedDescription
         }
         loading = false
+    }
+
+    /// Mirrors DashboardViewModel's own completed-event cutoff, since this portfolio metric
+    /// is about currently active events regardless of the Reports page's selected year.
+    private func isActiveEvent(_ event: Event) -> Bool {
+        guard let end = parseFlexibleDate(event.endDate) else { return true }
+        let days = Calendar.current.dateComponents([.day], from: end, to: Date()).day ?? 0
+        return days <= reportsCompletedThresholdDays
+    }
+
+    var portfolioSummary: (total: Int, avgCompletion: Int, onTrack: Int, attention: Int, atRisk: Int, critical: Int) {
+        let healths = events.filter(isActiveEvent).compactMap { healthByCode[$0.code] }
+        guard !healths.isEmpty else { return (0, 0, 0, 0, 0, 0) }
+        let avg = Int(healths.map(\.completion).reduce(0, +) / healths.count)
+        return (
+            healths.count, avg,
+            healths.filter { $0.tier == "on-track" }.count,
+            healths.filter { $0.tier == "attention" }.count,
+            healths.filter { $0.tier == "at-risk" }.count,
+            healths.filter { $0.tier == "critical" }.count
+        )
     }
 
     var years: [Int] {
