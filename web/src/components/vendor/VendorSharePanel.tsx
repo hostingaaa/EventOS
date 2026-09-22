@@ -34,6 +34,8 @@ export function VendorSharePanel({ eventCode, eventRowId, actorEmail, tasks }: P
   const [links, setLinks] = useState<VendorLink[]>([]);
   const [loading, setLoading] = useState(false);
   const [draft, setDraft] = useState<NewLinkDraft | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -102,12 +104,20 @@ export function VendorSharePanel({ eventCode, eventRowId, actorEmail, tasks }: P
 
   async function handleCreateDraft() {
     if (!draft) return;
-    await createLink({
-      vendorCategory: draft.vendorCategory || undefined,
-      vendorName: draft.vendorName || undefined,
-      permission: draft.permission,
-    });
-    setDraft(null);
+    setCreating(true);
+    setCreateError(null);
+    try {
+      await createLink({
+        vendorCategory: draft.vendorCategory || undefined,
+        vendorName: draft.vendorName || undefined,
+        permission: draft.permission,
+      });
+      setDraft(null);
+    } catch (e) {
+      setCreateError(e instanceof Error ? e.message : 'Failed to create vendor link. Please try again.');
+    } finally {
+      setCreating(false);
+    }
   }
 
   const hasFullEventLink = links.some((l) => !l.vendorCategory);
@@ -139,7 +149,7 @@ export function VendorSharePanel({ eventCode, eventRowId, actorEmail, tasks }: P
           <button
             type="button"
             className="vendor-share__add primary"
-            onClick={() => setDraft({ ...emptyDraft })}
+            onClick={() => { setDraft({ ...emptyDraft }); setCreateError(null); }}
             disabled={loading}
           >
             + Add vendor link
@@ -252,12 +262,13 @@ export function VendorSharePanel({ eventCode, eventRowId, actorEmail, tasks }: P
                 </option>
               </select>
             </label>
+            {createError && <p className="vendor-share__editor-error">⚠ {createError}</p>}
             <footer>
-              <button type="button" className="btn-secondary" onClick={() => setDraft(null)}>
+              <button type="button" className="btn-secondary" onClick={() => setDraft(null)} disabled={creating}>
                 Cancel
               </button>
-              <button type="button" className="btn-primary" onClick={handleCreateDraft}>
-                Create link
+              <button type="button" className="btn-primary" onClick={handleCreateDraft} disabled={creating}>
+                {creating ? 'Creating…' : 'Create link'}
               </button>
             </footer>
           </div>

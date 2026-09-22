@@ -215,6 +215,12 @@
   font-size: 0.72rem;
 }
 
+.vendor-share__editor-error {
+  color: #b45309;
+  font-size: 0.82rem;
+  margin: 0.5rem 0 0;
+}
+
 .vendor-share__editor footer {
   display: flex;
   justify-content: flex-end;
