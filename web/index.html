@@ -12,7 +12,10 @@
     <link rel="apple-touch-icon" href="%BASE_URL%apple-touch-icon.png" />
     <title>EventOS</title>
     <script>
-      // Restore path redirected through 404.html (GitHub Pages SPA trick)
+      // Restore path redirected through 404.html (GitHub Pages SPA trick).
+      // `path` here is already the full original path from the domain root
+      // (e.g. "EventOS/vendor/<token>") — 404.html encoded it that way — so
+      // it must NOT be prefixed with the base path again, or routes 404.
       (function () {
         var p = window.location.search.match(/[?&]p=([^&]*)/);
         if (p) {
@@ -22,7 +25,7 @@
           path = path.replace(/&q=.*/, '');
           window.history.replaceState(
             null, null,
-            window.location.pathname.split('/').slice(0, 2).join('/') + '/' + path + search + window.location.hash
+            '/' + path + search + window.location.hash
           );
         }
       })();

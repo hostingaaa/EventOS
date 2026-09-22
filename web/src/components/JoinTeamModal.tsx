@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { apiAuthCheckEmail, useMockData } from '../api/client';
 import {
@@ -15,6 +16,7 @@ type Step = 'email' | 'password' | 'not_found' | 'register';
 
 export function JoinTeamModal() {
   const { user, setUser, isReady } = useUser();
+  const location = useLocation();
 
   const [step, setStep]         = useState<Step>('email');
   const [email, setEmail]       = useState('');
@@ -35,6 +37,10 @@ export function JoinTeamModal() {
     if (step === 'password') passwordRef.current?.focus();
     if (step === 'register') nameRef.current?.focus();
   }, [step]);
+
+  // The vendor portal is a public, token-only page — vendors never have (or
+  // need) an EventOS account, so this sign-in gate must never cover it.
+  if (location.pathname.startsWith('/vendor/')) return null;
 
   if (!isReady || user) return null;
 
