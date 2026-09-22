@@ -288,10 +288,10 @@ enum DesignPDFBuilder {
             line(ctx, from: CGPoint(x: sx - sigW / 2, y: sigBaseY), to: CGPoint(x: sx + sigW / 2, y: sigBaseY), color: signatureColor, width: mm(0.3))
             var nameBottom = sigBaseY
             if !signer.name.isEmpty {
-                drawCentered(signer.name, in: CGRect(x: sx - mm(40), y: sigBaseY + mm(2), width: mm(80), height: mm(6)), font: .boldSystemFont(ofSize: 9), color: UIColor(red: 25/255, green: 25/255, blue: 35/255, alpha: 1))
+                drawCentered(signer.name, in: CGRect(x: sx - mm(40), y: sigBaseY + mm(5), width: mm(80), height: mm(6)), font: .boldSystemFont(ofSize: 9), color: UIColor(red: 25/255, green: 25/255, blue: 35/255, alpha: 1))
                 nameBottom += mm(5)
             }
-            drawCentered(signer.title, in: CGRect(x: sx - mm(40), y: nameBottom + mm(2), width: mm(80), height: mm(6)), font: .systemFont(ofSize: 8), color: UIColor(red: 85/255, green: 85/255, blue: 95/255, alpha: 1))
+            drawCentered(signer.title, in: CGRect(x: sx - mm(40), y: nameBottom + mm(5), width: mm(80), height: mm(6)), font: .systemFont(ofSize: 8), color: UIColor(red: 85/255, green: 85/255, blue: 95/255, alpha: 1))
         }
 
         drawCentered(eventLine(setup), in: CGRect(x: mm(15), y: ph - mm(20), width: pw - mm(30), height: mm(8)), font: .boldSystemFont(ofSize: 9), color: .white)
