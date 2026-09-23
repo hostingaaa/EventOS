@@ -5,7 +5,7 @@ import { useUser } from '../context/UserContext';
 import type { Event, EventHealth } from '../types';
 import { NewProjectModal } from '../components/NewProjectModal';
 import { getEventDateRange, parseIsoDate, todayAtNoon } from '../utils/calendarDates';
-import { getArchivedCodes, isEventAwarded, isEventCompleted } from '../utils/eventLifecycle';
+import { isEventAwarded, isEventCompleted } from '../utils/eventLifecycle';
 import './DashboardPage.css';
 
 type Filter = 'all' | 'attention' | 'behind' | 'missing-sow' | 'missing-venue';
@@ -375,10 +375,6 @@ export function DashboardPage() {
   const [healthByCode, setHealthByCode] = useState<Record<string, EventHealth>>({});
   const [completedOpen, setCompletedOpen] = useState(false);
 
-  // Archiving/deleting an event is now done from the event's own workspace
-  // page (admin-only there) — the dashboard just reflects archived state.
-  const [archivedCodes] = useState<Set<string>>(getArchivedCodes);
-
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -408,10 +404,10 @@ export function DashboardPage() {
     const completed: Event[] = [];
     const list = Array.isArray(events) ? events : [];
     for (const ev of list) {
-      (isEventCompleted(ev, archivedCodes) ? completed : active).push(ev);
+      (isEventCompleted(ev) ? completed : active).push(ev);
     }
     return { activeEvents: active, completedEvents: completed };
-  }, [events, archivedCodes]);
+  }, [events]);
 
   // Distinct owners among active events, for the "All owners" filter
   const owners = useMemo(() => {

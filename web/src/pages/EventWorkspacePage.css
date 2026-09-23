@@ -125,6 +125,20 @@
   white-space: nowrap;
 }
 
+.workspace__completed-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #475569;
+  color: #fff;
+  white-space: nowrap;
+}
+
 .workspace__header-sub {
   margin: 6px 0 0;
   color: var(--eo-muted);
@@ -136,7 +150,7 @@
 .workspace__drive-link,
 .workspace__add-tasks,
 .workspace__awarded-btn,
-.workspace__archive-btn,
+.workspace__completed-btn,
 .workspace__delete-btn {
   display: inline-flex;
   align-items: center;
@@ -152,7 +166,7 @@
 }
 
 .workspace__drive-link:hover,
-.workspace__archive-btn:hover,
+.workspace__completed-btn:hover:not(:disabled),
 .workspace__awarded-btn:hover:not(:disabled),
 .workspace__delete-btn:hover:not(:disabled) {
   box-shadow: var(--eo-shadow-md);
@@ -188,9 +202,19 @@
   cursor: not-allowed;
 }
 
-.workspace__archive-btn {
+.workspace__completed-btn {
   background: var(--eo-surface);
-  color: var(--eo-accent);
+  color: var(--eo-muted);
+}
+
+.workspace__completed-btn--on {
+  background: #475569;
+  color: #fff;
+}
+
+.workspace__completed-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .workspace__delete-btn {

@@ -1,51 +1,26 @@
-/** Shared "archived" state + completion check for events — used by both the
- * dashboard (to split active/completed) and the event workspace (to expose
- * the archive/restore action for admins). Archiving is a client-only concept
- * (no backend field), stored under this one localStorage key. */
+/** Shared lifecycle checks for events — used by both the dashboard (to split
+ * active/completed) and the event workspace (to expose the Awarded/Completed
+ * admin actions). */
 import type { Event } from '../types';
 import { parseIsoDate, todayAtNoon } from './calendarDates';
 
-const STORAGE_KEY = 'archived_events';
-
 /** Days past endDate after which an event is treated as completed even if
- * never explicitly archived. */
+ * never explicitly marked complete. */
 export const COMPLETED_THRESHOLD_DAYS = 15;
 
-export function getArchivedCodes(): Set<string> {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? new Set(JSON.parse(raw) as string[]) : new Set();
-  } catch {
-    return new Set();
-  }
+/** Real, admin-set backend field — "Yes" once awarded. */
+export function isEventAwarded(ev: Event): boolean {
+  return (ev.awarded ?? '').trim().toLowerCase() === 'yes';
 }
 
-function saveArchivedCodes(codes: Set<string>): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify([...codes]));
+/** Real, admin-set backend field — "Yes" once explicitly marked complete. */
+export function isEventManuallyCompleted(ev: Event): boolean {
+  return (ev.completed ?? '').trim().toLowerCase() === 'yes';
 }
 
-export function archiveEvent(code: string): Set<string> {
-  const next = new Set(getArchivedCodes());
-  next.add(code);
-  saveArchivedCodes(next);
-  return next;
-}
-
-export function unarchiveEvent(code: string): Set<string> {
-  const next = new Set(getArchivedCodes());
-  next.delete(code);
-  saveArchivedCodes(next);
-  return next;
-}
-
-export function isEventCompleted(ev: Event, archivedCodes: Set<string>): boolean {
-  if (archivedCodes.has(ev.code)) return true;
+export function isEventCompleted(ev: Event): boolean {
+  if (isEventManuallyCompleted(ev)) return true;
   const end = parseIsoDate(ev.endDate);
   if (!end) return false;
   return Math.floor((todayAtNoon().getTime() - end.getTime()) / 86_400_000) > COMPLETED_THRESHOLD_DAYS;
-}
-
-/** Real, admin-set backend field (unlike archiving) — "Yes" once awarded. */
-export function isEventAwarded(ev: Event): boolean {
-  return (ev.awarded ?? '').trim().toLowerCase() === 'yes';
 }

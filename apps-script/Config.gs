@@ -76,6 +76,7 @@ var CONFIG = {
     DRIVE_FOLDER_URL: 'Drive Folder URL',
     AWARDED: 'Awarded',
     REVENUE: 'Revenue',
+    COMPLETED: 'Completed',
     SERVICE_REPORT_DRIVE_URL: 'Service Report Drive URL',
     SERVICE_REPORT_DRIVE_FILE_ID: 'Service Report Drive File Id',
     SERVICE_REPORT_SAVED_AT: 'Service Report Saved At',

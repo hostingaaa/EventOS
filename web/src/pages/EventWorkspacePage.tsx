@@ -12,7 +12,7 @@ import { ApplyTemplatesModal } from '../components/templates/ApplyTemplatesModal
 import { VendorSharePanel } from '../components/vendor/VendorSharePanel';
 import { FinancialsPanel } from '../components/FinancialsPanel';
 import { formatEventHeaderDates } from '../utils/calendarDates';
-import { archiveEvent, getArchivedCodes, isEventAwarded, isEventCompleted, unarchiveEvent } from '../utils/eventLifecycle';
+import { isEventAwarded, isEventManuallyCompleted } from '../utils/eventLifecycle';
 import './EventWorkspacePage.css';
 
 type Tab = 'tasks' | 'overview' | 'financials' | 'activity';
@@ -33,9 +33,9 @@ export function EventWorkspacePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showApplyModal, setShowApplyModal] = useState(false);
-  const [archivedCodes, setArchivedCodes] = useState<Set<string>>(getArchivedCodes);
   const [deleting, setDeleting] = useState(false);
   const [savingAwarded, setSavingAwarded] = useState(false);
+  const [savingCompleted, setSavingCompleted] = useState(false);
   const { user, isAdmin, can } = useUser();
 
   const load = useCallback(async () => {
@@ -127,12 +127,8 @@ export function EventWorkspacePage() {
   const eventComments = comments.filter((c) => !c.taskId);
   const taskCategories = Array.from(new Set(tasks.map((t) => t.category).filter(Boolean)));
   const canDelete = can('events.delete');
-  const completed = isEventCompleted(event, archivedCodes);
+  const manuallyCompleted = isEventManuallyCompleted(event);
   const awarded = isEventAwarded(event);
-
-  function handleArchiveToggle() {
-    setArchivedCodes(completed ? unarchiveEvent(event.code) : archiveEvent(event.code));
-  }
 
   async function handleAwardedToggle() {
     if (!user?.email) return;
@@ -144,6 +140,19 @@ export function EventWorkspacePage() {
       alert(e instanceof Error ? e.message : 'Failed to update Awarded status');
     } finally {
       setSavingAwarded(false);
+    }
+  }
+
+  async function handleCompletedToggle() {
+    if (!user?.email) return;
+    setSavingCompleted(true);
+    try {
+      const updated = await updateEvent(event.rowId, event.code, { completed: manuallyCompleted ? '' : 'Yes' }, user.email);
+      handleEventUpdated(updated);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Failed to update Completed status');
+    } finally {
+      setSavingCompleted(false);
     }
   }
 
@@ -160,7 +169,6 @@ export function EventWorkspacePage() {
     setDeleting(true);
     try {
       await deleteEvent(event.rowId, event.code, user.email);
-      unarchiveEvent(event.code);
       navigate('/');
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Failed to delete event');
@@ -194,6 +202,7 @@ export function EventWorkspacePage() {
           <h1 className="workspace__title">
             <span>{event.code}</span>
             {awarded && <span className="workspace__awarded-badge">Awarded</span>}
+            {manuallyCompleted && <span className="workspace__completed-badge">Completed</span>}
             <span className="workspace__title-sep">—</span>
             <span>{event.location}</span>
           </h1>
@@ -209,6 +218,17 @@ export function EventWorkspacePage() {
               title={awarded ? 'Remove Awarded status' : 'Mark as Awarded'}
             >
               {savingAwarded ? 'Saving…' : awarded ? '✓ Awarded' : '☆ Mark as Awarded'}
+            </button>
+          )}
+          {isAdmin && (
+            <button
+              type="button"
+              className={`workspace__completed-btn${manuallyCompleted ? ' workspace__completed-btn--on' : ''}`}
+              onClick={handleCompletedToggle}
+              disabled={savingCompleted}
+              title={manuallyCompleted ? 'Remove Completed status' : 'Mark as Completed'}
+            >
+              {savingCompleted ? 'Saving…' : manuallyCompleted ? '✓ Completed' : '○ Mark as Completed'}
             </button>
           )}
           {event.driveFolderUrl && (
@@ -244,16 +264,6 @@ export function EventWorkspacePage() {
           {user && (
             <button type="button" className="workspace__add-tasks" onClick={() => setShowApplyModal(true)}>
               + Add from templates
-            </button>
-          )}
-          {isAdmin && (
-            <button
-              type="button"
-              className="workspace__archive-btn"
-              onClick={handleArchiveToggle}
-              title={completed ? 'Restore to active' : 'Archive event'}
-            >
-              {completed ? '↩ Restore to active' : '⊙ Archive event'}
             </button>
           )}
           {canDelete && (

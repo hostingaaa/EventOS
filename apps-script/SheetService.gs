@@ -105,6 +105,7 @@ function getEventsSheet_() {
       CONFIG.COLS.DRIVE_FOLDER_URL,
       CONFIG.COLS.AWARDED,
       CONFIG.COLS.REVENUE,
+      CONFIG.COLS.COMPLETED,
     ];
     sheet.appendRow(headers);
     sheet.setFrozenRows(1);
@@ -207,6 +208,7 @@ function rowToEvent_(row, rowNum, map) {
     driveFolderUrl: cell(CONFIG.COLS.DRIVE_FOLDER_URL),
     awarded: cell(CONFIG.COLS.AWARDED),
     revenue: cell(CONFIG.COLS.REVENUE),
+    completed: cell(CONFIG.COLS.COMPLETED),
     serviceReportDriveUrl: cell(CONFIG.COLS.SERVICE_REPORT_DRIVE_URL),
     serviceReportDriveFileId: cell(CONFIG.COLS.SERVICE_REPORT_DRIVE_FILE_ID),
     serviceReportSavedAt: cell(CONFIG.COLS.SERVICE_REPORT_SAVED_AT),
@@ -298,6 +300,7 @@ function updateEventFields_(rowNumber, updates) {
     driveFolderUrl: CONFIG.COLS.DRIVE_FOLDER_URL,
     awarded: CONFIG.COLS.AWARDED,
     revenue: CONFIG.COLS.REVENUE,
+    completed: CONFIG.COLS.COMPLETED,
     serviceReportDriveUrl: CONFIG.COLS.SERVICE_REPORT_DRIVE_URL,
     serviceReportDriveFileId: CONFIG.COLS.SERVICE_REPORT_DRIVE_FILE_ID,
     serviceReportSavedAt: CONFIG.COLS.SERVICE_REPORT_SAVED_AT,
