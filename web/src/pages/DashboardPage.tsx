@@ -5,7 +5,7 @@ import { useUser } from '../context/UserContext';
 import type { Event, EventHealth } from '../types';
 import { NewProjectModal } from '../components/NewProjectModal';
 import { getEventDateRange, parseIsoDate, todayAtNoon } from '../utils/calendarDates';
-import { getEventStatus, isEventActive } from '../utils/eventLifecycle';
+import { getEventStatus, isEventActive, isEventSetAside } from '../utils/eventLifecycle';
 import './DashboardPage.css';
 
 type Filter = 'all' | 'attention' | 'behind' | 'missing-sow' | 'missing-venue';
@@ -377,6 +377,7 @@ export function DashboardPage() {
   const [showNewProject, setShowNewProject] = useState(false);
   const [healthByCode, setHealthByCode] = useState<Record<string, EventHealth>>({});
   const [completedOpen, setCompletedOpen] = useState(false);
+  const [setAsideOpen, setSetAsideOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -401,16 +402,20 @@ export function DashboardPage() {
     setSortKey(key);
   }
 
-  // Split events into active / inactive (Proposed & Awarded are active;
-  // Completed, Postponed, Cancelled, Archived are all "inactive" together)
-  const { activeEvents, completedEvents } = useMemo(() => {
+  // Split events three ways: active (Proposed/Awarded), completed (status
+  // === 'Completed' only), and set-aside (Postponed/Cancelled/Archived —
+  // kept separate from Completed, shown in their own collapsible section).
+  const { activeEvents, completedEvents, setAsideEvents } = useMemo(() => {
     const active: Event[] = [];
     const completed: Event[] = [];
+    const setAside: Event[] = [];
     const list = Array.isArray(events) ? events : [];
     for (const ev of list) {
-      (isEventActive(ev) ? active : completed).push(ev);
+      if (isEventActive(ev)) active.push(ev);
+      else if (isEventSetAside(ev)) setAside.push(ev);
+      else completed.push(ev);
     }
-    return { activeEvents: active, completedEvents: completed };
+    return { activeEvents: active, completedEvents: completed, setAsideEvents: setAside };
   }, [events]);
 
   // Distinct owners among active events, for the "All owners" filter
@@ -456,6 +461,7 @@ export function DashboardPage() {
     [filteredActive, sortKey, sortDir],
   );
   const completedGroups = useMemo(() => groupByMonth(completedEvents, 'desc'), [completedEvents]);
+  const setAsideGroups = useMemo(() => groupByMonth(setAsideEvents, 'desc'), [setAsideEvents]);
 
   const sortArrow = (key: SortKey) => (sortKey === key ? (sortDir === 1 ? ' ↑' : ' ↓') : '');
 
@@ -615,6 +621,37 @@ export function DashboardPage() {
           {completedOpen && (
             <div className="dashboard__completed-body">
               {completedGroups.map(({ month, events: monthEvents }) => (
+                <MonthSection
+                  key={month}
+                  month={month}
+                  events={monthEvents}
+                  healthByCode={healthByCode}
+                  isCompleted
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Postponed/Cancelled/Archived — kept separate from Completed */}
+      {setAsideGroups.length > 0 && (
+        <div className="dashboard__completed">
+          <button
+            type="button"
+            className="dashboard__completed-toggle"
+            onClick={() => setSetAsideOpen((o) => !o)}
+            aria-expanded={setAsideOpen}
+          >
+            <span className={`dc-chevron${setAsideOpen ? ' dc-chevron--open' : ''}`} aria-hidden="true">›</span>
+            Cancelled/Postponed/Archived
+            <span className="dc-count">{setAsideEvents.length}</span>
+            <span className="dc-hint">{setAsideOpen ? 'Collapse' : 'Expand'}</span>
+          </button>
+
+          {setAsideOpen && (
+            <div className="dashboard__completed-body">
+              {setAsideGroups.map(({ month, events: monthEvents }) => (
                 <MonthSection
                   key={month}
                   month={month}

@@ -25,3 +25,9 @@ export function isEventActive(ev: Event): boolean {
   const s = getEventStatus(ev);
   return s === 'Proposed' || s === 'Awarded';
 }
+
+/** Postponed, Cancelled, or Archived — set aside from a real Completed status. */
+export function isEventSetAside(ev: Event): boolean {
+  const s = getEventStatus(ev);
+  return s === 'Postponed' || s === 'Cancelled' || s === 'Archived';
+}
