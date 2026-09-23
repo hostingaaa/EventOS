@@ -571,8 +571,13 @@ export async function applyTemplates(
 // ——— Vendor ———
 
 export function vendorPortalUrl(token: string): string {
+  // BASE_URL is '/EventOS/' on GitHub Pages, '/' for a custom domain or
+  // local dev — both already end in '/', so this never double- or
+  // zero-slashes the join. Omitting it 404s on GH Pages, since the app
+  // (and this route) only ever exists under /EventOS/, not the bare origin.
   const base = window.location.origin;
-  return `${base}/vendor/${encodeURIComponent(token)}`;
+  const basePath = import.meta.env.BASE_URL ?? '/';
+  return `${base}${basePath}vendor/${encodeURIComponent(token)}`;
 }
 
 export interface VendorLinkOptions {
