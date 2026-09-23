@@ -232,11 +232,15 @@ function getVendorWorkspace_(token) {
       };
     });
 
-  // Cost items scoped the same way tasks are — by vendor category, when set.
+  // Cost items scoped by vendor category, when set — but unlike tasks (whose
+  // category is the exact free-text label the vendor link was scoped from),
+  // a generator (e.g. AV Equipment) tags its synced cost items with its own
+  // fixed category strings ("AV Equipment", "AV Supplies"), not whatever the
+  // team happens to call the matching task category ("AV"). Match by prefix
+  // so a link scoped to "AV" still sees/quotes those lines.
   var allCostItems = listCostItems_(event.code, event.rowId);
   var costItems = allCostItems.filter(function (c) {
-    if (category && String(c.category || '').toLowerCase() !== category) return false;
-    return true;
+    return costItemCategoryInVendorScope_(c.category, link.vendorCategory);
   });
 
   return {
@@ -255,6 +259,18 @@ function getVendorWorkspace_(token) {
     vendorName: link.vendorName || '',
     permission: link.permission || 'view',
   };
+}
+
+/** True when a cost item's category is in scope for a vendor link's category.
+ * Prefix match (either way, case-insensitive) rather than exact — see the
+ * comment in getVendorWorkspace_ for why cost item categories don't always
+ * equal the vendor link's category string verbatim. An empty link category
+ * (full-event link) is unrestricted, matching every other scope check here. */
+function costItemCategoryInVendorScope_(itemCategory, linkCategory) {
+  var link = String(linkCategory || '').trim().toLowerCase();
+  if (!link) return true;
+  var item = String(itemCategory || '').trim().toLowerCase();
+  return item === link || item.indexOf(link) === 0 || link.indexOf(item) === 0;
 }
 
 /** True for a task in this vendor link's visible-task set (same rule getVendorWorkspace_ uses). */
