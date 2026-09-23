@@ -41,7 +41,7 @@ function markRowIdDeleted(rowId: string): void {
 
 const seedEvents: Event[] = [
   {
-    // Ended 22 days ago → moves to Completed section
+    // Marked Completed → shows in the Inactive events section
     rowNumber: 2,
     rowId: 'mock-1',
     code: 'J182-4',
@@ -59,6 +59,7 @@ const seedEvents: Event[] = [
     endDate: '2026-04-30',
     ownerEmail: 'sara@team.org',
     lastReminder: '',
+    status: 'Completed',
   },
   {
     // Ended 7 days ago → still active (within 15-day window), show as recently concluded

@@ -111,7 +111,7 @@
   font-weight: 400;
 }
 
-.workspace__awarded-badge {
+.workspace__status-badge {
   display: inline-flex;
   align-items: center;
   font-size: 11px;
@@ -120,24 +120,16 @@
   letter-spacing: 0.06em;
   padding: 3px 10px;
   border-radius: 999px;
-  background: var(--eo-award);
   color: #fff;
   white-space: nowrap;
 }
 
-.workspace__completed-badge {
-  display: inline-flex;
-  align-items: center;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: #475569;
-  color: #fff;
-  white-space: nowrap;
-}
+.workspace__status-badge--proposed  { background: #64748b; }
+.workspace__status-badge--awarded   { background: var(--eo-award); }
+.workspace__status-badge--completed { background: #475569; }
+.workspace__status-badge--postponed { background: #d97706; }
+.workspace__status-badge--cancelled { background: #b91c1c; }
+.workspace__status-badge--archived  { background: #1e293b; }
 
 .workspace__header-sub {
   margin: 6px 0 0;
@@ -149,8 +141,7 @@
 
 .workspace__drive-link,
 .workspace__add-tasks,
-.workspace__awarded-btn,
-.workspace__completed-btn,
+.workspace__status-select,
 .workspace__delete-btn {
   display: inline-flex;
   align-items: center;
@@ -166,8 +157,7 @@
 }
 
 .workspace__drive-link:hover,
-.workspace__completed-btn:hover:not(:disabled),
-.workspace__awarded-btn:hover:not(:disabled),
+.workspace__status-select:hover:not(:disabled),
 .workspace__delete-btn:hover:not(:disabled) {
   box-shadow: var(--eo-shadow-md);
 }
@@ -187,34 +177,37 @@
   background: var(--eo-accent-700);
 }
 
-.workspace__awarded-btn {
-  background: var(--eo-surface);
-  color: var(--eo-award);
+.workspace__status-select-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.workspace__awarded-btn--on {
-  background: var(--eo-award);
+.workspace__status-select {
+  appearance: none;
+  padding: 10px 30px 10px 18px;
   color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='white'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z' clip-rule='evenodd'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
 }
 
-.workspace__awarded-btn:disabled {
+.workspace__status-select:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-.workspace__completed-btn {
-  background: var(--eo-surface);
+.workspace__status-select--proposed  { background-color: #64748b; }
+.workspace__status-select--awarded   { background-color: var(--eo-award); }
+.workspace__status-select--completed { background-color: #475569; }
+.workspace__status-select--postponed { background-color: #d97706; }
+.workspace__status-select--cancelled { background-color: #b91c1c; }
+.workspace__status-select--archived  { background-color: #1e293b; }
+
+.workspace__status-saving {
+  font-size: 12px;
   color: var(--eo-muted);
-}
-
-.workspace__completed-btn--on {
-  background: #475569;
-  color: #fff;
-}
-
-.workspace__completed-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .workspace__delete-btn {

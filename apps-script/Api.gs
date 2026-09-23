@@ -103,9 +103,9 @@ function handleRequest_(e, method) {
           403,
         );
       }
-      if (updates.completed !== undefined && !isAdmin_(actorEmail)) {
+      if (updates.status !== undefined && !isAdmin_(actorEmail)) {
         return jsonResponse_(
-          { error: 'Permission denied: only admins can change Completed status' },
+          { error: 'Permission denied: only admins can change event Status' },
           403,
         );
       }

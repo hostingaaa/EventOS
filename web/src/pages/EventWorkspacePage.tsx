@@ -12,7 +12,7 @@ import { ApplyTemplatesModal } from '../components/templates/ApplyTemplatesModal
 import { VendorSharePanel } from '../components/vendor/VendorSharePanel';
 import { FinancialsPanel } from '../components/FinancialsPanel';
 import { formatEventHeaderDates } from '../utils/calendarDates';
-import { isEventAwarded, isEventManuallyCompleted } from '../utils/eventLifecycle';
+import { EVENT_STATUSES, getEventStatus, type EventStatus } from '../utils/eventLifecycle';
 import './EventWorkspacePage.css';
 
 type Tab = 'tasks' | 'overview' | 'financials' | 'activity';
@@ -34,8 +34,7 @@ export function EventWorkspacePage() {
   const [error, setError] = useState<string | null>(null);
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [savingAwarded, setSavingAwarded] = useState(false);
-  const [savingCompleted, setSavingCompleted] = useState(false);
+  const [savingStatus, setSavingStatus] = useState(false);
   const { user, isAdmin, can } = useUser();
 
   const load = useCallback(async () => {
@@ -127,32 +126,18 @@ export function EventWorkspacePage() {
   const eventComments = comments.filter((c) => !c.taskId);
   const taskCategories = Array.from(new Set(tasks.map((t) => t.category).filter(Boolean)));
   const canDelete = can('events.delete');
-  const manuallyCompleted = isEventManuallyCompleted(event);
-  const awarded = isEventAwarded(event);
+  const status = getEventStatus(event);
 
-  async function handleAwardedToggle() {
-    if (!user?.email) return;
-    setSavingAwarded(true);
+  async function handleStatusChange(next: EventStatus) {
+    if (!user?.email || next === status) return;
+    setSavingStatus(true);
     try {
-      const updated = await updateEvent(event.rowId, event.code, { awarded: awarded ? '' : 'Yes' }, user.email);
+      const updated = await updateEvent(event.rowId, event.code, { status: next }, user.email);
       handleEventUpdated(updated);
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Failed to update Awarded status');
+      alert(e instanceof Error ? e.message : 'Failed to update status');
     } finally {
-      setSavingAwarded(false);
-    }
-  }
-
-  async function handleCompletedToggle() {
-    if (!user?.email) return;
-    setSavingCompleted(true);
-    try {
-      const updated = await updateEvent(event.rowId, event.code, { completed: manuallyCompleted ? '' : 'Yes' }, user.email);
-      handleEventUpdated(updated);
-    } catch (e) {
-      alert(e instanceof Error ? e.message : 'Failed to update Completed status');
-    } finally {
-      setSavingCompleted(false);
+      setSavingStatus(false);
     }
   }
 
@@ -201,8 +186,7 @@ export function EventWorkspacePage() {
         <div>
           <h1 className="workspace__title">
             <span>{event.code}</span>
-            {awarded && <span className="workspace__awarded-badge">Awarded</span>}
-            {manuallyCompleted && <span className="workspace__completed-badge">Completed</span>}
+            <span className={`workspace__status-badge workspace__status-badge--${status.toLowerCase()}`}>{status}</span>
             <span className="workspace__title-sep">—</span>
             <span>{event.location}</span>
           </h1>
@@ -210,26 +194,20 @@ export function EventWorkspacePage() {
         </div>
         <div className="workspace__header-actions">
           {isAdmin && (
-            <button
-              type="button"
-              className={`workspace__awarded-btn${awarded ? ' workspace__awarded-btn--on' : ''}`}
-              onClick={handleAwardedToggle}
-              disabled={savingAwarded}
-              title={awarded ? 'Remove Awarded status' : 'Mark as Awarded'}
-            >
-              {savingAwarded ? 'Saving…' : awarded ? '✓ Awarded' : '☆ Mark as Awarded'}
-            </button>
-          )}
-          {isAdmin && (
-            <button
-              type="button"
-              className={`workspace__completed-btn${manuallyCompleted ? ' workspace__completed-btn--on' : ''}`}
-              onClick={handleCompletedToggle}
-              disabled={savingCompleted}
-              title={manuallyCompleted ? 'Remove Completed status' : 'Mark as Completed'}
-            >
-              {savingCompleted ? 'Saving…' : manuallyCompleted ? '✓ Completed' : '○ Mark as Completed'}
-            </button>
+            <span className="workspace__status-select-wrap">
+              <select
+                className={`workspace__status-select workspace__status-select--${status.toLowerCase()}`}
+                value={status}
+                onChange={(e) => handleStatusChange(e.target.value as EventStatus)}
+                disabled={savingStatus}
+                aria-label="Event status"
+              >
+                {EVENT_STATUSES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              {savingStatus && <span className="workspace__status-saving">Saving…</span>}
+            </span>
           )}
           {event.driveFolderUrl && (
             <a
