@@ -1,51 +1,27 @@
-/** Shared "archived" state + completion check for events — used by both the
- * dashboard (to split active/completed) and the event workspace (to expose
- * the archive/restore action for admins). Archiving is a client-only concept
- * (no backend field), stored under this one localStorage key. */
+/** Shared lifecycle status for events — used by both the dashboard (to split
+ * active/inactive) and the event workspace (to expose the Status dropdown). */
 import type { Event } from '../types';
-import { parseIsoDate, todayAtNoon } from './calendarDates';
 
-const STORAGE_KEY = 'archived_events';
+export const EVENT_STATUSES = ['Proposed', 'Awarded', 'Completed', 'Postponed', 'Cancelled', 'Archived'] as const;
+export type EventStatus = typeof EVENT_STATUSES[number];
 
-/** Days past endDate after which an event is treated as completed even if
- * never explicitly archived. */
-export const COMPLETED_THRESHOLD_DAYS = 15;
-
-export function getArchivedCodes(): Set<string> {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? new Set(JSON.parse(raw) as string[]) : new Set();
-  } catch {
-    return new Set();
-  }
-}
-
-function saveArchivedCodes(codes: Set<string>): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify([...codes]));
-}
-
-export function archiveEvent(code: string): Set<string> {
-  const next = new Set(getArchivedCodes());
-  next.add(code);
-  saveArchivedCodes(next);
-  return next;
-}
-
-export function unarchiveEvent(code: string): Set<string> {
-  const next = new Set(getArchivedCodes());
-  next.delete(code);
-  saveArchivedCodes(next);
-  return next;
-}
-
-export function isEventCompleted(ev: Event, archivedCodes: Set<string>): boolean {
-  if (archivedCodes.has(ev.code)) return true;
-  const end = parseIsoDate(ev.endDate);
-  if (!end) return false;
-  return Math.floor((todayAtNoon().getTime() - end.getTime()) / 86_400_000) > COMPLETED_THRESHOLD_DAYS;
-}
-
-/** Real, admin-set backend field (unlike archiving) — "Yes" once awarded. */
-export function isEventAwarded(ev: Event): boolean {
+function isLegacyAwarded(ev: Event): boolean {
   return (ev.awarded ?? '').trim().toLowerCase() === 'yes';
+}
+
+/** The event's lifecycle status. Defaults to 'Proposed' for events with no
+ * status set yet — except events already marked Awarded under the old
+ * boolean `awarded` field (before this dropdown existed), which keep
+ * showing as Awarded so nothing appears to silently revert on rollout. Once
+ * an admin explicitly picks anything via the new dropdown, the real
+ * `status` value takes over and this fallback is bypassed for good. */
+export function getEventStatus(ev: Event): EventStatus {
+  const raw = (ev.status ?? '').trim();
+  if ((EVENT_STATUSES as readonly string[]).includes(raw)) return raw as EventStatus;
+  return isLegacyAwarded(ev) ? 'Awarded' : 'Proposed';
+}
+
+export function isEventActive(ev: Event): boolean {
+  const s = getEventStatus(ev);
+  return s === 'Proposed' || s === 'Awarded';
 }

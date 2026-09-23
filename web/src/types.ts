@@ -26,6 +26,11 @@ export interface Event {
   awarded?: string;
   /** Total contract/quote value paid by the client. Admin-only to view or edit. */
   revenue?: string;
+  /** Lifecycle status: Proposed / Awarded / Completed / Postponed / Cancelled
+   * / Archived. Empty means Proposed (or, for events awarded before this
+   * field existed, falls back to the legacy `awarded` field — see
+   * eventLifecycle.ts). Admin-only to change. */
+  status?: string;
   /** Set when the Service Report generator saves a report for this event. */
   serviceReportDriveUrl?: string;
   serviceReportDriveFileId?: string;
@@ -58,7 +63,7 @@ export interface EventsResponse {
 }
 
 export type EventUpdates = Partial<
-  Pick<Event, 'lem' | 'av' | 'interpreters' | 'venue' | 'psaCldp' | 'sow' | 'notes' | 'ownerEmail' | 'perDiemRate' | 'maxVisaAllowance' | 'maxGroundTransport' | 'awarded' | 'revenue' | 'serviceReportDriveUrl' | 'serviceReportDriveFileId' | 'serviceReportSavedAt' | 'serviceReportSavedBy'>
+  Pick<Event, 'lem' | 'av' | 'interpreters' | 'venue' | 'psaCldp' | 'sow' | 'notes' | 'ownerEmail' | 'perDiemRate' | 'maxVisaAllowance' | 'maxGroundTransport' | 'awarded' | 'revenue' | 'status' | 'serviceReportDriveUrl' | 'serviceReportDriveFileId' | 'serviceReportSavedAt' | 'serviceReportSavedBy'>
 >;
 
 export type TaskStatus = 'todo' | 'in_progress' | 'blocked' | 'done';

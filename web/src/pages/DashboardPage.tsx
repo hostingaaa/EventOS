@@ -5,7 +5,7 @@ import { useUser } from '../context/UserContext';
 import type { Event, EventHealth } from '../types';
 import { NewProjectModal } from '../components/NewProjectModal';
 import { getEventDateRange, parseIsoDate, todayAtNoon } from '../utils/calendarDates';
-import { getArchivedCodes, isEventAwarded, isEventCompleted } from '../utils/eventLifecycle';
+import { getEventStatus, isEventActive } from '../utils/eventLifecycle';
 import './DashboardPage.css';
 
 type Filter = 'all' | 'attention' | 'behind' | 'missing-sow' | 'missing-venue';
@@ -253,7 +253,8 @@ function EventRow({ ev, health, isCompleted: done }: RowProps) {
   const happening = isHappening(ev);
   const showTag = !done && days !== null && days >= 0 && days <= IMMINENT_DAYS;
   const { city, country } = splitLocation(ev.location);
-  const awarded = isEventAwarded(ev);
+  const status = getEventStatus(ev);
+  const awarded = status === 'Awarded';
   const { label: statusLabel, tone } = statusInfo(ev, health, happening);
   const pct = pctOf(health);
   const filledDots = Math.min(5, Math.max(0, Math.round(pct / 20)));
@@ -272,7 +273,9 @@ function EventRow({ ev, health, isCompleted: done }: RowProps) {
             {ev.code}
             {!ev.venue && <span className="dl-flag" title="No venue confirmed">!</span>}
           </span>
-          {awarded && <span className="dl-awarded">Awarded</span>}
+          {status !== 'Proposed' && (
+            <span className={`dl-lifecycle dl-lifecycle--${status.toLowerCase()}`}>{status}</span>
+          )}
         </span>
 
         {/* Location */}
@@ -375,10 +378,6 @@ export function DashboardPage() {
   const [healthByCode, setHealthByCode] = useState<Record<string, EventHealth>>({});
   const [completedOpen, setCompletedOpen] = useState(false);
 
-  // Archiving/deleting an event is now done from the event's own workspace
-  // page (admin-only there) — the dashboard just reflects archived state.
-  const [archivedCodes] = useState<Set<string>>(getArchivedCodes);
-
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -402,16 +401,17 @@ export function DashboardPage() {
     setSortKey(key);
   }
 
-  // Split events into active / completed
+  // Split events into active / inactive (Proposed & Awarded are active;
+  // Completed, Postponed, Cancelled, Archived are all "inactive" together)
   const { activeEvents, completedEvents } = useMemo(() => {
     const active: Event[] = [];
     const completed: Event[] = [];
     const list = Array.isArray(events) ? events : [];
     for (const ev of list) {
-      (isEventCompleted(ev, archivedCodes) ? completed : active).push(ev);
+      (isEventActive(ev) ? active : completed).push(ev);
     }
     return { activeEvents: active, completedEvents: completed };
-  }, [events, archivedCodes]);
+  }, [events]);
 
   // Distinct owners among active events, for the "All owners" filter
   const owners = useMemo(() => {
@@ -424,7 +424,7 @@ export function DashboardPage() {
   }, [activeEvents]);
 
   const awardedCount = useMemo(
-    () => activeEvents.filter(isEventAwarded).length,
+    () => activeEvents.filter((ev) => getEventStatus(ev) === 'Awarded').length,
     [activeEvents],
   );
 
@@ -503,7 +503,7 @@ export function DashboardPage() {
         </div>
         <div className="dashboard__stat-card">
           <div className="dashboard__stat-figure">{completedEvents.length}</div>
-          <div className="dashboard__stat-label">Completed</div>
+          <div className="dashboard__stat-label">Inactive</div>
         </div>
       </div>
 
@@ -597,7 +597,7 @@ export function DashboardPage() {
         </div>
       )}
 
-      {/* Completed events — collapsible, grouped by month */}
+      {/* Inactive events (Completed/Postponed/Cancelled/Archived) — collapsible, grouped by month */}
       {completedGroups.length > 0 && (
         <div className="dashboard__completed">
           <button
@@ -607,7 +607,7 @@ export function DashboardPage() {
             aria-expanded={completedOpen}
           >
             <span className={`dc-chevron${completedOpen ? ' dc-chevron--open' : ''}`} aria-hidden="true">›</span>
-            Completed events
+            Inactive events
             <span className="dc-count">{completedEvents.length}</span>
             <span className="dc-hint">{completedOpen ? 'Collapse' : 'Expand'}</span>
           </button>
