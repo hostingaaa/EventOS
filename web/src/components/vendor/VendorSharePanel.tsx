@@ -37,6 +37,7 @@ export function VendorSharePanel({ eventCode, eventRowId, actorEmail, tasks }: P
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -70,6 +71,7 @@ export function VendorSharePanel({ eventCode, eventRowId, actorEmail, tasks }: P
 
   async function handleRegenerate(link: VendorLink) {
     if (!confirm('This will invalidate the existing link and create a new one. Continue?')) return;
+    setActionError(null);
     setLoading(true);
     try {
       await regenerateVendorLink(eventCode, eventRowId, actorEmail, {
@@ -79,18 +81,21 @@ export function VendorSharePanel({ eventCode, eventRowId, actorEmail, tasks }: P
         label: link.label,
       });
       await load();
-    } finally {
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : 'Failed to regenerate link');
       setLoading(false);
     }
   }
 
   async function handleRevoke(link: VendorLink) {
     if (!confirm(`Revoke the link for ${link.label}?`)) return;
+    setActionError(null);
     setLoading(true);
     try {
       await revokeVendorLink(link.linkId, actorEmail);
       await load();
-    } finally {
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : 'Failed to revoke link');
       setLoading(false);
     }
   }
@@ -156,6 +161,8 @@ export function VendorSharePanel({ eventCode, eventRowId, actorEmail, tasks }: P
           </button>
         </div>
       </header>
+
+      {actionError && <p className="vendor-share__editor-error">⚠ {actionError}</p>}
 
       {links.length === 0 && !loading && (
         <p className="vendor-share__empty">
