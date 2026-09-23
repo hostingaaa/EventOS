@@ -25,8 +25,11 @@ function isOwnSubmission(item: CostItem): boolean {
 }
 
 /** Vendor-portal sibling of FinancialsPanel — no revenue/profit, category is
- * locked to the link's own scope, and a vendor may only edit rows they
- * themselves submitted (enforced server-side; this just matches the UI to it). */
+ * locked to the link's own scope. A vendor can freely edit a row they
+ * submitted themselves; a row the team (or a generator, e.g. the AV
+ * Equipment list) created is theirs to quote a rate on, but the quantity/
+ * description stay under the team's control (enforced server-side; this
+ * just matches the UI to it). */
 export function VendorCostItemsPanel({ vendorToken, costItems, onCostItemAdded, onCostItemUpdated }: Props) {
   const [draft, setDraft] = useState(emptyDraft());
   const [adding, setAdding] = useState(false);
@@ -86,13 +89,13 @@ export function VendorCostItemsPanel({ vendorToken, costItems, onCostItemAdded, 
           </thead>
           <tbody>
             {costItems.map((item) => {
-              const editable = isOwnSubmission(item);
+              const ownSubmission = isOwnSubmission(item);
               const busy = busyItemId === item.costItemId;
               return (
                 <tr key={item.costItemId} className={busy ? 'vendor-costs__row--busy' : ''}>
                   <td>{item.description}</td>
                   <td>
-                    {editable ? (
+                    {ownSubmission ? (
                       <input
                         type="number"
                         className="vendor-costs__cell-input"
@@ -103,16 +106,14 @@ export function VendorCostItemsPanel({ vendorToken, costItems, onCostItemAdded, 
                     ) : item.quantity}
                   </td>
                   <td>
-                    {editable ? (
-                      <input
-                        type="number"
-                        step="0.01"
-                        className="vendor-costs__cell-input"
-                        defaultValue={item.unitRate}
-                        onBlur={(e) => handleFieldEdit(item, 'unitRate', e.target.value)}
-                        disabled={busy}
-                      />
-                    ) : item.unitRate}
+                    <input
+                      type="number"
+                      step="0.01"
+                      className="vendor-costs__cell-input"
+                      defaultValue={item.unitRate}
+                      onBlur={(e) => handleFieldEdit(item, 'unitRate', e.target.value)}
+                      disabled={busy}
+                    />
                   </td>
                   <td>{formatMoney(item.total, item.currency)}</td>
                 </tr>

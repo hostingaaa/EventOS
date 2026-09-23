@@ -480,11 +480,24 @@ function handleVendorRequest_(vendorToken, action, body) {
       if (!item) return jsonResponse_({ error: 'Cost item not found' }, 404);
       var itemCategory = String(item.category || '').toLowerCase();
       var linkCategory = String(link.vendorCategory || '').toLowerCase();
-      var isOwnSubmission = String(item.createdBy || '').indexOf('vendor:') === 0;
-      if (item.eventCode !== link.eventCode || (linkCategory && itemCategory !== linkCategory) || !isOwnSubmission) {
-        return jsonResponse_({ error: 'You can only edit cost items you submitted yourself.' }, 403);
+      var inScope = item.eventCode === link.eventCode && (!linkCategory || itemCategory === linkCategory);
+      if (!inScope) {
+        return jsonResponse_({ error: 'You can only edit cost items in your own scope.' }, 403);
       }
-      return jsonResponse_(updateCostItem_(body.costItemId, body.updates || {}, vendorActorLabel_(link)));
+
+      // Own submissions can be edited freely. A team/generator-created line
+      // (e.g. the AV Equipment list saved into this event) is visible to the
+      // vendor so they can quote it, but only the rate is theirs to set —
+      // the quantity/description stay under the team's control.
+      var isOwnSubmission = String(item.createdBy || '').indexOf('vendor:') === 0;
+      var requestedUpdates = body.updates || {};
+      var allowedUpdates = isOwnSubmission
+        ? requestedUpdates
+        : (requestedUpdates.unitRate !== undefined ? { unitRate: requestedUpdates.unitRate } : {});
+      if (Object.keys(allowedUpdates).length === 0) {
+        return jsonResponse_({ error: 'You can only set the rate on this item.' }, 403);
+      }
+      return jsonResponse_(updateCostItem_(body.costItemId, allowedUpdates, vendorActorLabel_(link)));
     }
 
     if (action === 'vendorFileUpload') {
