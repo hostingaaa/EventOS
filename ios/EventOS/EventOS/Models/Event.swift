@@ -24,8 +24,50 @@ struct Event: Codable, Identifiable, Equatable {
     var driveFolderUrl: String?
     var awarded: String?
     var revenue: String?
+    var status: String?
 
     var id: String { rowId }
+}
+
+/// Mirrors web/src/utils/eventLifecycle.ts — keep the 6 values and the
+/// legacy-awarded fallback in sync with that file.
+enum EventStatus: String, CaseIterable, Identifiable {
+    case proposed = "Proposed"
+    case awarded = "Awarded"
+    case completed = "Completed"
+    case postponed = "Postponed"
+    case cancelled = "Cancelled"
+    case archived = "Archived"
+
+    var id: String { rawValue }
+}
+
+private func isLegacyAwarded(_ event: Event) -> Bool {
+    (event.awarded ?? "").trimmingCharacters(in: .whitespaces).lowercased() == "yes"
+}
+
+/// The event's lifecycle status. Defaults to `.proposed` for events with no
+/// status set yet — except events already marked Awarded under the old
+/// boolean `awarded` field (before the Status dropdown existed), which keep
+/// showing as Awarded so nothing appears to silently revert. Once an admin
+/// explicitly picks anything via the dropdown, the real `status` value takes
+/// over and this fallback is bypassed for good.
+func getEventStatus(_ event: Event) -> EventStatus {
+    if let raw = event.status?.trimmingCharacters(in: .whitespaces), let s = EventStatus(rawValue: raw) {
+        return s
+    }
+    return isLegacyAwarded(event) ? .awarded : .proposed
+}
+
+func isEventActive(_ event: Event) -> Bool {
+    let s = getEventStatus(event)
+    return s == .proposed || s == .awarded
+}
+
+/// Postponed, Cancelled, or Archived — set aside from a real Completed status.
+func isEventSetAside(_ event: Event) -> Bool {
+    let s = getEventStatus(event)
+    return s == .postponed || s == .cancelled || s == .archived
 }
 
 struct EventsResponse: Codable {

@@ -10,7 +10,7 @@ final class WorkspaceViewModel: ObservableObject {
     @Published var newCommentBody = ""
     @Published var newTaskTitle = ""
     @Published var busyTaskId: String?
-    @Published var savingAwarded = false
+    @Published var savingStatus = false
     @Published var savingRevenue = false
     @Published var busyCostItemId: String?
 
@@ -85,18 +85,19 @@ final class WorkspaceViewModel: ObservableObject {
         }
     }
 
-    var isAwarded: Bool {
-        (data?.event.awarded ?? "").trimmingCharacters(in: .whitespaces).lowercased() == "yes"
+    var status: EventStatus {
+        guard let event = data?.event else { return .proposed }
+        return getEventStatus(event)
     }
 
-    func toggleAwarded(actorEmail: String) async {
-        guard let event = data?.event else { return }
-        savingAwarded = true
-        defer { savingAwarded = false }
+    func updateStatus(to newStatus: EventStatus, actorEmail: String) async {
+        guard let event = data?.event, newStatus != status else { return }
+        savingStatus = true
+        defer { savingStatus = false }
         do {
             let updated = try await EventOSService.updateEvent(
                 rowId: event.rowId, code: event.code,
-                updates: ["awarded": isAwarded ? "" : "Yes"], actorEmail: actorEmail
+                updates: ["status": newStatus.rawValue], actorEmail: actorEmail
             )
             guard var current = data else { return }
             current.event = updated

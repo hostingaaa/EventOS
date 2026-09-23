@@ -46,6 +46,10 @@ struct DashboardView: View {
                             if !vm.completedGroups.isEmpty {
                                 completedSection
                             }
+
+                            if !vm.setAsideGroups.isEmpty {
+                                setAsideSection
+                            }
                         }
                     }
                     .padding(.horizontal, 16)
@@ -285,6 +289,33 @@ struct DashboardView: View {
             }
         }
     }
+
+    private var setAsideSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Button {
+                withAnimation { vm.showSetAside.toggle() }
+            } label: {
+                HStack {
+                    Text("Cancelled/Postponed/Archived").font(.subheadline.bold())
+                    Spacer()
+                    Text("\(vm.setAsideGroups.reduce(0) { $0 + $1.events.count })").foregroundStyle(Theme.textSecondary)
+                    Image(systemName: vm.showSetAside ? "chevron.up" : "chevron.down")
+                        .foregroundStyle(Theme.textSecondary)
+                }
+                .foregroundStyle(Theme.textPrimary)
+                .padding(14)
+                .background(Theme.cardAlt)
+                .clipShape(RoundedRectangle(cornerRadius: Theme.cornerSmall, style: .continuous))
+            }
+            .buttonStyle(.plain)
+
+            if vm.showSetAside {
+                ForEach(vm.setAsideGroups) { group in
+                    monthGroupSection(group)
+                }
+            }
+        }
+    }
 }
 
 // MARK: - Grid card (2-column quick glance, mirrors Stake's property grid tiles)
@@ -347,6 +378,15 @@ private struct EventListCard: View {
                         Text("● Now").font(.caption2.bold()).foregroundStyle(Theme.green)
                     } else if let days = daysUntilStart, days >= 0, days <= 7 {
                         Text(days == 0 ? "Today" : "In \(days)d").font(.caption2.bold()).foregroundStyle(Theme.statusAttention)
+                    }
+                    let status = getEventStatus(event)
+                    if status != .proposed {
+                        Text(status.rawValue.uppercased())
+                            .font(.caption2.weight(.bold))
+                            .padding(.horizontal, 6).padding(.vertical, 2)
+                            .background(Theme.eventStatusColor(status).opacity(0.18))
+                            .foregroundStyle(Theme.eventStatusColor(status))
+                            .clipShape(Capsule())
                     }
                 }
                 Text(event.location.isEmpty ? "—" : event.location).font(.subheadline).foregroundStyle(Theme.textSecondary)

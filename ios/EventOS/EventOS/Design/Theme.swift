@@ -38,6 +38,17 @@ enum Theme {
         }
     }
 
+    static func eventStatusColor(_ status: EventStatus) -> Color {
+        switch status {
+        case .proposed: return textTertiary
+        case .awarded: return green
+        case .completed: return Color(hex: "475569")
+        case .postponed: return statusAttention
+        case .cancelled: return statusRisk
+        case .archived: return Color(hex: "1e293b")
+        }
+    }
+
     static func tierLabel(_ tier: String?) -> String {
         switch tier {
         case "on-track": return "On track"

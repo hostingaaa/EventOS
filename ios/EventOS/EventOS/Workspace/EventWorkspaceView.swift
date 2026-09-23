@@ -39,29 +39,36 @@ struct EventWorkspaceView: View {
             ToolbarItem(placement: .principal) {
                 HStack(spacing: 8) {
                     Text(vm.eventCode).font(.headline).foregroundStyle(Theme.textPrimary)
-                    if vm.isAwarded {
-                        Text("AWARDED")
-                            .font(.caption2.weight(.bold))
-                            .padding(.horizontal, 8).padding(.vertical, 3)
-                            .background(Theme.green.opacity(0.18))
-                            .foregroundStyle(Theme.green)
-                            .clipShape(Capsule())
-                    }
+                    Text(vm.status.rawValue.uppercased())
+                        .font(.caption2.weight(.bold))
+                        .padding(.horizontal, 8).padding(.vertical, 3)
+                        .background(Theme.eventStatusColor(vm.status).opacity(0.18))
+                        .foregroundStyle(Theme.eventStatusColor(vm.status))
+                        .clipShape(Capsule())
                 }
             }
             if session.user?.isAdmin == true, vm.data != nil {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        Task { await vm.toggleAwarded(actorEmail: session.user?.email ?? "") }
-                    } label: {
-                        if vm.savingAwarded {
-                            ProgressView().tint(Theme.green)
-                        } else {
-                            Image(systemName: vm.isAwarded ? "checkmark.seal.fill" : "seal")
+                    if vm.savingStatus {
+                        ProgressView().tint(Theme.green)
+                    } else {
+                        Menu {
+                            ForEach(EventStatus.allCases) { s in
+                                Button {
+                                    Task { await vm.updateStatus(to: s, actorEmail: session.user?.email ?? "") }
+                                } label: {
+                                    if s == vm.status {
+                                        Label(s.rawValue, systemImage: "checkmark")
+                                    } else {
+                                        Text(s.rawValue)
+                                    }
+                                }
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis.circle")
                                 .foregroundStyle(Theme.green)
                         }
                     }
-                    .disabled(vm.savingAwarded)
                 }
             }
         }

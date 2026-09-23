@@ -22,7 +22,6 @@ struct MonthGroup: Identifiable {
     var id: String { month }
 }
 
-private let completedThresholdDays = 15
 private let imminentDays = 7
 
 private let isoDayFormatter: ISO8601DateFormatter = {
@@ -51,6 +50,7 @@ final class DashboardViewModel: ObservableObject {
     @Published var loading = true
     @Published var error: String?
     @Published var showCompleted = false
+    @Published var showSetAside = false
 
     func load() async {
         loading = true
@@ -63,12 +63,6 @@ final class DashboardViewModel: ObservableObject {
             self.error = error.localizedDescription
         }
         loading = false
-    }
-
-    private func isCompleted(_ event: Event) -> Bool {
-        guard let end = parseFlexibleDate(event.endDate) else { return false }
-        let days = Calendar.current.dateComponents([.day], from: end, to: Date()).day ?? 0
-        return days > completedThresholdDays
     }
 
     func daysUntilStart(_ event: Event) -> Int? {
@@ -146,22 +140,27 @@ final class DashboardViewModel: ObservableObject {
     }
 
     var activeGroups: [MonthGroup] {
-        let active = events.filter { !isCompleted($0) }.filter(matchesFilter)
+        let active = events.filter(isEventActive).filter(matchesFilter)
         return groupByMonth(active, ascending: true)
     }
 
+    /// Real Completed status only — Postponed/Cancelled/Archived get their own section.
     var completedGroups: [MonthGroup] {
-        groupByMonth(events.filter(isCompleted), ascending: false)
+        groupByMonth(events.filter { getEventStatus($0) == .completed }, ascending: false)
+    }
+
+    var setAsideGroups: [MonthGroup] {
+        groupByMonth(events.filter(isEventSetAside), ascending: false)
     }
 
     var activeCount: Int {
-        events.filter { !isCompleted($0) }.filter(matchesFilter).count
+        events.filter(isEventActive).filter(matchesFilter).count
     }
 
     /// The single most urgent active event — worst health tier first, then soonest to start.
     /// Powers the "Featured event" hero card.
     var featuredEvent: Event? {
-        let active = events.filter { !isCompleted($0) }
+        let active = events.filter(isEventActive)
         guard !active.isEmpty else { return nil }
         func rank(_ e: Event) -> Int {
             switch healthByCode[e.code]?.tier {
@@ -182,15 +181,16 @@ final class DashboardViewModel: ObservableObject {
 
     /// A handful of active events (excluding the featured one) for the quick-glance grid.
     var gridEvents: [Event] {
-        let active = events.filter { !isCompleted($0) }.filter(matchesFilter)
+        let active = events.filter(isEventActive).filter(matchesFilter)
         return active.filter { $0.rowId != featuredEvent?.rowId }.prefix(4).map { $0 }
     }
 
     /// Mirrors web's dashboard stat cards (Active events / Awarded / Completed) — unlike
     /// `activeCount`, these are not affected by the filter tabs.
     var lifecycleStats: (active: Int, awarded: Int, completed: Int) {
-        let active = events.filter { !isCompleted($0) }
-        let awarded = active.filter { ($0.awarded ?? "").trimmingCharacters(in: .whitespaces).lowercased() == "yes" }
-        return (active.count, awarded.count, events.filter(isCompleted).count)
+        let active = events.filter(isEventActive)
+        let awarded = active.filter { getEventStatus($0) == .awarded }
+        let completed = events.filter { getEventStatus($0) == .completed }
+        return (active.count, awarded.count, completed.count)
     }
 }
