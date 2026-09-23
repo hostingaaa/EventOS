@@ -127,7 +127,7 @@ function handleRequest_(e, method) {
     // Maintenance: re-derive Start/End Date + Month Group from each event's
     // (reliable, plain-text) Dates label. Admin-only; POST {apply:true} to
     // actually write fixes, otherwise it only reports what would change.
-    if (action === 'eventDatesRepair' && method === 'POST') {
+    if (action === 'eventDatesRepair' && acceptsWrite_(method, e)) {
       requireAdmin_(actorEmail);
       return jsonResponse_(repairEventDates_(body.apply === true));
     }
@@ -164,26 +164,26 @@ function handleRequest_(e, method) {
       return jsonResponse_(data);
     }
 
-    if (action === 'templateCreate' && method === 'POST') {
+    if (action === 'templateCreate' && acceptsWrite_(method, e)) {
       requireAdmin_(actorEmail);
       return jsonResponse_(createTemplate_(body));
     }
 
-    if (action === 'templateUpdate' && method === 'POST') {
+    if (action === 'templateUpdate' && acceptsWrite_(method, e)) {
       return jsonResponse_(updateTemplate_(body.templateId, body.updates || {}, actorEmail));
     }
 
-    if (action === 'templateDelete' && method === 'POST') {
+    if (action === 'templateDelete' && acceptsWrite_(method, e)) {
       return jsonResponse_(deleteTemplate_(body.templateId, actorEmail));
     }
 
-    if (action === 'templateFileUpload' && method === 'POST') {
+    if (action === 'templateFileUpload' && acceptsWrite_(method, e)) {
       body.uploadedBy = actorEmail;
       body.actorEmail = actorEmail;
       return jsonResponse_(uploadTemplateFile_(body));
     }
 
-    if (action === 'templateFileDelete' && method === 'POST') {
+    if (action === 'templateFileDelete' && acceptsWrite_(method, e)) {
       return jsonResponse_(deleteTemplateFile_(body.fileId, actorEmail));
     }
 
@@ -204,7 +204,7 @@ function handleRequest_(e, method) {
       return jsonResponse_(upsertOrgTemplateFile_(body));
     }
 
-    if (action === 'orgTemplateDelete' && method === 'POST') {
+    if (action === 'orgTemplateDelete' && acceptsWrite_(method, e)) {
       requireAdmin_(actorEmail);
       return jsonResponse_(deleteOrgTemplateEntry_(body.id, actorEmail));
     }
@@ -238,7 +238,7 @@ function handleRequest_(e, method) {
       return jsonResponse_({ link: getOrCreateVendorLink_(ec, er, actorEmail, opts) });
     }
 
-    if (action === 'vendorLinkRegenerate' && method === 'POST') {
+    if (action === 'vendorLinkRegenerate' && acceptsWrite_(method, e)) {
       return jsonResponse_({
         link: regenerateVendorLink_(body.eventCode, body.eventRowId, actorEmail, {
           vendorCategory: body.vendorCategory || '',
@@ -249,7 +249,7 @@ function handleRequest_(e, method) {
       });
     }
 
-    if (action === 'vendorLinkRevoke' && method === 'POST') {
+    if (action === 'vendorLinkRevoke' && acceptsWrite_(method, e)) {
       return jsonResponse_(revokeVendorLink_(body.linkId, actorEmail));
     }
 
@@ -260,7 +260,7 @@ function handleRequest_(e, method) {
       });
     }
 
-    if (action === 'taskCreate' && method === 'POST') {
+    if (action === 'taskCreate' && acceptsWrite_(method, e)) {
       return jsonResponse_(createTask_(body));
     }
 
@@ -283,7 +283,7 @@ function handleRequest_(e, method) {
       return jsonResponse_(updateCostItem_(body.costItemId, body.updates || {}, actorEmail));
     }
 
-    if (action === 'costItemDelete' && method === 'POST') {
+    if (action === 'costItemDelete' && acceptsWrite_(method, e)) {
       return jsonResponse_(deleteCostItem_(body.costItemId, actorEmail));
     }
 
@@ -294,7 +294,7 @@ function handleRequest_(e, method) {
       });
     }
 
-    if (action === 'commentAdd' && method === 'POST') {
+    if (action === 'commentAdd' && acceptsWrite_(method, e)) {
       return jsonResponse_(addComment_(body));
     }
 
@@ -309,7 +309,7 @@ function handleRequest_(e, method) {
       return jsonResponse_(uploadFile_(body));
     }
 
-    if (action === 'fileDelete' && method === 'POST') {
+    if (action === 'fileDelete' && acceptsWrite_(method, e)) {
       return jsonResponse_(deleteFile_(body.fileId, actorEmail));
     }
 
@@ -384,12 +384,12 @@ function handleRequest_(e, method) {
       return jsonResponse_(registerAccount_(body.name, body.email, body.passwordHash));
     }
 
-    if (action === 'authLogin' && method === 'POST') {
+    if (action === 'authLogin' && acceptsWrite_(method, e)) {
       var loginResult = verifyAccount_(body.email, body.passwordHash);
       return jsonResponse_({ account: loginResult });
     }
 
-    if (action === 'authChangePassword' && method === 'POST') {
+    if (action === 'authChangePassword' && acceptsWrite_(method, e)) {
       changeAccountPassword_(body.email, body.newHash);
       return jsonResponse_({ ok: true });
     }
@@ -404,7 +404,7 @@ function handleRequest_(e, method) {
       return jsonResponse_(upsertMember_(body.member));
     }
 
-    if (action === 'membersDeactivate' && method === 'POST') {
+    if (action === 'membersDeactivate' && acceptsWrite_(method, e)) {
       requireAdmin_(actorEmail);
       deactivateMember_(body.id);
       return jsonResponse_({ ok: true });
