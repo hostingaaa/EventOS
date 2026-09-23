@@ -503,7 +503,7 @@ export function DashboardPage() {
         </div>
         <div className="dashboard__stat-card">
           <div className="dashboard__stat-figure">{completedEvents.length}</div>
-          <div className="dashboard__stat-label">Inactive</div>
+          <div className="dashboard__stat-label">Completed</div>
         </div>
       </div>
 
@@ -597,7 +597,7 @@ export function DashboardPage() {
         </div>
       )}
 
-      {/* Inactive events (Completed/Postponed/Cancelled/Archived) — collapsible, grouped by month */}
+      {/* Completed events (Completed/Postponed/Cancelled/Archived) — collapsible, grouped by month */}
       {completedGroups.length > 0 && (
         <div className="dashboard__completed">
           <button
@@ -607,7 +607,7 @@ export function DashboardPage() {
             aria-expanded={completedOpen}
           >
             <span className={`dc-chevron${completedOpen ? ' dc-chevron--open' : ''}`} aria-hidden="true">›</span>
-            Inactive events
+            Completed events
             <span className="dc-count">{completedEvents.length}</span>
             <span className="dc-hint">{completedOpen ? 'Collapse' : 'Expand'}</span>
           </button>
