@@ -478,9 +478,7 @@ function handleVendorRequest_(vendorToken, action, body) {
     if (action === 'vendorCostItemUpdate') {
       var item = findCostItem_(body.costItemId);
       if (!item) return jsonResponse_({ error: 'Cost item not found' }, 404);
-      var itemCategory = String(item.category || '').toLowerCase();
-      var linkCategory = String(link.vendorCategory || '').toLowerCase();
-      var inScope = item.eventCode === link.eventCode && (!linkCategory || itemCategory === linkCategory);
+      var inScope = item.eventCode === link.eventCode && costItemCategoryInVendorScope_(item.category, link.vendorCategory);
       if (!inScope) {
         return jsonResponse_({ error: 'You can only edit cost items in your own scope.' }, 403);
       }
