@@ -89,6 +89,10 @@ export function VendorPortalPage() {
     );
   }
 
+  function handleRatesSubmitted(ratesSubmittedAt: string) {
+    setData((d) => (d ? { ...d, ratesSubmittedAt } : d));
+  }
+
   return (
     <div className="vendor-portal" data-event={event.code} data-scope={vendorCategory || 'full'}>
       <header className="vendor-portal__header">
@@ -200,8 +204,10 @@ export function VendorPortalPage() {
             <VendorCostItemsPanel
               vendorToken={token || ''}
               costItems={costItems}
+              ratesSubmittedAt={data.ratesSubmittedAt}
               onCostItemAdded={handleCostItemAdded}
               onCostItemUpdated={handleCostItemUpdated}
+              onRatesSubmitted={handleRatesSubmitted}
             />
           </section>
         )}

@@ -10,6 +10,7 @@ var VENDOR_LINK_COLS = {
   CREATED_AT: 'Created At',
   CREATED_BY: 'Created By',
   ACTIVE: 'Active',
+  RATES_SUBMITTED_AT: 'Rates Submitted At',
 };
 
 function getVendorLinksSheet_() {
@@ -53,6 +54,7 @@ function rowToVendorLink_(row, map) {
     createdAt: cell(VENDOR_LINK_COLS.CREATED_AT),
     createdBy: cell(VENDOR_LINK_COLS.CREATED_BY),
     active: cell(VENDOR_LINK_COLS.ACTIVE) || 'yes',
+    ratesSubmittedAt: cell(VENDOR_LINK_COLS.RATES_SUBMITTED_AT),
   };
 }
 
@@ -258,7 +260,41 @@ function getVendorWorkspace_(token) {
     vendorCategory: link.vendorCategory || '',
     vendorName: link.vendorName || '',
     permission: link.permission || 'view',
+    ratesSubmittedAt: link.ratesSubmittedAt || '',
   };
+}
+
+/** Locks a vendor link's rate entry: sets Rates Submitted At so future
+ * vendorCostItemCreate/vendorCostItemUpdate calls are refused, while the
+ * vendor can still see the (now read-only) list on reload. */
+function submitVendorRates_(token) {
+  var link = findVendorLinkByToken_(token);
+  if (!link) throw new Error('This vendor link is invalid or has expired.');
+  if (link.ratesSubmittedAt) return { ok: true, ratesSubmittedAt: link.ratesSubmittedAt };
+
+  var sheet = getVendorLinksSheet_();
+  var map = getHeaderMap_(sheet);
+  var idCol = colIndex_(map, VENDOR_LINK_COLS.LINK_ID);
+  var subCol = colIndex_(map, VENDOR_LINK_COLS.RATES_SUBMITTED_AT);
+  var lastRow = sheet.getLastRow();
+  if (lastRow > 1 && idCol && subCol) {
+    var data = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
+    for (var r = 0; r < data.length; r++) {
+      if (String(data[r][idCol - 1]) === link.linkId) {
+        var now = new Date().toISOString();
+        sheet.getRange(r + 2, subCol).setValue(now);
+        logActivity_(
+          'vendor_rates_submitted',
+          link.eventCode,
+          link.linkId,
+          (link.vendorName || link.vendorCategory || 'Vendor') + ' submitted rates',
+          vendorActorLabel_(link),
+        );
+        return { ok: true, ratesSubmittedAt: now };
+      }
+    }
+  }
+  return { ok: false };
 }
 
 /** True when a cost item's category is in scope for a vendor link's category.

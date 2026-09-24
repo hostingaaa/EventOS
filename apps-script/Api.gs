@@ -449,6 +449,7 @@ function handleVendorRequest_(vendorToken, action, body) {
     vendorCostItemUpdate: 1,
     vendorFileUpload: 1,
     vendorTaskStatusUpdate: 1,
+    vendorRatesSubmit: 1,
   };
   if (writeActions[action]) {
     var link = findVendorLinkByToken_(token);
@@ -457,6 +458,14 @@ function handleVendorRequest_(vendorToken, action, body) {
     }
     if (link.permission !== 'collaborate') {
       return jsonResponse_({ error: 'This vendor link is view-only.' }, 403);
+    }
+
+    if (action === 'vendorRatesSubmit') {
+      return jsonResponse_(submitVendorRates_(token));
+    }
+
+    if ((action === 'vendorCostItemCreate' || action === 'vendorCostItemUpdate') && link.ratesSubmittedAt) {
+      return jsonResponse_({ error: 'Rates have already been submitted and can no longer be changed.' }, 403);
     }
 
     if (action === 'vendorCostItemCreate') {

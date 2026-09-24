@@ -257,6 +257,7 @@ export interface VendorWorkspaceData {
   vendorName?: string;
   vendorCategory?: string;
   permission?: 'view' | 'collaborate';
+  ratesSubmittedAt?: string;
 }
 
 export interface TeamMember {
