@@ -209,6 +209,22 @@ function handleRequest_(e, method) {
       return jsonResponse_(deleteOrgTemplateEntry_(body.id, actorEmail));
     }
 
+    // ——— Useful links (admin-curated list of external sites) ———
+    if (action === 'usefulLinksList') {
+      return jsonResponse_({ links: listUsefulLinks_() });
+    }
+
+    if (action === 'usefulLinkUpsert' && acceptsWrite_(method, e)) {
+      requireAdmin_(actorEmail);
+      body.actorEmail = actorEmail;
+      return jsonResponse_(upsertUsefulLink_(body));
+    }
+
+    if (action === 'usefulLinkDelete' && acceptsWrite_(method, e)) {
+      requireAdmin_(actorEmail);
+      return jsonResponse_(deleteUsefulLink_(body.id, actorEmail));
+    }
+
     // ——— Vendor links (team) ———
     if (action === 'vendorLinksList') {
       if (typeof listVendorLinks_ !== 'function') {

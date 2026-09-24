@@ -54,6 +54,53 @@
   padding: 0.1rem 0.55rem;
 }
 
+/* ─── Useful links ─────────────────────────────────────────── */
+.otf-links__empty {
+  color: var(--text-secondary, #64748b);
+  font-size: 0.88rem;
+}
+
+.otf-links__list {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.otf-links__item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--eo-surface, #fff);
+  border-radius: 12px;
+  box-shadow: var(--eo-shadow-sm);
+  padding: 0.7rem 1rem;
+}
+
+.otf-links__link {
+  font-weight: 600;
+  color: var(--eo-accent, #0d9488);
+  text-decoration: none;
+}
+
+.otf-links__link:hover {
+  text-decoration: underline;
+}
+
+.otf-links__notes {
+  color: var(--text-secondary, #64748b);
+  font-size: 0.85rem;
+  flex: 1;
+}
+
+.otf-links__actions {
+  display: flex;
+  gap: 0.35rem;
+  margin-left: auto;
+}
+
 /* ─── File grid ────────────────────────────────────────────── */
 .otf-grid {
   display: grid;
@@ -384,12 +431,21 @@
   color: var(--text-primary, #1e293b);
 }
 
-.otf-modal__form select {
+.otf-modal__form select,
+.otf-modal__form input {
   padding: 0.5rem 0.75rem;
   border: 1.5px solid var(--border, #e2e8f0);
   border-radius: 8px;
   font-size: 0.9rem;
   background: var(--surface-1, #fff);
+  font-family: inherit;
+}
+
+.otf-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  padding: 0 1.4rem 1.4rem;
 }
 
 .otf-dropzone {
