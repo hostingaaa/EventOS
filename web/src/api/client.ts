@@ -718,6 +718,10 @@ export async function vendorUpdateTaskStatus(vendorToken: string, taskId: string
   return vendorPost(vendorToken, 'vendorTaskStatusUpdate', { taskId, status });
 }
 
+export async function vendorSubmitRates(vendorToken: string): Promise<{ ok: boolean; ratesSubmittedAt?: string }> {
+  return vendorPost(vendorToken, 'vendorRatesSubmit', {});
+}
+
 export const TASK_STATUSES: { value: TaskStatus; label: string }[] = [
   { value: 'todo', label: 'To do' },
   { value: 'in_progress', label: 'In progress' },

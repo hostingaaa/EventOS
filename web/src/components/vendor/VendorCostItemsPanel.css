@@ -12,6 +12,15 @@
   font-size: 0.85rem;
 }
 
+.vendor-costs__submitted {
+  color: #0b6a5b;
+  background: #e6f4f1;
+  padding: 0.5rem 0.8rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  margin-bottom: 0.75rem;
+}
+
 .vendor-costs__table {
   width: 100%;
   border-collapse: collapse;
@@ -87,6 +96,29 @@
 }
 
 .vendor-costs__add-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.vendor-costs__submit-btn {
+  margin-top: 0.85rem;
+  background: var(--eo-accent-700, var(--primary));
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 999px;
+  font-family: 'Archivo', inherit;
+  font-weight: 700;
+  box-shadow: var(--eo-shadow-sm);
+  transition: box-shadow 0.15s, background 0.15s;
+  cursor: pointer;
+}
+
+.vendor-costs__submit-btn:hover:not(:disabled) {
+  box-shadow: var(--eo-shadow-md);
+}
+
+.vendor-costs__submit-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
