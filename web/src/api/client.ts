@@ -850,3 +850,47 @@ export async function deleteOrgTemplateFile(id: string, actorEmail: string): Pro
   }
   await post('orgTemplateDelete', { id, actorEmail });
 }
+
+// ——— Useful links (admin-curated list of external sites) ———
+
+export interface UsefulLink {
+  id: string;
+  title: string;
+  url: string;
+  notes?: string;
+  addedBy: string;
+  addedAt: string;
+}
+
+export async function fetchUsefulLinks(): Promise<UsefulLink[]> {
+  if (useMockData()) {
+    const { getUsefulLinks } = await import('../utils/usefulLinksStore');
+    return getUsefulLinks();
+  }
+  const res = await parseJson<{ links: UsefulLink[] }>(await fetch(buildUrl('usefulLinksList')));
+  return res.links;
+}
+
+/** Creates a new link (omit `id`) or edits an existing one (pass `id`). Admin-only. */
+export async function saveUsefulLink(payload: {
+  id?: string;
+  title: string;
+  url: string;
+  notes?: string;
+  actorEmail: string;
+}): Promise<UsefulLink> {
+  if (useMockData()) {
+    const { upsertUsefulLink } = await import('../utils/usefulLinksStore');
+    return upsertUsefulLink(payload, payload.actorEmail);
+  }
+  return post('usefulLinkUpsert', payload);
+}
+
+export async function deleteUsefulLink(id: string, actorEmail: string): Promise<void> {
+  if (useMockData()) {
+    const { deleteUsefulLinkEntry } = await import('../utils/usefulLinksStore');
+    deleteUsefulLinkEntry(id);
+    return;
+  }
+  await post('usefulLinkDelete', { id, actorEmail });
+}

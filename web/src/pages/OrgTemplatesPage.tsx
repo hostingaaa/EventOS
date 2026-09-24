@@ -2,9 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { useUser } from '../context/UserContext';
 import {
   deleteOrgTemplateFile,
+  deleteUsefulLink,
   fetchOrgTemplates,
+  fetchUsefulLinks,
   saveOrgTemplateFile,
+  saveUsefulLink,
   type OrgTemplateFile,
+  type UsefulLink,
 } from '../api/client';
 import './OrgTemplatesPage.css';
 
@@ -207,6 +211,25 @@ function PreviewModal({ file, onClose }: PreviewModalProps) {
   );
 }
 
+interface LinkDraft {
+  id?: string;
+  title: string;
+  url: string;
+  notes: string;
+}
+
+function emptyLinkDraft(): LinkDraft {
+  return { title: '', url: '', notes: '' };
+}
+
+/** Adds a scheme if the admin typed a bare domain (e.g. "example.com"), so
+ * the saved link always opens correctly instead of resolving relative to
+ * the app's own origin. */
+function normalizeLinkUrl(url: string): string {
+  const trimmed = url.trim();
+  return /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+}
+
 export function OrgTemplatesPage() {
   const { user, isAdmin } = useUser();
   const [files, setFiles] = useState<OrgTemplateFile[]>([]);
@@ -219,6 +242,11 @@ export function OrgTemplatesPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const addFileInput = useRef<HTMLInputElement>(null);
 
+  const [links, setLinks] = useState<UsefulLink[]>([]);
+  const [linkDraft, setLinkDraft] = useState<LinkDraft | null>(null);
+  const [savingLink, setSavingLink] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
+
   async function refresh() {
     try {
       setFiles(await fetchOrgTemplates());
@@ -227,9 +255,53 @@ export function OrgTemplatesPage() {
     }
   }
 
+  async function refreshLinks() {
+    try {
+      setLinks(await fetchUsefulLinks());
+    } catch (e) {
+      setLinkError(e instanceof Error ? e.message : 'Failed to load links');
+    }
+  }
+
   useEffect(() => {
     refresh();
+    refreshLinks();
   }, []);
+
+  async function handleSaveLink() {
+    if (!linkDraft || !user) return;
+    const title = linkDraft.title.trim();
+    const url = linkDraft.url.trim();
+    if (!title || !url) return;
+    setSavingLink(true);
+    setLinkError(null);
+    try {
+      await saveUsefulLink({
+        id: linkDraft.id,
+        title,
+        url: normalizeLinkUrl(url),
+        notes: linkDraft.notes.trim() || undefined,
+        actorEmail: user.email,
+      });
+      await refreshLinks();
+      setLinkDraft(null);
+    } catch (e) {
+      setLinkError(e instanceof Error ? e.message : 'Failed to save link');
+    } finally {
+      setSavingLink(false);
+    }
+  }
+
+  async function handleDeleteLink(link: UsefulLink) {
+    if (!user || !confirm(`Remove "${link.title}" from Useful Links?`)) return;
+    setLinkError(null);
+    try {
+      await deleteUsefulLink(link.id, user.email);
+      await refreshLinks();
+    } catch (e) {
+      setLinkError(e instanceof Error ? e.message : 'Failed to remove link');
+    }
+  }
 
   async function handleAddFile(fileList: FileList | null) {
     if (!fileList?.length || !user) return;
@@ -317,6 +389,60 @@ export function OrgTemplatesPage() {
       </header>
 
       {error && <p className="otf-error">{error}</p>}
+
+      <section className="otf-section otf-links">
+        <h2 className="otf-section__title">
+          🔗 Useful Links
+          <span className="otf-section__count">{links.length}</span>
+        </h2>
+        {links.length === 0 && (
+          <p className="otf-links__empty">
+            No links yet.{isAdmin && ' Click "+ Add link" below to save a website for the team.'}
+          </p>
+        )}
+        {links.length > 0 && (
+          <ul className="otf-links__list">
+            {links.map((l) => (
+              <li key={l.id} className="otf-links__item">
+                <a href={l.url} target="_blank" rel="noopener noreferrer" className="otf-links__link">
+                  {l.title}
+                </a>
+                {l.notes && <span className="otf-links__notes">{l.notes}</span>}
+                {isAdmin && (
+                  <span className="otf-links__actions">
+                    <button
+                      type="button"
+                      className="otf-btn otf-btn--sm otf-btn--icon otf-btn--ghost"
+                      title="Edit link"
+                      aria-label="Edit link"
+                      onClick={() => setLinkDraft({ id: l.id, title: l.title, url: l.url, notes: l.notes ?? '' })}
+                    >
+                      ✎
+                    </button>
+                    <button
+                      type="button"
+                      className="otf-btn otf-btn--sm otf-btn--danger"
+                      title="Remove link"
+                      onClick={() => handleDeleteLink(l)}
+                    >
+                      ✕
+                    </button>
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+        {isAdmin && (
+          <button
+            type="button"
+            className="otf-btn otf-btn--secondary otf-links__add-btn"
+            onClick={() => setLinkDraft(emptyLinkDraft())}
+          >
+            + Add link
+          </button>
+        )}
+      </section>
 
       {CATEGORIES.map((cat) => {
         const catFiles = grouped[cat] ?? [];
@@ -487,6 +613,59 @@ export function OrgTemplatesPage() {
               </div>
               {uploading === 'new' && <p className="otf-uploading">Uploading…</p>}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add/edit useful link modal (admin) */}
+      {linkDraft && isAdmin && (
+        <div className="otf-modal-overlay" onClick={() => setLinkDraft(null)} role="presentation">
+          <div className="otf-modal otf-modal--sm" onClick={(e) => e.stopPropagation()}>
+            <div className="otf-modal__header">
+              <h2>{linkDraft.id ? 'Edit link' : 'Add link'}</h2>
+              <button type="button" className="otf-modal__close" onClick={() => setLinkDraft(null)}>✕</button>
+            </div>
+            <div className="otf-modal__form">
+              {linkError && <p className="otf-error">{linkError}</p>}
+              <label>
+                Title
+                <input
+                  value={linkDraft.title}
+                  onChange={(e) => setLinkDraft({ ...linkDraft, title: e.target.value })}
+                  placeholder="e.g. Venue directory"
+                  autoFocus
+                />
+              </label>
+              <label>
+                URL
+                <input
+                  value={linkDraft.url}
+                  onChange={(e) => setLinkDraft({ ...linkDraft, url: e.target.value })}
+                  placeholder="https://example.com"
+                />
+              </label>
+              <label>
+                Notes (optional)
+                <input
+                  value={linkDraft.notes}
+                  onChange={(e) => setLinkDraft({ ...linkDraft, notes: e.target.value })}
+                  placeholder="What is this for?"
+                />
+              </label>
+            </div>
+            <footer className="otf-modal__footer">
+              <button type="button" className="otf-btn otf-btn--secondary" onClick={() => setLinkDraft(null)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="otf-btn otf-btn--primary"
+                onClick={handleSaveLink}
+                disabled={savingLink || !linkDraft.title.trim() || !linkDraft.url.trim()}
+              >
+                {savingLink ? 'Saving…' : linkDraft.id ? 'Save changes' : 'Add link'}
+              </button>
+            </footer>
           </div>
         </div>
       )}
