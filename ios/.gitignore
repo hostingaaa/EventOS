@@ -1,0 +1,5 @@
+EventOS/EventOS/Config/Secrets.swift
+DerivedData/
+*.xcuserstate
+xcuserdata/
+EventOS.xcodeproj/

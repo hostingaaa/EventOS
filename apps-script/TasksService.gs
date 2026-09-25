@@ -205,6 +205,16 @@ function updateTask_(taskId, updates, actorEmail) {
   return findTask_(taskId);
 }
 
+/** Permanently removes a single task row. Admin-only (checked by caller). */
+function deleteTask_(taskId, actorEmail) {
+  var task = findTask_(taskId);
+  if (!task) throw new Error('Task not found');
+
+  getTasksSheet_().deleteRow(task.rowNumber);
+  logActivity_('task_deleted', task.eventCode, taskId, task.title, actorEmail || '');
+  return { ok: true };
+}
+
 /** Remove all task rows for an event (bottom-up to keep row indices stable). */
 function deleteTasksForEvent_(eventCode) {
   if (!eventCode) return;
