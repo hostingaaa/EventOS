@@ -1,0 +1,132 @@
+.edc {
+  background: var(--eo-surface);
+  border-radius: 16px;
+  box-shadow: var(--eo-shadow-md);
+  padding: 20px 22px;
+  border: 1px solid var(--eo-accent-200, #c6e7e0);
+}
+
+.edc__top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.edc__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.edc__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.edc__code {
+  font-family: 'Archivo', sans-serif;
+  font-weight: 800;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.edc__awarded {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--eo-award);
+  color: #fff;
+}
+
+.edc__location {
+  font-size: 14px;
+}
+
+.edc__dates {
+  font-size: 13px;
+  opacity: 0.55;
+  margin-top: 2px;
+}
+
+.edc__close {
+  all: unset;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  font-size: 13px;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.edc__close:hover {
+  background: var(--eo-neutral-200, #e6ebec);
+  opacity: 1;
+}
+
+.edc__section-title {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.55;
+  margin: 18px 0 6px;
+}
+
+.edc__empty {
+  font-size: 0.85rem;
+  color: var(--eo-muted);
+  margin: 0;
+}
+
+.edc__team-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--eo-divider, rgba(20, 33, 43, 0.12));
+}
+
+.edc__team-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.edc__team-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.edc__team-role {
+  font-size: 11px;
+  opacity: 0.5;
+}
+
+.edc__team-status {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--eo-text) 45%, transparent);
+  white-space: nowrap;
+}
+
+.edc__team-status--conflict {
+  color: var(--eo-accent-700);
+}
+
+.edc__link {
+  display: inline-block;
+  margin-top: 14px;
+  font-size: 13px;
+  text-decoration: none;
+  font-weight: 600;
+  color: var(--eo-accent);
+}
+
+.edc__link:hover {
+  text-decoration: underline;
+}

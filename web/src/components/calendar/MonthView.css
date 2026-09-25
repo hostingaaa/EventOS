@@ -1,0 +1,141 @@
+.mv {
+  background: var(--eo-surface);
+  border-radius: 16px;
+  box-shadow: var(--eo-shadow-sm);
+  padding: 12px;
+}
+
+.mv__weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+  padding: 4px 4px 10px;
+}
+
+.mv__weekday {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--eo-muted);
+  padding-left: 8px;
+}
+
+.mv__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.mv__cell {
+  min-height: 118px;
+  border-radius: 12px;
+  padding: 8px;
+  box-sizing: border-box;
+  min-width: 0;
+  background: var(--eo-surface);
+  border: 1px solid var(--eo-divider, rgba(20, 33, 43, 0.12));
+}
+
+.mv__cell--weekend {
+  background: var(--eo-neutral-100, #f4f7f7);
+}
+
+.mv__cell--today {
+  border-color: var(--eo-accent);
+}
+
+.mv__cell--outside {
+  background: transparent;
+  border-color: transparent;
+  opacity: 0.4;
+}
+
+.mv__cell-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.mv__daynum {
+  font-family: 'Archivo', sans-serif;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.mv__daynum--today {
+  background: var(--eo-accent);
+  color: #fff;
+  border-radius: 999px;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+}
+
+.mv__today-label {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--eo-accent-700);
+}
+
+.mv__chips {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mv__chip {
+  all: unset;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 5px 8px;
+  font-size: 12px;
+  border-radius: 8px;
+  box-sizing: border-box;
+  width: 100%;
+  transition: filter 0.1s;
+}
+
+.mv__chip:hover {
+  filter: brightness(0.96);
+}
+
+.mv__chip--continued {
+  border-top-left-radius: 2px;
+  border-bottom-left-radius: 2px;
+}
+
+.mv__chip--selected {
+  box-shadow: 0 0 0 2px var(--eo-accent);
+}
+
+.mv__chip-code {
+  font-family: 'Archivo', sans-serif;
+  font-weight: 800;
+  flex: none;
+}
+
+.mv__chip-city {
+  flex: 1 1 0;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mv__chip-avatars {
+  margin-left: auto;
+  display: flex;
+  flex: none;
+}
+
+.mv__chip-overflow {
+  font-size: 11px;
+  color: var(--eo-muted);
+  padding: 2px 4px;
+}

@@ -1,0 +1,111 @@
+.pv {
+  background: var(--eo-surface);
+  border-radius: 16px;
+  box-shadow: var(--eo-shadow-sm);
+  padding: 16px 12px 12px;
+  overflow-x: auto;
+}
+
+.pv__scroll {
+  min-width: fit-content;
+}
+
+.pv__head {
+  display: grid;
+  padding: 0 0 8px;
+}
+
+.pv__head-day {
+  font-size: 11px;
+  text-align: center;
+  color: var(--eo-muted);
+}
+
+.pv__head-day--weekend {
+  color: color-mix(in srgb, var(--eo-text) 35%, transparent);
+}
+
+.pv__head-day--today {
+  font-weight: 800;
+  color: var(--eo-accent);
+}
+
+.pv__row {
+  display: grid;
+  border-top: 1px solid var(--eo-divider, rgba(20, 33, 43, 0.12));
+  padding: 6px 0;
+  transition: opacity 0.15s;
+}
+
+.pv__label {
+  grid-column: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px;
+  min-width: 0;
+}
+
+.pv__label-text {
+  min-width: 0;
+}
+
+.pv__label-name {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pv__label-role {
+  font-size: 11px;
+  color: var(--eo-muted);
+}
+
+.pv__daybg {
+  border-left: 1px solid var(--eo-divider, rgba(20, 33, 43, 0.12));
+}
+
+.pv__daybg--weekend {
+  background: var(--eo-neutral-100, #f4f7f7);
+}
+
+.pv__daybg--today {
+  background: var(--eo-accent-100);
+}
+
+.pv__bar {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 1;
+  margin: 3px 2px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 12px;
+}
+
+.pv__bar-code {
+  font-family: 'Archivo', sans-serif;
+  font-weight: 800;
+  flex: none;
+}
+
+.pv__bar-label {
+  opacity: 0.75;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pv__bar--selected {
+  box-shadow: 0 0 0 2px var(--eo-accent);
+}

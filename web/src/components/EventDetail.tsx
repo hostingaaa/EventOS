@@ -1,10 +1,12 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { Event, EventUpdates } from '../types';
 import { StatusChip } from './StatusChip';
 import { updateEvent } from '../api/client';
 import { useUser } from '../context/UserContext';
 import { getAssignableMembers } from '../utils/roleStore';
 import { formatEventHeaderDates } from '../utils/calendarDates';
+import { parseAssignedTeam, serializeAssignedTeam } from '../utils/teamAssignment';
+import { PersonAvatar } from './calendar/PersonAvatar';
 import './EventDetail.css';
 
 const LEM_OPTIONS = ['Open', 'Closed', 'Full/Connectmice'];
@@ -30,6 +32,11 @@ export function EventDetail({ event, onUpdated }: Props) {
 
   const canAssign = can('events.assign');
   const assignableMembers = useMemo(() => getAssignableMembers(), []);
+
+  const [teamOrder, setTeamOrder] = useState<string[]>([]);
+  useEffect(() => {
+    setTeamOrder(parseAssignedTeam(event ?? {}));
+  }, [event?.rowId]);
 
   if (!event) {
     return (
@@ -59,6 +66,23 @@ export function EventDetail({ event, onUpdated }: Props) {
     const next = email.trim();
     if (next === (ev.ownerEmail ?? '').trim()) return;
     await saveField({ ownerEmail: next });
+  }
+
+  function toggleTeamMember(email: string) {
+    if (!canAssign) return;
+    setTeamOrder((prev) => (prev.includes(email) ? prev.filter((e) => e !== email) : [...prev, email]));
+  }
+
+  function makeLead(email: string) {
+    if (!canAssign) return;
+    setTeamOrder((prev) => [email, ...prev.filter((e) => e !== email)]);
+  }
+
+  const teamDirty = serializeAssignedTeam(teamOrder) !== (ev.assignedTeam ?? '');
+
+  async function saveTeam() {
+    if (!canAssign || !teamDirty) return;
+    await saveField({ assignedTeam: serializeAssignedTeam(teamOrder) });
   }
 
   const sowLink = sowHref(ev.sow);
@@ -289,6 +313,67 @@ export function EventDetail({ event, onUpdated }: Props) {
         ) : (
           <p className="detail__meta">
             {ev.ownerEmail ? ev.ownerEmail : 'No assigned member'}
+          </p>
+        )}
+      </section>
+
+      <section className="detail__section">
+        <h3>Assigned team</h3>
+        {canAssign ? (
+          <>
+            <ul className="detail__team-list">
+              {assignableMembers.map((m) => {
+                const checked = teamOrder.includes(m.email);
+                const isLead = teamOrder[0] === m.email;
+                return (
+                  <li key={m.id} className="detail__team-row">
+                    <label className="detail__team-check">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleTeamMember(m.email)}
+                        disabled={saving}
+                      />
+                      <PersonAvatar email={m.email} name={m.name} size={24} />
+                      <span className="detail__team-name">{m.name}</span>
+                    </label>
+                    {checked && (
+                      isLead ? (
+                        <span className="detail__team-lead-tag">Lead</span>
+                      ) : (
+                        <button
+                          type="button"
+                          className="detail__team-lead-btn"
+                          onClick={() => makeLead(m.email)}
+                          disabled={saving}
+                        >
+                          Set as lead
+                        </button>
+                      )
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+            <button
+              type="button"
+              className="detail__team-save-btn"
+              onClick={saveTeam}
+              disabled={saving || !teamDirty}
+            >
+              {saving ? 'Saving…' : 'Save team'}
+            </button>
+          </>
+        ) : (
+          <p className="detail__meta">
+            {teamOrder.length > 0
+              ? teamOrder
+                  .map((email, i) => {
+                    const m = assignableMembers.find((x) => x.email.toLowerCase() === email.toLowerCase());
+                    return (m?.name || email) + (i === 0 ? ' (lead)' : '');
+                  })
+                  .join(', ')
+              : 'No team assigned'}
           </p>
         )}
       </section>

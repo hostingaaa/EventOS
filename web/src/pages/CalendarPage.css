@@ -1,295 +1,174 @@
+/* ─── Design tokens (scoped to this page) ────────────────────────────────────
+ * Same values as the design handoff's own :root block, and byte-identical to
+ * DashboardPage.css's local copy — kept local per this app's established
+ * "page-scoped tokens, not merged into theme.css" convention. */
+
 .cal {
-  width: 100%;
-  min-width: 0;
+  --eo-bg: #f1f4f7;
+  --eo-surface: #ffffff;
+  --eo-text: #14212b;
+  --eo-divider: color-mix(in srgb, #14212b 12%, transparent);
+
+  --eo-accent: #0f7d69;
+  --eo-accent-100: #e6f4f1;
+  --eo-accent-200: #c6e7e0;
+  --eo-accent-700: #0b6a5b;
+
+  --eo-neutral-100: #f4f7f7;
+  --eo-neutral-200: #e6ebec;
+
+  --eo-award: #2f9e5f;
+
+  --eo-muted: color-mix(in srgb, var(--eo-text) 55%, transparent);
+
+  --eo-shadow-sm: 0 1px 2px rgba(20, 33, 43, 0.05), 0 1px 3px rgba(20, 33, 43, 0.04);
+  --eo-shadow-md: 0 4px 14px rgba(20, 33, 43, 0.08);
+
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 1.5rem 2.5rem;
+  color: var(--eo-text);
+  font-family: 'Archivo', 'Plus Jakarta Sans', system-ui, sans-serif;
 }
 
 .cal__loading {
-  color: var(--muted);
   padding: 2rem;
+  color: var(--muted, #64748b);
 }
 
-.cal__header {
+/* ─── Toolbar ─────────────────────────────────────────────────────────────── */
+
+.cal__toolbar {
   display: flex;
+  align-items: flex-end;
+  gap: 24px;
+  padding: 28px 0 22px;
   flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1.25rem;
+}
+
+.cal__title-block {
+  flex: 1;
+  min-width: 260px;
+}
+
+.cal__kicker {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--eo-accent-700);
+  margin-bottom: 10px;
 }
 
 .cal__title {
-  margin: 0;
   font-family: 'Archivo', sans-serif;
-  font-size: 32px;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  color: var(--eo-text, var(--ink));
+  font-size: 40px;
+  line-height: 1;
+  margin: 0;
+  letter-spacing: -0.02em;
 }
 
-.cal__sub {
-  margin: 0.35rem 0 0;
-  color: var(--eo-muted, var(--muted));
-  font-size: 0.95rem;
-}
-
-.cal__nav {
+.cal__controls {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.cal__nav-btn {
-  width: 2.25rem;
-  height: 2.25rem;
-  border: none;
+.cal__stepper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--eo-surface);
   border-radius: 999px;
-  background: var(--eo-surface, var(--surface));
   box-shadow: var(--eo-shadow-sm);
-  color: var(--eo-text, var(--ink-secondary));
-  font-size: 1.25rem;
-  line-height: 1;
+  padding: 4px;
+}
+
+.cal__step-btn {
+  all: unset;
   cursor: pointer;
-  transition: box-shadow 0.12s;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  font-size: 15px;
 }
 
-.cal__nav-btn:hover {
-  box-shadow: var(--eo-shadow-md);
+.cal__step-btn:hover {
+  background: var(--eo-accent-100);
+  color: var(--eo-accent-700);
 }
 
-.cal__month {
-  min-width: 9rem;
+.cal__month-label {
+  min-width: 132px;
   text-align: center;
-  font-weight: 700;
-  font-size: 1.05rem;
-  color: var(--eo-text, var(--ink));
+  font-family: 'Archivo', sans-serif;
+  font-weight: 800;
+  font-size: 14px;
 }
 
 .cal__today-btn {
-  margin-left: 0.5rem;
-  padding: 0.45rem 0.85rem;
-  border: none;
-  border-radius: 999px;
-  background: var(--eo-surface, var(--surface));
-  box-shadow: var(--eo-shadow-sm);
-  color: var(--eo-text, var(--ink-secondary));
-  font-family: 'Archivo', inherit;
-  font-weight: 800;
-  font-size: 0.85rem;
+  all: unset;
   cursor: pointer;
-  transition: box-shadow 0.12s;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: var(--eo-surface);
+  box-shadow: var(--eo-shadow-sm);
+  font-family: 'Archivo', sans-serif;
+  font-weight: 800;
+  font-size: 13px;
 }
 
 .cal__today-btn:hover {
   box-shadow: var(--eo-shadow-md);
 }
 
-/* Scrollable timeline board */
-.cal__board-wrap {
-  width: 100%;
-  max-width: 100%;
-  background: var(--eo-surface, var(--surface));
-  border: none;
-  border-radius: 16px;
+.cal__seg {
+  display: flex;
+  gap: 4px;
+  background: var(--eo-surface);
+  border-radius: 999px;
   box-shadow: var(--eo-shadow-sm);
-  overflow-x: auto;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-gutter: stable;
+  padding: 4px;
 }
 
-.cal__board {
-  width: max-content;
-  min-width: 100%;
-}
-
-.cal__head-row {
-  display: grid;
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  background: var(--eo-surface, var(--surface));
-  border-bottom: 1px solid var(--border);
-}
-
-.cal__head-label {
-  position: sticky;
-  left: 0;
-  z-index: 6;
-  background: var(--eo-surface, var(--surface));
-  border-right: 1px solid var(--border);
-}
-
-.cal__head-day {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 0.5rem 0.25rem;
-  border-right: 1px solid var(--border-subtle);
-  min-height: 52px;
-}
-
-.cal__head-day--weekend {
-  background: #f8fafc;
-}
-
-.cal__head-day--today {
-  background: #fff7ed;
-}
-
-.cal__head-day--today .cal__head-num {
-  background: #ea580c;
-  color: #fff;
+.cal__seg-btn {
+  all: unset;
+  cursor: pointer;
+  padding: 6px 16px;
   border-radius: 999px;
-  width: 1.65rem;
-  height: 1.65rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.cal__head-dow {
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: var(--muted-light);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.cal__head-num {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--ink-secondary);
-  margin-top: 0.15rem;
-}
-
-/* Member row */
-.cal__row {
-  display: grid;
-  border-bottom: 1px solid var(--border-subtle);
-  align-items: stretch;
-}
-
-.cal__row:last-child {
-  border-bottom: none;
-}
-
-.cal__row-label {
-  position: sticky;
-  left: 0;
-  z-index: 4;
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  padding: 0.65rem 0.75rem;
-  background: var(--eo-surface, var(--surface));
-  border-right: 1px solid var(--border);
-  font-weight: 600;
-  font-size: 0.88rem;
-  color: var(--eo-text, var(--ink));
-}
-
-.cal__avatar {
-  flex-shrink: 0;
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: 999px;
-  background: var(--eo-accent, #203864);
-  color: #fff;
-  font-size: 0.75rem;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.cal__member-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  text-transform: lowercase;
-}
-
-.cal__row-grid {
-  position: relative;
-  display: grid;
-  grid-auto-rows: min-content;
-}
-
-.cal__cell {
-  border-right: 1px solid var(--border-subtle);
-  min-height: 100%;
-}
-
-.cal__cell--weekend {
-  background: #f8fafc;
-}
-
-.cal__cell--today {
-  background: rgba(255, 247, 237, 0.55);
-}
-
-/* Event bars */
-.cal__bar {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.05rem;
-  margin: 0 2px;
-  padding: 0.2rem 0.45rem;
-  height: 28px;
-  border-radius: 6px;
-  border: 1px solid;
-  text-decoration: none;
-  overflow: hidden;
-  transition: filter 0.12s, transform 0.12s;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
-}
-
-.cal__bar:hover {
-  filter: brightness(0.97);
-  transform: translateY(-1px);
-  z-index: 3;
-}
-
-.cal__bar-code {
-  font-size: 0.72rem;
+  font-family: 'Archivo', sans-serif;
   font-weight: 800;
-  letter-spacing: -0.02em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 13px;
+  color: var(--eo-text);
 }
 
-.cal__bar-sub {
-  font-size: 0.62rem;
-  font-weight: 500;
-  opacity: 0.85;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.cal__seg-btn--active {
+  background: var(--eo-accent);
+  color: #fff;
 }
 
-.cal__empty {
-  padding: 2.5rem 1.5rem;
-  text-align: center;
-  color: var(--muted);
+/* ─── Body ────────────────────────────────────────────────────────────────── */
+
+.cal__body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: flex-start;
 }
 
-.cal__note {
-  margin: 1rem 0 0;
-  font-size: 0.85rem;
-  color: var(--muted);
+.cal__main {
+  min-width: 0;
+  flex: 999 1 680px;
 }
 
-@media (max-width: 768px) {
-  .cal__header {
-    flex-direction: column;
-  }
-
-  .cal__member-name {
-    max-width: 5.5rem;
-  }
+.cal__aside {
+  flex: 1 1 280px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: sticky;
+  top: 84px;
 }
