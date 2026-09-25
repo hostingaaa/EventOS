@@ -13,6 +13,7 @@ import { PerDiemFormPage } from './pages/PerDiemFormPage';
 import { TransferListPage } from './pages/TransferListPage';
 import { AVEquipmentPage } from './pages/AVEquipmentPage';
 import { ServiceReportPage } from './pages/ServiceReportPage';
+import { QRCodePage } from './pages/QRCodePage';
 import { GeneratorsPage } from './pages/GeneratorsPage';
 import { SOWGeneratorPage } from './pages/SOWGeneratorPage';
 import { DesignsPage } from './pages/DesignsPage';
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="/transfer-list" element={<TransferListPage />} />
           <Route path="/av-equipment" element={<AVEquipmentPage />} />
           <Route path="/service-report" element={<ServiceReportPage />} />
+          <Route path="/qr-code" element={<QRCodePage />} />
           <Route element={<AppLayout />}>
             <Route index element={<DashboardPage />} />
             <Route path="event/:eventCode" element={<EventWorkspacePage />} />

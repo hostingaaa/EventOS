@@ -91,6 +91,24 @@ const GENERATORS: GeneratorCard[] = [
     bg:    '#fffbeb',
     label: 'Open Generator',
   },
+  {
+    title: 'QR Code Generator',
+    description:
+      'Turn a registration link (or any URL) into a scannable QR code — ' +
+      'participants point their phone camera at it and the link opens ' +
+      'straight in their browser.',
+    detail: [
+      'Paste any link, or pick an event to auto-fill a label',
+      'Small / Medium / Large sizes, print-ready resolution',
+      'Generated entirely in your browser — nothing sent to a third party',
+      'Download as PNG or SVG',
+    ],
+    href:  '/qr-code',
+    icon:  '▦',
+    color: '#0f172a',
+    bg:    '#f1f5f9',
+    label: 'Open Generator',
+  },
 ];
 
 const SOW_GENERATOR: GeneratorCard = {

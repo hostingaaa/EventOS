@@ -1,0 +1,201 @@
+/* ─── Page layout ─────────────────────────────────────────────────────────── */
+
+.qr-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background: var(--eo-bg, #f4f5f7);
+  font-family: var(--font-sans, system-ui, sans-serif);
+  font-size: 0.875rem;
+}
+
+.qr-nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--eo-surface, #fff);
+  box-shadow: var(--eo-shadow-sm);
+  flex-shrink: 0;
+}
+
+.qr-nav__back {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--eo-accent, #4f46e5);
+  text-decoration: none;
+}
+.qr-nav__back:hover { text-decoration: underline; }
+
+.qr-nav__title {
+  font-family: 'Archivo', sans-serif;
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--eo-text, #1e293b);
+}
+
+.qr-body {
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  flex: 1;
+  min-height: 0;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .qr-body { grid-template-columns: 1fr; }
+}
+
+/* ─── Panels ──────────────────────────────────────────────────────────────── */
+
+.qr-panel {
+  background: var(--eo-surface, #fff);
+  border: none;
+  border-radius: 16px;
+  box-shadow: var(--eo-shadow-sm);
+  overflow: hidden;
+}
+
+.qr-panel--left {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.qr-panel--preview {
+  padding: 2.5rem 1.5rem;
+  min-height: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ─── Sections ────────────────────────────────────────────────────────────── */
+
+.qr-section {
+  padding: 1.1rem 1.25rem;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+}
+
+.qr-section:last-of-type {
+  border-bottom: none;
+}
+
+.qr-section--actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.qr-section__title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-secondary, #64748b);
+  margin: 0 0 0.75rem;
+}
+
+.qr-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-secondary, #475569);
+  margin-bottom: 0.65rem;
+}
+
+.qr-label:last-child { margin-bottom: 0; }
+
+.qr-input,
+.qr-select {
+  width: 100%;
+  padding: 0.42rem 0.6rem;
+  border: 1px solid var(--border, #d1d5db);
+  border-radius: 6px;
+  font-size: 0.82rem;
+  background: white;
+  color: var(--text, #1e293b);
+  box-sizing: border-box;
+}
+
+.qr-error {
+  margin: 0 1.25rem 1rem;
+  background: var(--danger-soft, #fee2e2);
+  color: #b91c1c;
+  padding: 0.6rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+}
+
+/* ─── Buttons ─────────────────────────────────────────────────────────────── */
+
+.qr-btn {
+  padding: 0.75rem 1.1rem;
+  border: none;
+  border-radius: 999px;
+  font-family: 'Archivo', inherit;
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: var(--eo-shadow-sm);
+  transition: background 0.15s, box-shadow 0.15s, opacity 0.15s;
+}
+
+.qr-btn--primary {
+  background: var(--eo-accent, var(--primary));
+  color: white;
+}
+.qr-btn--primary:hover:not(:disabled) { background: var(--eo-accent-700, var(--primary-hover)); }
+
+.qr-btn--secondary {
+  background: var(--eo-surface, white);
+  color: var(--eo-accent, var(--primary));
+}
+.qr-btn--secondary:hover:not(:disabled) { box-shadow: var(--eo-shadow-md); }
+
+.qr-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ─── Preview ─────────────────────────────────────────────────────────────── */
+
+.qr-preview__empty {
+  color: var(--text-secondary, #94a3b8);
+  font-size: 0.9rem;
+}
+
+.qr-preview__frame {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.qr-preview__canvas {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+}
+
+.qr-preview__label {
+  font-family: 'Archivo', inherit;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--eo-text, #1e293b);
+  margin: 0;
+  text-align: center;
+}
+
+.qr-preview__url {
+  font-size: 0.78rem;
+  color: var(--text-secondary, #94a3b8);
+  margin: 0;
+  word-break: break-all;
+  text-align: center;
+  max-width: 360px;
+}
