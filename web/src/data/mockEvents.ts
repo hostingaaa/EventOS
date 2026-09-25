@@ -80,6 +80,7 @@ const seedEvents: Event[] = [
     endDate: '2026-05-15',
     ownerEmail: 'mark@team.org',
     lastReminder: '',
+    assignedTeam: 'lead@team.org,director@team.org',
   },
   {
     // Starts in 3 days → IMMINENT
@@ -100,6 +101,7 @@ const seedEvents: Event[] = [
     endDate: '2026-05-26',
     ownerEmail: 'aisha@team.org',
     lastReminder: '',
+    assignedTeam: 'director@team.org,admin@team.org',
   },
   {
     // Starts in 6 days → IMMINENT
@@ -120,6 +122,7 @@ const seedEvents: Event[] = [
     endDate: '2026-05-29',
     ownerEmail: 'mark@team.org',
     lastReminder: '',
+    assignedTeam: 'lead@team.org',
   },
   {
     // Starts in 14 days → upcoming

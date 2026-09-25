@@ -31,6 +31,10 @@ export interface Event {
    * field existed, falls back to the legacy `awarded` field — see
    * eventLifecycle.ts). Admin-only to change. */
   status?: string;
+  /** Comma-joined member emails; the first is the lead, the rest are support.
+   * Independent of ownerEmail (see utils/teamAssignment.ts for why they're
+   * not kept in sync) — used by the Calendar page's staffing views. */
+  assignedTeam?: string;
   /** Set when the Service Report generator saves a report for this event. */
   serviceReportDriveUrl?: string;
   serviceReportDriveFileId?: string;
@@ -63,7 +67,7 @@ export interface EventsResponse {
 }
 
 export type EventUpdates = Partial<
-  Pick<Event, 'lem' | 'av' | 'interpreters' | 'venue' | 'psaCldp' | 'sow' | 'notes' | 'ownerEmail' | 'perDiemRate' | 'maxVisaAllowance' | 'maxGroundTransport' | 'awarded' | 'revenue' | 'status' | 'serviceReportDriveUrl' | 'serviceReportDriveFileId' | 'serviceReportSavedAt' | 'serviceReportSavedBy'>
+  Pick<Event, 'lem' | 'av' | 'interpreters' | 'venue' | 'psaCldp' | 'sow' | 'notes' | 'ownerEmail' | 'perDiemRate' | 'maxVisaAllowance' | 'maxGroundTransport' | 'awarded' | 'revenue' | 'status' | 'assignedTeam' | 'serviceReportDriveUrl' | 'serviceReportDriveFileId' | 'serviceReportSavedAt' | 'serviceReportSavedBy'>
 >;
 
 export type TaskStatus = 'todo' | 'in_progress' | 'blocked' | 'done';

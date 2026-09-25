@@ -1,0 +1,93 @@
+.plc {
+  background: var(--eo-surface);
+  border-radius: 16px;
+  box-shadow: var(--eo-shadow-sm);
+  padding: 18px 18px 10px;
+}
+
+.plc__header {
+  display: flex;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+
+.plc__title {
+  font-family: 'Archivo', sans-serif;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.plc__clear {
+  all: unset;
+  cursor: pointer;
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--eo-accent-700);
+}
+
+.plc__clear:hover {
+  text-decoration: underline;
+}
+
+.plc__row {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 8px;
+  border-radius: 10px;
+  transition: background 0.12s, opacity 0.12s;
+}
+
+.plc__row:hover {
+  background: var(--eo-neutral-100, #f4f7f7);
+}
+
+.plc__row--selected {
+  background: var(--eo-accent-100);
+}
+
+.plc__row-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.plc__row-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.plc__row-role {
+  font-size: 11px;
+  opacity: 0.5;
+}
+
+.plc__row-count {
+  text-align: right;
+}
+
+.plc__row-num {
+  font-family: 'Archivo', sans-serif;
+  font-weight: 800;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.plc__row-label {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.5;
+}
+
+.plc__footnote {
+  font-size: 11px;
+  opacity: 0.5;
+  padding: 8px 2px 6px;
+  margin: 0;
+}

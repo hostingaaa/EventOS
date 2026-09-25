@@ -9,6 +9,9 @@ export interface CalendarDay {
   weekday: string;
   isWeekend: boolean;
   isToday: boolean;
+  /** True for a leading/trailing day from an adjacent month, included only
+   * to pad a month grid to full weeks (see buildMonthGrid). */
+  isOutsideMonth?: boolean;
 }
 
 export interface EventDateFields {
@@ -214,6 +217,44 @@ export function buildMonthDays(month: Date): CalendarDay[] {
   return days;
 }
 
+/** Full 7-column month grid: buildMonthDays's days, padded with leading/
+ * trailing days from adjacent months so every week is complete. Used by
+ * the Calendar page's Month view (buildMonthDays alone, with no padding,
+ * remains the right choice for a plain day-range picker like
+ * ProgramDatesPicker). */
+export function buildMonthGrid(month: Date, weekStart: 'monday' | 'sunday' = 'monday'): CalendarDay[] {
+  const start = startOfMonth(month);
+  const end = endOfMonth(month);
+  const todayIso = toIsoDate(todayAtNoon());
+
+  const weekIndex = (jsDay: number) => (weekStart === 'monday' ? (jsDay + 6) % 7 : jsDay);
+  const leading = weekIndex(start.getDay());
+  const trailing = 6 - weekIndex(end.getDay());
+
+  const gridStart = new Date(start);
+  gridStart.setDate(gridStart.getDate() - leading);
+  const gridEnd = new Date(end);
+  gridEnd.setDate(gridEnd.getDate() + trailing);
+
+  const days: CalendarDay[] = [];
+  for (let d = new Date(gridStart); d <= gridEnd; d.setDate(d.getDate() + 1)) {
+    const copy = new Date(d);
+    copy.setHours(12, 0, 0, 0);
+    const iso = toIsoDate(copy);
+    const dow = copy.getDay();
+    days.push({
+      date: copy,
+      iso,
+      dayNum: copy.getDate(),
+      weekday: WEEKDAY[dow],
+      isWeekend: dow === 0 || dow === 6,
+      isToday: iso === todayIso,
+      isOutsideMonth: copy.getMonth() !== month.getMonth(),
+    });
+  }
+  return days;
+}
+
 /** Inclusive day index within a month grid (1-based column for CSS grid). */
 export function dayColumn(iso: string, days: CalendarDay[]): number | null {
   const idx = days.findIndex((d) => d.iso === iso);
@@ -257,21 +298,4 @@ export function assignEventLanes(
     map.set(ev.id, lane);
   }
   return map;
-}
-
-export const EVENT_BAR_PALETTE = [
-  { bg: '#ffedd5', border: '#fb923c', text: '#9a3412' },
-  { bg: '#dbeafe', border: '#60a5fa', text: '#1e40af' },
-  { bg: '#dcfce7', border: '#4ade80', text: '#166534' },
-  { bg: '#fce7f3', border: '#f472b6', text: '#9d174d' },
-  { bg: '#fef9c3', border: '#facc15', text: '#854d0e' },
-  { bg: '#ede9fe', border: '#a78bfa', text: '#5b21b6' },
-  { bg: '#ccfbf1', border: '#2dd4bf', text: '#115e59' },
-  { bg: '#e0e7ff', border: '#818cf8', text: '#3730a3' },
-] as const;
-
-export function eventColorIndex(code: string): number {
-  let h = 0;
-  for (let i = 0; i < code.length; i++) h = (h + code.charCodeAt(i) * (i + 1)) % EVENT_BAR_PALETTE.length;
-  return h;
 }

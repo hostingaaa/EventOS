@@ -109,6 +109,12 @@ function handleRequest_(e, method) {
           403,
         );
       }
+      if (updates.assignedTeam !== undefined && !canActor_(actorEmail, 'events.assign')) {
+        return jsonResponse_(
+          { error: 'Permission denied: change assigned team is not enabled for your role' },
+          403,
+        );
+      }
       updateEventFields_(target.rowNumber, updates);
       return jsonResponse_(findEventRow_(target.rowId, target.code));
     }
