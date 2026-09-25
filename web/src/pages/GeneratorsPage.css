@@ -134,11 +134,6 @@
 
 /* ─── Featured card (SOW Generator) ──────────────────────────────────────── */
 
-.gen-card--featured {
-  background: var(--card-bg);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--card-color) 30%, transparent), var(--eo-shadow-sm);
-}
-
 .gen-card__admin-badge {
   margin-left: auto;
   font-size: 0.68rem;
