@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/EventOS/eventos-icon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/EventOS/favicon-32.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="EventOS" />
+    <link rel="apple-touch-icon" href="/EventOS/apple-touch-icon.png" />
+    <title>EventOS</title>
+    <script>
+      // Restore path redirected through 404.html (GitHub Pages SPA trick).
+      // `path` here is already the full original path from the domain root
+      // (e.g. "EventOS/vendor/<token>") — 404.html encoded it that way — so
+      // it must NOT be prefixed with the base path again, or routes 404.
+      (function () {
+        var p = window.location.search.match(/[?&]p=([^&]*)/);
+        if (p) {
+          var path = decodeURIComponent(p[1]);
+          var q = path.match(/&q=(.*)/);
+          var search = q ? '?' + decodeURIComponent(q[1]) : '';
+          path = path.replace(/&q=.*/, '');
+          window.history.replaceState(
+            null, null,
+            '/' + path + search + window.location.hash
+          );
+        }
+      })();
+    </script>
+    <script type="module" crossorigin src="/EventOS/assets/index-BTKo8RPy.js"></script>
+    <link rel="stylesheet" crossorigin href="/EventOS/assets/index-CylXO53n.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
