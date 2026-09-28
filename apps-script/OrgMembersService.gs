@@ -92,6 +92,10 @@ function upsertMember_(member) {
 function sendInvitationEmail_(member, invitedByEmail) {
   try {
     var siteUrl = getScriptProperty_('APP_URL', true) || 'https://hostingaaa.github.io/EventOS/';
+    // Pre-fills the email step and jumps straight to the registration form
+    // (skipping the manual "type your email" + "No account found" steps) —
+    // see the ?email= handling in JoinTeamModal.tsx.
+    var inviteLink = siteUrl + (siteUrl.indexOf('?') >= 0 ? '&' : '?') + 'email=' + encodeURIComponent(member.email);
     var roleLabel = String(member.role || '').replace(/_/g, ' ');
     var inviter = typeof findMemberByEmail_ === 'function' ? findMemberByEmail_(invitedByEmail) : null;
     var invitedByLabel = (inviter && inviter.name) || invitedByEmail || 'An admin';
@@ -102,7 +106,7 @@ function sendInvitationEmail_(member, invitedByEmail) {
       escapeHtml_(member.email),
       escapeHtml_(roleLabel),
       escapeHtml_(invitedByLabel),
-      siteUrl,
+      inviteLink,
     );
     MailApp.sendEmail({ to: member.email, subject: subject, htmlBody: htmlBody });
   } catch (e) {

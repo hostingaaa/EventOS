@@ -14,6 +14,26 @@ import './JoinTeamModal.css';
 
 type Step = 'email' | 'password' | 'not_found' | 'register';
 
+/** Shared by the manual email-entry step and the invite-link auto-check
+ * below — true if an account already exists for this email. */
+async function checkEmailExists(trimmed: string): Promise<boolean> {
+  let exists = !!getAccountByEmail(trimmed);
+  if (!exists && !useMockData()) {
+    try {
+      exists = await apiAuthCheckEmail(trimmed);
+    } catch (err) {
+      // Older GAS deployment without authCheckEmail — still allow sign-in attempt
+      const msg = err instanceof Error ? err.message : '';
+      if (msg.includes('Unknown action')) {
+        exists = true;
+      } else {
+        throw err;
+      }
+    }
+  }
+  return exists;
+}
+
 export function JoinTeamModal() {
   const { user, setUser, isReady } = useUser();
   const location = useLocation();
@@ -30,6 +50,7 @@ export function JoinTeamModal() {
   const emailRef    = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
   const nameRef     = useRef<HTMLInputElement>(null);
+  const autoInviteHandled = useRef(false);
 
   // Auto-focus the first field on each step
   useEffect(() => {
@@ -37,6 +58,37 @@ export function JoinTeamModal() {
     if (step === 'password') passwordRef.current?.focus();
     if (step === 'register') nameRef.current?.focus();
   }, [step]);
+
+  // An invitation email links here with ?email=<invited address> so the
+  // invitee lands straight on the registration form instead of retyping
+  // their email and clicking through "No account found" — see
+  // sendInvitationEmail_ in apps-script/OrgMembersService.gs. Skips the
+  // interstitial entirely since clicking that specific link already makes
+  // the intent unambiguous; the normal manual-entry path below still shows
+  // it, since a typo there is genuinely worth confirming before registering.
+  useEffect(() => {
+    if (autoInviteHandled.current || !isReady || user) return;
+    const invited = new URLSearchParams(location.search).get('email');
+    if (!invited) return;
+    autoInviteHandled.current = true;
+    const trimmed = invited.trim().toLowerCase();
+    if (!trimmed || !trimmed.includes('@')) return;
+
+    setEmail(trimmed);
+    setLoading(true);
+    checkEmailExists(trimmed)
+      .then((exists) => setStep(exists ? 'password' : 'register'))
+      .catch((err) => {
+        const msg = err instanceof Error ? err.message : '';
+        setError(msg || 'Could not reach the server. Check your connection and try again.');
+      })
+      .finally(() => setLoading(false));
+
+    // Drop it from the address bar now that it's been used.
+    const url = new URL(window.location.href);
+    url.searchParams.delete('email');
+    window.history.replaceState({}, '', url.toString());
+  }, [isReady, user, location.search]);
 
   // The vendor portal is a public, token-only page — vendors never have (or
   // need) an EventOS account, so this sign-in gate must never cover it.
@@ -56,20 +108,7 @@ export function JoinTeamModal() {
     }
     setLoading(true);
     try {
-      let exists = !!getAccountByEmail(trimmed);
-      if (!exists && !useMockData()) {
-        try {
-          exists = await apiAuthCheckEmail(trimmed);
-        } catch (err) {
-          // Older GAS deployment without authCheckEmail — still allow sign-in attempt
-          const msg = err instanceof Error ? err.message : '';
-          if (msg.includes('Unknown action')) {
-            exists = true;
-          } else {
-            throw err;
-          }
-        }
-      }
+      const exists = await checkEmailExists(trimmed);
       setEmail(trimmed);
       setStep(exists ? 'password' : 'not_found');
     } catch (err) {
