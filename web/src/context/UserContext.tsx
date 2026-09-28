@@ -34,6 +34,13 @@ function getMockAdminEmails(): string[] {
 
 function loadUser(): TeamUser | null {
   try {
+    // An invitation link (?email=...) must always land on registration/
+    // sign-in for that specific address — never silently show whichever
+    // account happens to already be logged in on this device/browser (e.g.
+    // a shared computer, or the admin's own browser after inviting
+    // someone). See the matching ?email= handling in JoinTeamModal.tsx.
+    if (new URLSearchParams(window.location.search).has('email')) return null;
+
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as TeamUser;
