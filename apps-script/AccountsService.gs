@@ -64,6 +64,43 @@ function registerAccount_(name, email, passwordHash) {
   var id        = 'auth-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
   var createdAt = new Date().toISOString().slice(0, 10);
   getAuthAccountsSheet_().appendRow([id, name.trim(), lower, passwordHash, createdAt]);
+
+  // Registration is fully self-serve (any email can sign up) — this is the
+  // one authoritative place that creates or activates the matching
+  // OrgMembers row, so an admin's pre-added "invited" record actually
+  // transitions to "active" once the person registers, instead of staying
+  // stuck as Invited forever. Never let this block account creation.
+  try {
+    if (typeof findMemberByEmail_ === 'function' && typeof upsertMember_ === 'function') {
+      var existingMember = findMemberByEmail_(lower);
+      if (existingMember) {
+        if (existingMember.status === 'invited') {
+          upsertMember_({
+            id: existingMember.id,
+            name: name.trim(),
+            email: lower,
+            role: existingMember.role,
+            status: 'active',
+            createdAt: existingMember.createdAt,
+            invitedBy: existingMember.invitedBy,
+          });
+        }
+      } else {
+        upsertMember_({
+          id: 'member-' + Date.now(),
+          name: name.trim(),
+          email: lower,
+          role: 'project_lead',
+          status: 'active',
+          createdAt: createdAt,
+          invitedBy: '',
+        });
+      }
+    }
+  } catch (e) {
+    Logger.log('registerAccount_ member sync failed for ' + lower + ': ' + e);
+  }
+
   return { id: id, name: name.trim(), email: lower, passwordHash: passwordHash, createdAt: createdAt };
 }
 

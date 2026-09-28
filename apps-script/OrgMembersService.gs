@@ -86,6 +86,26 @@ function upsertMember_(member) {
   return member;
 }
 
+/** Emails a newly invited member the site link + their assigned role.
+ * Failure here must never block adding the member — email delivery is a
+ * courtesy notification, not a requirement for the record to exist. */
+function sendInvitationEmail_(member, invitedByEmail) {
+  try {
+    var siteUrl = getScriptProperty_('APP_URL', true) || 'https://hostingaaa.github.io/EventOS/';
+    var roleLabel = String(member.role || '').replace(/_/g, ' ');
+    var subject = "You've been added to EventOS";
+    var htmlBody =
+      '<p>Hi ' + (member.name || '') + ',</p>' +
+      '<p>' + (invitedByEmail || 'An admin') + ' has added you to EventOS' +
+      (roleLabel ? ' as a <strong>' + roleLabel + '</strong>' : '') + '.</p>' +
+      '<p>Sign in (or create your account) using this email address (' + member.email + ') at:</p>' +
+      '<p><a href="' + siteUrl + '">' + siteUrl + '</a></p>';
+    MailApp.sendEmail({ to: member.email, subject: subject, htmlBody: htmlBody });
+  } catch (e) {
+    Logger.log('sendInvitationEmail_ failed for ' + member.email + ': ' + e);
+  }
+}
+
 function deactivateMember_(id) {
   var found = findMemberRow_(id);
   if (!found) throw new Error('Member not found: ' + id);

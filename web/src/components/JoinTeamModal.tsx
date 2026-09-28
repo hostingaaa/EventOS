@@ -7,7 +7,7 @@ import {
   getAccountByEmail,
   verifyPassword,
 } from '../utils/authStore';
-import { getMemberByEmail, upsertMember } from '../utils/roleStore';
+import { fetchAndCacheMembers, getMemberByEmail, upsertMember } from '../utils/roleStore';
 import { EventOSWordmark } from './EventOSWordmark';
 import { EventOSLogo } from '../brand/EventOSLogo';
 import './JoinTeamModal.css';
@@ -113,8 +113,13 @@ export function JoinTeamModal() {
     try {
       const account = await createAuthAccount(name.trim(), email, password);
 
-      // Ensure the user exists in the org members store
-      if (!getMemberByEmail(email)) {
+      if (!useMockData()) {
+        // The backend's registerAccount_ already created (or activated a
+        // pre-invited) OrgMembers row server-side — refresh the local cache
+        // from it rather than guessing here, so a pre-assigned role/status
+        // reflects the server's authoritative record.
+        await fetchAndCacheMembers();
+      } else if (!getMemberByEmail(email)) {
         upsertMember({
           id: `member-${Date.now()}`,
           name: account.name,

@@ -423,7 +423,12 @@ function handleRequest_(e, method) {
 
     if (action === 'membersUpsert' && acceptsWrite_(method, e)) {
       requireAdmin_(actorEmail);
-      return jsonResponse_(upsertMember_(body.member));
+      var isNewMember = body.member && !findMemberRow_(body.member.id);
+      var savedMember = upsertMember_(body.member);
+      if (isNewMember && savedMember.status === 'invited') {
+        sendInvitationEmail_(savedMember, actorEmail);
+      }
+      return jsonResponse_(savedMember);
     }
 
     if (action === 'membersDeactivate' && acceptsWrite_(method, e)) {
