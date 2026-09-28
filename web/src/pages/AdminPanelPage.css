@@ -133,6 +133,11 @@
   font-size: 0.78rem;
 }
 
+.ap-row-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
 /* ── Members table ──────────────────────────────────────────────────────── */
 .ap-table-wrap {
   overflow-x: auto;

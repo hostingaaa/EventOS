@@ -437,6 +437,12 @@ function handleRequest_(e, method) {
       return jsonResponse_({ ok: true });
     }
 
+    if (action === 'membersDelete' && acceptsWrite_(method, e)) {
+      requireAdmin_(actorEmail);
+      deleteMember_(body.id);
+      return jsonResponse_({ ok: true });
+    }
+
     // ——— Role capabilities ———
     // Intentionally NOT admin-gated: every signed-in user's client (web's
     // initAuthStore, iOS's AdminPanelViewModel) fetches this matrix to
