@@ -778,6 +778,10 @@ export async function apiMembersDeactivate(id: string, actorEmail: string): Prom
   await post('membersDeactivate', { id, actorEmail });
 }
 
+export async function apiMembersDelete(id: string, actorEmail: string): Promise<void> {
+  await post('membersDelete', { id, actorEmail });
+}
+
 // ——— Role capabilities ———
 
 export async function apiCapsList(): Promise<CapMatrix | null> {

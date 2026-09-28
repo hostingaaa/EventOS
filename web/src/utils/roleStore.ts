@@ -277,6 +277,25 @@ export function deactivateMember(id: string, actorEmail?: string): void {
   });
 }
 
+/**
+ * Permanently removes a member from the local cache and, in real mode,
+ * fires a background write to GAS. Unlike deactivateMember, this can't be
+ * undone — meant for cleaning up unused accounts (stale invites, test
+ * rows), not for removing someone still genuinely on the team.
+ */
+export function deleteMember(id: string, actorEmail?: string): void {
+  const all = getMembers().filter((m) => m.id !== id);
+  saveMembers(all);
+
+  import('../api/client').then(({ useMockData, apiMembersDelete }) => {
+    if (!useMockData()) {
+      apiMembersDelete(id, actorEmail ?? '').catch((err) =>
+        console.warn('[roleStore] membersDelete failed:', err),
+      );
+    }
+  });
+}
+
 // ── Capability matrix CRUD ───────────────────────────────────────────────
 
 /** Merge stored matrix with defaults so new capabilities appear after upgrades. */

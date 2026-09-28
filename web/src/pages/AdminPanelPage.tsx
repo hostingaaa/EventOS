@@ -8,6 +8,7 @@ import {
   type AppRole,
   type CapMatrix,
   type OrgMember,
+  deleteMember,
   getCapMatrix,
   getMembers,
   saveCapMatrix,
@@ -125,6 +126,13 @@ export function AdminPanelPage() {
       return prev.map((m) => m.id === id ? updated : m);
     });
   }, []);
+
+  const handleDeleteMember = useCallback((m: OrgMember) => {
+    if (!confirm(`Permanently delete "${m.name}" (${m.email})? This can't be undone.`)) return;
+    deleteMember(m.id, user?.email);
+    setMembers((prev) => prev.filter((x) => x.id !== m.id));
+    window.dispatchEvent(new StorageEvent('storage', { key: 'org_members_v1' }));
+  }, [user?.email]);
 
   const handleAddMember = useCallback((m: OrgMember) => {
     upsertMember(m);
@@ -274,12 +282,23 @@ export function AdminPanelPage() {
                       <td className="ap-date">{m.createdAt}</td>
                       <td>
                         {!isSelf && (
-                          <button
-                            className={`ap-btn ap-btn--sm ${m.status === 'inactive' ? 'ap-btn--ghost' : 'ap-btn--danger-ghost'}`}
-                            onClick={() => handleStatusToggle(m.id)}
-                          >
-                            {m.status === 'inactive' ? 'Activate' : 'Deactivate'}
-                          </button>
+                          <div className="ap-row-actions">
+                            <button
+                              className={`ap-btn ap-btn--sm ${m.status === 'inactive' ? 'ap-btn--ghost' : 'ap-btn--danger-ghost'}`}
+                              onClick={() => handleStatusToggle(m.id)}
+                            >
+                              {m.status === 'inactive' ? 'Activate' : 'Deactivate'}
+                            </button>
+                            {m.status !== 'active' && (
+                              <button
+                                className="ap-btn ap-btn--sm ap-btn--danger-ghost"
+                                title="Permanently delete this unused account"
+                                onClick={() => handleDeleteMember(m)}
+                              >
+                                Delete
+                              </button>
+                            )}
+                          </div>
                         )}
                       </td>
                     </tr>

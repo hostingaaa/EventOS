@@ -258,6 +258,17 @@ function deactivateMember_(id) {
     .setValue('inactive');
 }
 
+/** Permanently removes the row — unlike deactivateMember_, this can't be
+ * undone from the Admin Panel. Meant for cleaning up unused accounts
+ * (stale invites, test rows) rather than for removing someone who was
+ * genuinely part of the team; the UI only offers this for non-active
+ * members, as a guard against deleting someone still in active use. */
+function deleteMember_(id) {
+  var found = findMemberRow_(id);
+  if (!found) throw new Error('Member not found: ' + id);
+  getOrgMembersSheet_().deleteRow(found.rowIndex);
+}
+
 // ── Capability matrix ─────────────────────────────────────────────────────
 
 function getCapMatrixFromSheet_() {
