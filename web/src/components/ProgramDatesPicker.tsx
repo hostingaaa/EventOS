@@ -27,9 +27,9 @@ export function ProgramDatesPicker({ value, onChange, id }: ProgramDatesPickerPr
     return () => document.removeEventListener('mousedown', onOutside);
   }, [open]);
 
-  // Flip the panel above the trigger (and keep it scrolled into view) when it
-  // would otherwise render partly or fully below the viewport — without this,
-  // the Done/Clear footer can land off-screen with no way to reach it.
+  // Flip the panel above the trigger when it would otherwise render partly
+  // or fully below the viewport — without this, the Done/Clear footer can
+  // land off-screen with no way to reach it.
   useLayoutEffect(() => {
     if (!open || !rootRef.current || !panelRef.current) return;
     const triggerRect = rootRef.current.getBoundingClientRect();
@@ -37,7 +37,6 @@ export function ProgramDatesPicker({ value, onChange, id }: ProgramDatesPickerPr
     const fitsBelow = triggerRect.bottom + panelHeight <= window.innerHeight;
     const fitsAbove = triggerRect.top - panelHeight >= 0;
     setOpenUpward(!fitsBelow && fitsAbove);
-    panelRef.current.scrollIntoView({ block: 'nearest' });
   }, [open, viewMonth]);
 
   function toggleOpen() {
