@@ -16,7 +16,7 @@ import { buildTransferCostLines } from '../utils/transferFinancialsSync';
 import { syncGeneratorCostItems } from '../utils/generatorFinancialsSync';
 import { useUser } from '../context/UserContext';
 import type { Event } from '../types';
-import { DateInput } from '../components/DateInput';
+import { SingleDatePicker } from '../components/SingleDatePicker';
 import './TransferListPage.css';
 
 // ─── Types (exported so exportTransferList can import them) ───────────────
@@ -229,7 +229,7 @@ function TravelerRow({ t, idx, isOpen, onToggle, onUpdate, onRemove }: RowProps)
             <div className="tl-grid-3">
               <label>
                 Arrival date
-                <DateInput value={t.arrivalDate} onChange={setField('arrivalDate')} />
+                <SingleDatePicker value={t.arrivalDate} onChange={setField('arrivalDate')} />
               </label>
               <label>
                 Flight code
@@ -247,7 +247,7 @@ function TravelerRow({ t, idx, isOpen, onToggle, onUpdate, onRemove }: RowProps)
             <div className="tl-grid-3">
               <label>
                 Departure date
-                <DateInput value={t.departureDate} onChange={setField('departureDate')} />
+                <SingleDatePicker value={t.departureDate} onChange={setField('departureDate')} />
               </label>
               <label>
                 Flight code
