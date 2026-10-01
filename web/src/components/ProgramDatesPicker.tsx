@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { buildMonthDays, parseIsoDate, startOfMonth, todayAtNoon } from '../utils/calendarDates';
 import { formatProgramDates } from '../utils/dateFormat';
 import './ProgramDatesPicker.css';
@@ -13,8 +13,10 @@ const WEEKDAY_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
 export function ProgramDatesPicker({ value, onChange, id }: ProgramDatesPickerProps) {
   const [open, setOpen]           = useState(false);
+  const [openUpward, setOpenUpward] = useState(false);
   const [viewMonth, setViewMonth] = useState(() => startOfMonth(parseIsoDate(value[0]) || todayAtNoon()));
   const rootRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -24,6 +26,19 @@ export function ProgramDatesPicker({ value, onChange, id }: ProgramDatesPickerPr
     document.addEventListener('mousedown', onOutside);
     return () => document.removeEventListener('mousedown', onOutside);
   }, [open]);
+
+  // Flip the panel above the trigger (and keep it scrolled into view) when it
+  // would otherwise render partly or fully below the viewport — without this,
+  // the Done/Clear footer can land off-screen with no way to reach it.
+  useLayoutEffect(() => {
+    if (!open || !rootRef.current || !panelRef.current) return;
+    const triggerRect = rootRef.current.getBoundingClientRect();
+    const panelHeight = panelRef.current.offsetHeight;
+    const fitsBelow = triggerRect.bottom + panelHeight <= window.innerHeight;
+    const fitsAbove = triggerRect.top - panelHeight >= 0;
+    setOpenUpward(!fitsBelow && fitsAbove);
+    panelRef.current.scrollIntoView({ block: 'nearest' });
+  }, [open, viewMonth]);
 
   function toggleOpen() {
     setOpen((wasOpen) => {
@@ -56,7 +71,7 @@ export function ProgramDatesPicker({ value, onChange, id }: ProgramDatesPickerPr
       </button>
 
       {open && (
-        <div className="pdp-panel">
+        <div ref={panelRef} className={`pdp-panel${openUpward ? ' pdp-panel--up' : ''}`}>
           <div className="pdp-panel__header">
             <button type="button" className="pdp-nav" onClick={() => shiftMonth(-1)} aria-label="Previous month">‹</button>
             <span className="pdp-panel__month">
