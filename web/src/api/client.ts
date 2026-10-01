@@ -191,6 +191,7 @@ export interface CreateEventInput {
   venue?: string;
   ownerEmail?: string;
   notes?: string;
+  supportLevel?: string;
   templateIds?: string[];
 }
 

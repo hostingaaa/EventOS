@@ -260,6 +260,7 @@ export function createMockEvent(payload: Partial<Event> & { code: string }): Eve
     endDate: payload.endDate || startDate,
     ownerEmail: payload.ownerEmail || '',
     lastReminder: '',
+    supportLevel: payload.supportLevel || '',
   };
 
   appendExtraEvent(event);

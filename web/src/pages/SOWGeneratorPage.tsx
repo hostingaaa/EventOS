@@ -222,6 +222,7 @@ export function SOWGeneratorPage() {
           monthGroup:  formatMonthYear(startDate),
           venue:       venue.trim(),
           ownerEmail:  assignee.trim() || user?.email || '',
+          supportLevel,
           notes:       [title ? `Meeting: ${title}` : '', supportLevel ? `Support: ${PKG_LABELS[supportLevel === 'full' ? 'fullLEM' : 'minimalLEM']}` : '', pax ? `PAX: ${pax}` : '', language ? `Language: ${language}` : '', notes].filter(Boolean).join('\n'),
           templateIds,
         },

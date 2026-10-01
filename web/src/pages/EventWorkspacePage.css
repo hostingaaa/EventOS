@@ -131,6 +131,22 @@
 .workspace__status-badge--cancelled { background: #b91c1c; }
 .workspace__status-badge--archived  { background: #1e293b; }
 
+/* LEM support level — Full (blue) / Min (orange) */
+.workspace__support-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.workspace__support-badge--full    { background: #dbeafe; color: #1d4ed8; }
+.workspace__support-badge--minimal { background: #ffedd5; color: #c2410c; }
+
 .workspace__header-sub {
   margin: 6px 0 0;
   color: var(--eo-muted);

@@ -78,6 +78,7 @@ var CONFIG = {
     REVENUE: 'Revenue',
     STATUS: 'Status',
     ASSIGNED_TEAM: 'Assigned Team',
+    SUPPORT_LEVEL: 'Support Level',
     SERVICE_REPORT_DRIVE_URL: 'Service Report Drive URL',
     SERVICE_REPORT_DRIVE_FILE_ID: 'Service Report Drive File Id',
     SERVICE_REPORT_SAVED_AT: 'Service Report Saved At',
