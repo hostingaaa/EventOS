@@ -80,6 +80,7 @@ export function SOWGeneratorPage() {
   const [city,       setCity]       = useState('');
   const [cityOther,  setCityOther]  = useState('');
   const [programDates, setProgramDates] = useState<string[]>([]);
+  const [supportLevel, setSupportLevel] = useState<'' | 'full' | 'minimal'>('');
   const [notes,      setNotes]      = useState('');
   const [venue,      setVenue]      = useState('');
   const [pax,        setPax]        = useState('');
@@ -179,6 +180,7 @@ export function SOWGeneratorPage() {
       setCity(matched.city);
       setCityOther(matched.cityOther);
       setProgramDates(expandDateRange(sow.startDate, sow.endDate));
+      setSupportLevel(sow.packages.fullLEM ? 'full' : sow.packages.minimalLEM ? 'minimal' : '');
       setNotes(sow.notes);
       setPax(sow.totalParticipants);
       setLanguage(sow.language);
@@ -220,7 +222,7 @@ export function SOWGeneratorPage() {
           monthGroup:  formatMonthYear(startDate),
           venue:       venue.trim(),
           ownerEmail:  assignee.trim() || user?.email || '',
-          notes:       [title ? `Meeting: ${title}` : '', pax ? `PAX: ${pax}` : '', language ? `Language: ${language}` : '', notes].filter(Boolean).join('\n'),
+          notes:       [title ? `Meeting: ${title}` : '', supportLevel ? `Support: ${PKG_LABELS[supportLevel === 'full' ? 'fullLEM' : 'minimalLEM']}` : '', pax ? `PAX: ${pax}` : '', language ? `Language: ${language}` : '', notes].filter(Boolean).join('\n'),
           templateIds,
         },
         user?.email ?? '',
@@ -452,13 +454,27 @@ export function SOWGeneratorPage() {
                 </label>
               )}
 
-              <label className="sow-label" style={{ marginTop: '0.65rem' }}>
-                Program dates
-                <ProgramDatesPicker
-                  value={programDates}
-                  onChange={setProgramDates}
-                />
-              </label>
+              <div className="sow-grid-2" style={{ marginTop: '0.65rem' }}>
+                <label className="sow-label">
+                  LEM support level
+                  <select
+                    className="sow-input sow-select"
+                    value={supportLevel}
+                    onChange={(e) => setSupportLevel(e.target.value as '' | 'full' | 'minimal')}
+                  >
+                    <option value="">— not specified —</option>
+                    <option value="full">Full Support LEM</option>
+                    <option value="minimal">Minimum Support LEM</option>
+                  </select>
+                </label>
+                <label className="sow-label">
+                  Program dates
+                  <ProgramDatesPicker
+                    value={programDates}
+                    onChange={setProgramDates}
+                  />
+                </label>
+              </div>
 
               <label className="sow-label" style={{ marginTop: '0.65rem' }}>
                 Meeting name / Title
