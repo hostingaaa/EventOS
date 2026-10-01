@@ -197,11 +197,16 @@ const ARR_MERGE_COLS = [4, 5, 6, 7];
 // 4=Date, 5=Flight, 6=Time, 7=Vehicle, 8=Hotel Pickup
 const DEP_MERGE_COLS = [4, 5, 6, 7, 8];
 
-function buildArrivalsSheet(
+interface SheetSection {
+  rows:   unknown[][];
+  merges: { s: { r: number; c: number }; e: { r: number; c: number } }[];
+}
+
+function buildArrivalsSection(
   travelers: TravelerEntry[],
   airport:   string,
   hotel:     string,
-): ReturnType<typeof XLSXStyle.utils.aoa_to_sheet> {
+): SheetSection {
   const rows: unknown[][] = [];
   // row 0 = title, row 1 = headers → data starts at row 2
   let rowIdx = 2;
@@ -267,28 +272,14 @@ function buildArrivalsSheet(
     }
   }
 
-  const ws = XLSXStyle.utils.aoa_to_sheet(rows);
-  ws['!merges'] = merges;
-  ws['!rows']   = [{ hpt: 36 }]; // title row height (pt) — accommodates sz:20
-  ws['!cols']   = [
-    { wch: 4 },   // Nr
-    { wch: 16 },  // First Name
-    { wch: 16 },  // Last Name
-    { wch: 16 },  // Phone
-    { wch: 18 },  // Date
-    { wch: 26 },  // Flight
-    { wch: 12 },  // Time
-    { wch: 14 },  // Vehicle
-    { wch: 12 },  // Type
-  ];
-  return ws;
+  return { rows, merges };
 }
 
-function buildDeparturesSheet(
+function buildDeparturesSection(
   travelers: TravelerEntry[],
   hotel:     string,
   airport:   string,
-): ReturnType<typeof XLSXStyle.utils.aoa_to_sheet> {
+): SheetSection {
   const rows: unknown[][] = [];
   let rowIdx = 2;
   const merges: { s: { r: number; c: number }; e: { r: number; c: number } }[] = [
@@ -352,21 +343,18 @@ function buildDeparturesSheet(
     }
   }
 
-  const ws = XLSXStyle.utils.aoa_to_sheet(rows);
-  ws['!merges'] = merges;
-  ws['!rows']   = [{ hpt: 36 }]; // title row height
-  ws['!cols']   = [
-    { wch: 4 },
-    { wch: 16 },
-    { wch: 16 },
-    { wch: 16 },
-    { wch: 18 },
-    { wch: 26 },
-    { wch: 12 },
-    { wch: 14 },
-    { wch: 20 },
-  ];
-  return ws;
+  return { rows, merges };
+}
+
+/** Shift every merge range in a section down by `rowOffset` rows. */
+function offsetMerges(
+  merges: SheetSection['merges'],
+  rowOffset: number,
+): SheetSection['merges'] {
+  return merges.map((m) => ({
+    s: { r: m.s.r + rowOffset, c: m.s.c },
+    e: { r: m.e.r + rowOffset, c: m.e.c },
+  }));
 }
 
 // ─── main export function ──────────────────────────────────────────────────
@@ -378,14 +366,37 @@ export function transferListFilename(setup: TransferSetup): string {
   return `${code}_${city}_${dates}_Transfer_List.xlsx`;
 }
 
+// Blank rows left between the Arrivals block and the Departures block below it.
+const SECTION_GAP_ROWS = 2;
+
 export function buildTransferListWorkbook(travelers: TravelerEntry[], setup: TransferSetup) {
   const wb = XLSXStyle.utils.book_new();
 
-  const arrSheet = buildArrivalsSheet(travelers, setup.arrivalAirport, setup.hotel);
-  const depSheet = buildDeparturesSheet(travelers, setup.hotel, setup.departureAirport || setup.arrivalAirport);
+  const arrivals   = buildArrivalsSection(travelers, setup.arrivalAirport, setup.hotel);
+  const departures = buildDeparturesSection(travelers, setup.hotel, setup.departureAirport || setup.arrivalAirport);
 
-  XLSXStyle.utils.book_append_sheet(wb, arrSheet, 'Arrivals');
-  XLSXStyle.utils.book_append_sheet(wb, depSheet, 'Departures');
+  const gap = Array.from({ length: SECTION_GAP_ROWS }, () => Array(ARR_COLS).fill(cell('', {})));
+  const depRowOffset = arrivals.rows.length + SECTION_GAP_ROWS;
+
+  const rows = [...arrivals.rows, ...gap, ...departures.rows];
+  const merges = [...arrivals.merges, ...offsetMerges(departures.merges, depRowOffset)];
+
+  const ws = XLSXStyle.utils.aoa_to_sheet(rows);
+  ws['!merges'] = merges;
+  ws['!rows']   = [{ hpt: 36 }, ...Array(depRowOffset - 1).fill(undefined), { hpt: 36 }]; // title row heights
+  ws['!cols']   = [
+    { wch: 4 },   // Nr
+    { wch: 16 },  // First Name
+    { wch: 16 },  // Last Name
+    { wch: 16 },  // Phone
+    { wch: 18 },  // Date
+    { wch: 26 },  // Flight
+    { wch: 12 },  // Time
+    { wch: 14 },  // Vehicle
+    { wch: 20 },  // Type / Hotel Departure Time
+  ];
+
+  XLSXStyle.utils.book_append_sheet(wb, ws, 'Transfer List');
 
   return wb;
 }
