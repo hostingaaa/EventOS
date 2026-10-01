@@ -210,6 +210,7 @@ function rowToEvent_(row, rowNum, map) {
     revenue: cell(CONFIG.COLS.REVENUE),
     status: cell(CONFIG.COLS.STATUS),
     assignedTeam: cell(CONFIG.COLS.ASSIGNED_TEAM),
+    supportLevel: cell(CONFIG.COLS.SUPPORT_LEVEL),
     serviceReportDriveUrl: cell(CONFIG.COLS.SERVICE_REPORT_DRIVE_URL),
     serviceReportDriveFileId: cell(CONFIG.COLS.SERVICE_REPORT_DRIVE_FILE_ID),
     serviceReportSavedAt: cell(CONFIG.COLS.SERVICE_REPORT_SAVED_AT),
@@ -303,6 +304,7 @@ function updateEventFields_(rowNumber, updates) {
     revenue: CONFIG.COLS.REVENUE,
     status: CONFIG.COLS.STATUS,
     assignedTeam: CONFIG.COLS.ASSIGNED_TEAM,
+    supportLevel: CONFIG.COLS.SUPPORT_LEVEL,
     serviceReportDriveUrl: CONFIG.COLS.SERVICE_REPORT_DRIVE_URL,
     serviceReportDriveFileId: CONFIG.COLS.SERVICE_REPORT_DRIVE_FILE_ID,
     serviceReportSavedAt: CONFIG.COLS.SERVICE_REPORT_SAVED_AT,
@@ -357,6 +359,7 @@ function createEvent_(payload) {
   setCol(CONFIG.COLS.START_DATE, payload.startDate || '');
   setCol(CONFIG.COLS.END_DATE, payload.endDate || payload.startDate || '');
   setCol(CONFIG.COLS.OWNER_EMAIL, payload.ownerEmail || '');
+  setCol(CONFIG.COLS.SUPPORT_LEVEL, payload.supportLevel || '');
   setCol(CONFIG.COLS.ROW_ID, rowId);
 
   // Create Google Drive folder structure for this event

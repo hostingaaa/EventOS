@@ -187,6 +187,11 @@ export function EventWorkspacePage() {
           <h1 className="workspace__title">
             <span>{event.code}</span>
             <span className={`workspace__status-badge workspace__status-badge--${status.toLowerCase()}`}>{status}</span>
+            {event.supportLevel && (
+              <span className={`workspace__support-badge workspace__support-badge--${event.supportLevel}`}>
+                {event.supportLevel === 'full' ? 'Full' : 'Min'}
+              </span>
+            )}
             <span className="workspace__title-sep">—</span>
             <span>{event.location}</span>
           </h1>

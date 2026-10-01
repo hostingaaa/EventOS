@@ -276,6 +276,11 @@ function EventRow({ ev, health, isCompleted: done }: RowProps) {
           {status !== 'Proposed' && (
             <span className={`dl-lifecycle dl-lifecycle--${status.toLowerCase()}`}>{status}</span>
           )}
+          {ev.supportLevel && (
+            <span className={`dl-support dl-support--${ev.supportLevel}`}>
+              {ev.supportLevel === 'full' ? 'Full' : 'Min'}
+            </span>
+          )}
         </span>
 
         {/* Location */}
