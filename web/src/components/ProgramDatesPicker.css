@@ -40,13 +40,11 @@
 }
 
 .pdp-panel {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  z-index: 30;
+  position: fixed;
+  z-index: 1000;
   width: 280px;
-  max-width: calc(100vw - 2rem);
-  max-height: calc(100vh - 2rem);
+  max-width: calc(100vw - 1rem);
+  max-height: calc(100vh - var(--app-bottom-nav-h, 0px) - 1rem);
   overflow-y: auto;
   background: white;
   border: 1px solid var(--border, #d1d5db);
@@ -54,11 +52,6 @@
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
   padding: 0.75rem;
   box-sizing: border-box;
-}
-
-.pdp-panel--up {
-  top: auto;
-  bottom: calc(100% + 6px);
 }
 
 .pdp-panel__header {

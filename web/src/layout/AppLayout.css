@@ -18,6 +18,9 @@
   --sidebar-w-expanded:  240px;
   --sidebar-transition:  width 0.28s cubic-bezier(0.4, 0, 0.2, 1),
                          opacity 0.22s ease;
+  /* Height of the fixed bottom tab bar the sidebar becomes at <=768px.
+   * Popovers/dropdowns read this to avoid rendering content behind it. */
+  --app-bottom-nav-h: 0px;
 }
 
 .layout__sidebar {
@@ -348,6 +351,10 @@
 /* ─── Mobile: bottom tab bar ────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {
+  :root {
+    --app-bottom-nav-h: 60px;
+  }
+
   .layout {
     flex-direction: column;
   }
