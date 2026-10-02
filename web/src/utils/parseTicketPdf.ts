@@ -140,10 +140,16 @@ const AIRLINE_INFO: Record<string, { code: string; label: string }> = {
 /** "Turkish Airlines" + "0236" → "Turkish Airlines TK236" (leading zeros
  * stripped; falls back to the raw airline name if it isn't in the map). */
 function formatFlightFromName(airlineRaw: string, flightNoRaw: string): string {
-  const info = AIRLINE_INFO[airlineRaw.trim().toUpperCase()];
+  // The captured name can carry trailing words of the preceding sentence
+  // ("your business. Turkish Airlines"), so match a known airline at the end
+  // of it, and otherwise drop everything up to the last sentence break.
+  const upper = airlineRaw.trim().toUpperCase().replace(/\s+/g, ' ');
+  const known = Object.keys(AIRLINE_INFO)
+    .filter((name) => upper === name || upper.endsWith(' ' + name))
+    .sort((a, b) => b.length - a.length)[0];
   const num = String(parseInt(flightNoRaw, 10));
-  if (info) return `${info.label} ${info.code}${num}`;
-  return `${titleCase(airlineRaw)} ${num}`;
+  if (known) return `${AIRLINE_INFO[known].label} ${AIRLINE_INFO[known].code}${num}`;
+  return `${titleCase(airlineRaw.split('.').pop() ?? airlineRaw)} ${num}`;
 }
 
 // ─── Format 1: National Travel / agency GDS itinerary ─────────────────────
@@ -160,7 +166,7 @@ function parseNationalTravel(text: string, projectCityUpper: string): ParsedTick
   // unrelated preceding text when the nearest word boundary is far off
   // (e.g. the first "Flight Number" in the document, with a long clean
   // alphabetic run of body copy before it).
-  const legRe = /([A-Za-z]+(?:[ .]+[A-Za-z]+){0,3})\s+Flight Number\s+(\d+)\s+Confirmation:\s*\S+\s+Departure:\s*[A-Za-z]{3},\s*(\d{2})\/(\d{2})\/(\d{4})\s+(\d{1,2}:\d{2}\s*[AP]M)\s+Arrival:\s*[A-Za-z]{3},\s*(\d{2})\/(\d{2})\/(\d{4})\s+(\d{1,2}:\d{2}\s*[AP]M).*?Departure City:\s*([^()]+?)\s*\(([A-Z]{3})\)\s*Arrival City:\s*([^()]+?)\s*\(([A-Z]{3})\)/g;
+  const legRe = /([A-Za-z]+(?:[ .]+[A-Za-z]+){0,3})\s+Flight Number\s+(\d+)\s+Confirmation:\s*\S+\s+Departure:\s*[A-Za-z]{3},\s*(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}:\d{2}\s*[AP]M)\s+Arrival:\s*[A-Za-z]{3},\s*(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}:\d{2}\s*[AP]M).*?Departure City:\s*([^()]+?)\s*\(([A-Z]{3})\)\s*Arrival City:\s*([^()]+?)\s*\(([A-Z]{3})\)/g;
 
   let m: RegExpExecArray | null;
   while ((m = legRe.exec(text))) {
