@@ -384,7 +384,9 @@ export async function parseTicketPdf(
   projectCity: string,
 ): Promise<ParsedTicketResult> {
   const text = await extractPdfText(file);
-  const cityUpper = projectCity.trim().toUpperCase();
+  // Event locations are stored as "City, Country"; tickets only print the
+  // city (and spell countries differently), so match on the city alone.
+  const cityUpper = projectCity.split(',')[0].trim().toUpperCase();
   if (!cityUpper) {
     throw new Error('Enter the event city before uploading tickets, so arrival/departure legs can be identified.');
   }
