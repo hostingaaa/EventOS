@@ -134,8 +134,6 @@ export function CalendarPage() {
             />
           )}
           <PeopleListCard
-            month={month}
-            monthLabel={monthLabel}
             members={members}
             events={events}
             selectedPersonEmail={selectedPersonEmail}
