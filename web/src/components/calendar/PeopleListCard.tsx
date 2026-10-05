@@ -1,34 +1,24 @@
 import type { Event } from '../../types';
 import type { OrgMember } from '../../utils/roleStore';
-import { buildMonthDays, getEventDateRange } from '../../utils/calendarDates';
+import { isEventActive } from '../../utils/eventLifecycle';
 import { isPersonOnEvent } from '../../utils/teamAssignment';
 import { PersonAvatar } from './PersonAvatar';
 import './PeopleListCard.css';
 
 interface Props {
-  month: Date;
-  monthLabel: string;
   members: OrgMember[];
   events: Event[];
   selectedPersonEmail: string | null;
   onSelectPerson: (email: string) => void;
 }
 
-function daysAssigned(person: OrgMember, events: Event[], month: Date): number {
-  const days = buildMonthDays(month);
-  let count = 0;
-  for (const day of days) {
-    const onSomething = events.some((ev) => {
-      if (!isPersonOnEvent(ev, person.email)) return false;
-      const range = getEventDateRange(ev);
-      return !!range && range.start <= day.iso && day.iso <= range.end;
-    });
-    if (onSomething) count++;
-  }
-  return count;
+/** Programs this person is on that are still active (Proposed or Awarded),
+ * across all months — the same definition as the dashboard's "Active events". */
+function activePrograms(person: OrgMember, events: Event[]): number {
+  return events.filter((ev) => isEventActive(ev) && isPersonOnEvent(ev, person.email)).length;
 }
 
-export function PeopleListCard({ month, monthLabel, members, events, selectedPersonEmail, onSelectPerson }: Props) {
+export function PeopleListCard({ members, events, selectedPersonEmail, onSelectPerson }: Props) {
   return (
     <div className="plc">
       <div className="plc__header">
@@ -57,15 +47,15 @@ export function PeopleListCard({ month, monthLabel, members, events, selectedPer
               <div className="plc__row-role">{m.role}</div>
             </div>
             <div className="plc__row-count">
-              <div className="plc__row-num">{daysAssigned(m, events, month)}</div>
-              <div className="plc__row-label">days</div>
+              <div className="plc__row-num">{activePrograms(m, events)}</div>
+              <div className="plc__row-label">{activePrograms(m, events) === 1 ? 'program' : 'programs'}</div>
             </div>
           </button>
         );
       })}
 
       <p className="plc__footnote">
-        Event days assigned in {monthLabel}. Pick a person to highlight their schedule.
+        Active programs assigned to each person. Pick a person to highlight their schedule.
       </p>
     </div>
   );
