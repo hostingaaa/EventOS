@@ -129,7 +129,6 @@ export function EventWorkspacePage() {
   const eventComments = comments.filter((c) => !c.taskId);
   const taskCategories = Array.from(new Set(tasks.map((t) => t.category).filter(Boolean)));
   const canDelete = can('events.delete');
-  const canEdit = can('events.edit');
   const status = getEventStatus(event);
 
   async function handleStatusChange(next: EventStatus) {
@@ -248,7 +247,7 @@ export function EventWorkspacePage() {
               📊 Service Report
             </a>
           )}
-          {user && canEdit && (
+          {user && isAdmin && (
             <button type="button" className="workspace__edit-btn" onClick={() => setShowEditModal(true)}>
               ✎ Edit event
             </button>
@@ -402,7 +401,7 @@ export function EventWorkspacePage() {
         </section>
       )}
 
-      {showEditModal && user && (
+      {showEditModal && user && isAdmin && (
         <EditEventModal
           event={event}
           actorEmail={user.email}
