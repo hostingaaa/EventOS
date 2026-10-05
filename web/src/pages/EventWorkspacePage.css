@@ -157,6 +157,7 @@
 
 .workspace__drive-link,
 .workspace__add-tasks,
+.workspace__edit-btn,
 .workspace__status-select,
 .workspace__delete-btn {
   display: inline-flex;
@@ -191,6 +192,15 @@
 
 .workspace__add-tasks:hover {
   background: var(--eo-accent-700);
+}
+
+.workspace__edit-btn {
+  background: var(--eo-surface, #fff);
+  color: var(--eo-text, #1e293b);
+}
+
+.workspace__edit-btn:hover {
+  box-shadow: var(--eo-shadow-md, 0 4px 12px rgba(15, 23, 42, 0.12));
 }
 
 .workspace__status-select-wrap {

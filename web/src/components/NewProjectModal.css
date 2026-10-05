@@ -89,6 +89,7 @@
 }
 
 .new-project__grid input,
+.new-project__grid select,
 .new-project__grid textarea {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -101,6 +102,7 @@
 }
 
 .new-project__grid input:focus,
+.new-project__grid select:focus,
 .new-project__grid textarea:focus {
   outline: none;
   border-color: var(--primary);
