@@ -458,6 +458,12 @@
   background: var(--eo-award-100);
 }
 
+/* Minimum-support programs — takes precedence over the awarded tint */
+.dashboard__row--min {
+  border-color: #fdba74;
+  background: #fff4e6;
+}
+
 /* 1. Event: bar + code + Awarded pill */
 .dl-event {
   display: flex;
