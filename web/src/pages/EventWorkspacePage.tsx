@@ -13,6 +13,7 @@ import { VendorSharePanel } from '../components/vendor/VendorSharePanel';
 import { FinancialsPanel } from '../components/FinancialsPanel';
 import { formatEventHeaderDates } from '../utils/calendarDates';
 import { EVENT_STATUSES, getEventStatus, type EventStatus } from '../utils/eventLifecycle';
+import { normalizeSupportLevel } from '../utils/supportLevel';
 import './EventWorkspacePage.css';
 
 type Tab = 'tasks' | 'overview' | 'financials' | 'activity';
@@ -187,9 +188,9 @@ export function EventWorkspacePage() {
           <h1 className="workspace__title">
             <span>{event.code}</span>
             <span className={`workspace__status-badge workspace__status-badge--${status.toLowerCase()}`}>{status}</span>
-            {event.supportLevel && (
-              <span className={`workspace__support-badge workspace__support-badge--${event.supportLevel}`}>
-                {event.supportLevel === 'full' ? 'Full' : 'Min'}
+            {normalizeSupportLevel(event.supportLevel) && (
+              <span className={`workspace__support-badge workspace__support-badge--${normalizeSupportLevel(event.supportLevel)}`}>
+                {normalizeSupportLevel(event.supportLevel) === 'full' ? 'Full' : 'Min'}
               </span>
             )}
             <span className="workspace__title-sep">—</span>

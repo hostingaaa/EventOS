@@ -6,6 +6,7 @@ import type { Event, EventHealth } from '../types';
 import { NewProjectModal } from '../components/NewProjectModal';
 import { getEventDateRange, parseIsoDate, todayAtNoon } from '../utils/calendarDates';
 import { getEventStatus, isEventActive, isEventSetAside } from '../utils/eventLifecycle';
+import { normalizeSupportLevel } from '../utils/supportLevel';
 import './DashboardPage.css';
 
 type Filter = 'all' | 'attention' | 'behind' | 'missing-sow' | 'missing-venue';
@@ -255,6 +256,7 @@ function EventRow({ ev, health, isCompleted: done }: RowProps) {
   const { city, country } = splitLocation(ev.location);
   const status = getEventStatus(ev);
   const awarded = status === 'Awarded';
+  const supportLevel = normalizeSupportLevel(ev.supportLevel);
   const { label: statusLabel, tone } = statusInfo(ev, health, happening);
   const pct = pctOf(health);
   const filledDots = Math.min(5, Math.max(0, Math.round(pct / 20)));
@@ -264,7 +266,7 @@ function EventRow({ ev, health, isCompleted: done }: RowProps) {
     <div className={`dashboard__row-wrap${done ? ' dashboard__row-wrap--completed' : ''}`}>
       <Link
         to={`/event/${encodeURIComponent(ev.code)}`}
-        className={`dashboard__row${awarded ? ' dashboard__row--awarded' : ''}${ev.supportLevel === 'minimal' ? ' dashboard__row--min' : ''}`}
+        className={`dashboard__row${awarded ? ' dashboard__row--awarded' : ''}${supportLevel === 'minimal' ? ' dashboard__row--min' : ''}`}
       >
         {/* Event code */}
         <span className="dl-event">
@@ -276,9 +278,9 @@ function EventRow({ ev, health, isCompleted: done }: RowProps) {
           {status !== 'Proposed' && (
             <span className={`dl-lifecycle dl-lifecycle--${status.toLowerCase()}`}>{status}</span>
           )}
-          {ev.supportLevel && (
-            <span className={`dl-support dl-support--${ev.supportLevel}`}>
-              {ev.supportLevel === 'full' ? 'Full' : 'Min'}
+          {supportLevel && (
+            <span className={`dl-support dl-support--${supportLevel}`}>
+              {supportLevel === 'full' ? 'Full' : 'Min'}
             </span>
           )}
         </span>
