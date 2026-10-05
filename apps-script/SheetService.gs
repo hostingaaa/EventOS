@@ -287,6 +287,7 @@ function updateEventFields_(rowNumber, updates) {
   var sheet = getEventsSheet_();
   var map = getHeaderMap_(sheet);
   var fieldMap = {
+    location: CONFIG.COLS.LOCATION,
     lem: CONFIG.COLS.LEM,
     av: CONFIG.COLS.AV,
     interpreters: CONFIG.COLS.INTERPRETERS,

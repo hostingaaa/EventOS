@@ -8,6 +8,7 @@ import { TaskPanel } from '../components/tasks/TaskPanel';
 import { ActivityFeed } from '../components/collaboration/ActivityFeed';
 import { CommentThread } from '../components/collaboration/CommentThread';
 import { EventDetail } from '../components/EventDetail';
+import { EditEventModal } from '../components/EditEventModal';
 import { ApplyTemplatesModal } from '../components/templates/ApplyTemplatesModal';
 import { VendorSharePanel } from '../components/vendor/VendorSharePanel';
 import { FinancialsPanel } from '../components/FinancialsPanel';
@@ -34,6 +35,7 @@ export function EventWorkspacePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showApplyModal, setShowApplyModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [savingStatus, setSavingStatus] = useState(false);
   const { user, isAdmin, can } = useUser();
@@ -127,6 +129,7 @@ export function EventWorkspacePage() {
   const eventComments = comments.filter((c) => !c.taskId);
   const taskCategories = Array.from(new Set(tasks.map((t) => t.category).filter(Boolean)));
   const canDelete = can('events.delete');
+  const canEdit = can('events.edit');
   const status = getEventStatus(event);
 
   async function handleStatusChange(next: EventStatus) {
@@ -244,6 +247,11 @@ export function EventWorkspacePage() {
             >
               📊 Service Report
             </a>
+          )}
+          {user && canEdit && (
+            <button type="button" className="workspace__edit-btn" onClick={() => setShowEditModal(true)}>
+              ✎ Edit event
+            </button>
           )}
           {user && (
             <button type="button" className="workspace__add-tasks" onClick={() => setShowApplyModal(true)}>
@@ -392,6 +400,15 @@ export function EventWorkspacePage() {
           <h3>Recent activity</h3>
           <ActivityFeed items={activity} />
         </section>
+      )}
+
+      {showEditModal && user && (
+        <EditEventModal
+          event={event}
+          actorEmail={user.email}
+          onSaved={handleEventUpdated}
+          onClose={() => setShowEditModal(false)}
+        />
       )}
 
       {showApplyModal && user && (
