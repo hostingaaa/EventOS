@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchTeamOverview } from '../api/client';
-import { getAssignableMembers } from '../utils/roleStore';
+import { fetchAndCacheMembers, getAssignableMembers, getMembers } from '../utils/roleStore';
 import type { Task, TeamMember, TeamOverview } from '../types';
 import './TeamPage.css';
 
@@ -34,10 +34,15 @@ function buildAccounts(team: TeamOverview): AccountSummary[] {
     });
   }
 
+  const inactiveEmails = new Set(
+    getMembers().filter((m) => m.status === 'inactive').map((m) => m.email.toLowerCase()),
+  );
+
   for (const bucket of team.members) {
     if (bucket.name === 'Unassigned' && !bucket.email) continue;
     const key = bucket.email.toLowerCase();
     if (key && matchedEmails.has(key)) continue;
+    if (key && inactiveEmails.has(key)) continue;
     result.push({
       id: bucket.email || bucket.name,
       name: bucket.name,
@@ -100,7 +105,10 @@ export function TeamPage() {
   const [openCompleted, setOpenCompleted] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    fetchTeamOverview()
+    // Refresh the roster first so an account deactivated since this browser
+    // last synced is already excluded when the list is built.
+    fetchAndCacheMembers()
+      .then(fetchTeamOverview)
       .then(setTeam)
       .finally(() => setLoading(false));
   }, []);
