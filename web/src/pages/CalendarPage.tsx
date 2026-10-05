@@ -3,9 +3,9 @@
  * timeline, so schedule load and double-bookings are visible at a glance.
  * Route: /calendar
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { fetchEvents } from '../api/client';
-import { getAssignableMembers } from '../utils/roleStore';
+import { fetchAndCacheMembers, getAssignableMembers } from '../utils/roleStore';
 import { startOfMonth } from '../utils/calendarDates';
 import type { Event } from '../types';
 import { MonthView } from '../components/calendar/MonthView';
@@ -24,7 +24,17 @@ export function CalendarPage() {
   const [selectedEventRowId, setSelectedEventRowId] = useState<string | null>(null);
   const [selectedPersonEmail, setSelectedPersonEmail] = useState<string | null>(null);
 
-  const members = useMemo(() => getAssignableMembers(), []);
+  const [members, setMembers] = useState(() => getAssignableMembers());
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchAndCacheMembers().finally(() => {
+      if (!cancelled) setMembers(getAssignableMembers());
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;

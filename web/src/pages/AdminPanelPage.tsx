@@ -109,23 +109,23 @@ export function AdminPanelPage() {
     setMembers((prev) => {
       const next = prev.map((m) => m.id === id ? { ...m, role } : m);
       const changed = next.find((m) => m.id === id)!;
-      upsertMember(changed);
+      upsertMember(changed, user?.email);
       // Notify other tabs / UserContext
       window.dispatchEvent(new StorageEvent('storage', { key: 'org_members_v1' }));
       return next;
     });
-  }, []);
+  }, [user?.email]);
 
   const handleStatusToggle = useCallback((id: string) => {
     setMembers((prev) => {
       const member = prev.find((m) => m.id === id)!;
       const next = member.status === 'inactive' ? 'active' : 'inactive';
       const updated = { ...member, status: next as OrgMember['status'] };
-      upsertMember(updated);
+      upsertMember(updated, user?.email);
       window.dispatchEvent(new StorageEvent('storage', { key: 'org_members_v1' }));
       return prev.map((m) => m.id === id ? updated : m);
     });
-  }, []);
+  }, [user?.email]);
 
   const handleDeleteMember = useCallback((m: OrgMember) => {
     if (!confirm(`Permanently delete "${m.name}" (${m.email})? This can't be undone.`)) return;
@@ -135,11 +135,11 @@ export function AdminPanelPage() {
   }, [user?.email]);
 
   const handleAddMember = useCallback((m: OrgMember) => {
-    upsertMember(m);
+    upsertMember(m, user?.email);
     setMembers(getMembers());
     setShowAdd(false);
     window.dispatchEvent(new StorageEvent('storage', { key: 'org_members_v1' }));
-  }, []);
+  }, [user?.email]);
 
   // ── permissions tab ──────────────────────────────────────────────────────
 
