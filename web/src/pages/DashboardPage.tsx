@@ -264,7 +264,7 @@ function EventRow({ ev, health, isCompleted: done }: RowProps) {
     <div className={`dashboard__row-wrap${done ? ' dashboard__row-wrap--completed' : ''}`}>
       <Link
         to={`/event/${encodeURIComponent(ev.code)}`}
-        className={`dashboard__row${awarded ? ' dashboard__row--awarded' : ''}`}
+        className={`dashboard__row${awarded ? ' dashboard__row--awarded' : ''}${ev.supportLevel === 'minimal' ? ' dashboard__row--min' : ''}`}
       >
         {/* Event code */}
         <span className="dl-event">
