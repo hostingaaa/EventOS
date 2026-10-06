@@ -168,14 +168,16 @@ export function AppLayout() {
             </NavLink>
           )}
 
-          <NavLink
-            to="/team"
-            className={({ isActive }) => `layout__link${isActive ? ' active' : ''}`}
-            title="Team"
-          >
-            <span className="layout__link-icon"><IconTeam /></span>
-            <span className="layout__link-label">Team</span>
-          </NavLink>
+          {isAdmin && (
+            <NavLink
+              to="/team"
+              className={({ isActive }) => `layout__link${isActive ? ' active' : ''}`}
+              title="Team"
+            >
+              <span className="layout__link-icon"><IconTeam /></span>
+              <span className="layout__link-label">Team</span>
+            </NavLink>
+          )}
 
           {can('task_templates') && (
             <NavLink
