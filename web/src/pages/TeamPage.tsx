@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchTeamOverview } from '../api/client';
+import { useUser } from '../context/UserContext';
 import { fetchAndCacheMembers, getAssignableMembers, getMembers } from '../utils/roleStore';
 import type { Task, TeamMember, TeamOverview } from '../types';
 import './TeamPage.css';
@@ -98,7 +99,21 @@ function Disclosure({
   );
 }
 
+/** Admin-only for now. */
 export function TeamPage() {
+  const { isAdmin, isReady } = useUser();
+  if (!isReady) return <p className="team__msg">Loading team…</p>;
+  if (!isAdmin) {
+    return (
+      <p className="team__msg">
+        This page is only available to admins. <Link to="/">← Back to Events</Link>
+      </p>
+    );
+  }
+  return <TeamPageContent />;
+}
+
+function TeamPageContent() {
   const [team, setTeam] = useState<TeamOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [unassignedOpen, setUnassignedOpen] = useState(false);
