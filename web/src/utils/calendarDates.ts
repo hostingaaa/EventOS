@@ -125,6 +125,37 @@ function parseDatesLabel(
 }
 
 /**
+ * Individual days from a comma-list dates label, e.g.
+ * "13 Nov 2026, 14 Nov 2026, 20 Nov 2026" — the format saved when an event's
+ * program days are not consecutive. Null for range/single-date labels, so
+ * "Jun 10–11, 2026" (which also contains a comma) is never misread as a list.
+ */
+function parseDatesList(dates: string | undefined): string[] | null {
+  const parts = (dates || '').split(',').map((p) => p.trim()).filter(Boolean);
+  if (parts.length < 2) return null;
+  const out: string[] = [];
+  for (const part of parts) {
+    const m = part.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(20\d{2})$/);
+    const monthIndex = m ? monthIndexFromName(m[2]) : null;
+    if (!m || monthIndex == null) return null;
+    out.push(isoFromParts(Number(m[3]), monthIndex, Number(m[1])));
+  }
+  return Array.from(new Set(out)).sort();
+}
+
+/**
+ * Every program day of an event as ISO dates. Uses the exact days listed in
+ * the dates label when they are not consecutive; otherwise every day from
+ * start to end.
+ */
+export function getEventProgramDays(ev: EventDateFields): string[] {
+  const listed = parseDatesList(ev.dates);
+  if (listed) return listed;
+  const range = getEventDateRange(ev);
+  return range ? expandDateRange(range.start, range.end) : [];
+}
+
+/**
  * Resolve calendar placement dates from ISO fields or the human "dates" label
  * used on the events dashboard (e.g. "Jun 10–11, 2026").
  */
@@ -149,6 +180,19 @@ export function formatEventHeaderDates(ev: EventDateFields): string {
   const start = parseIsoDate(range.start);
   if (!start) return ev.dates?.trim() || '—';
   const end = parseIsoDate(range.end) || start;
+
+  // Non-consecutive days: list exactly the days picked, never the gap between them.
+  const listed = parseDatesList(ev.dates);
+  if (listed) {
+    const picked = listed.map((iso) => parseIsoDate(iso)).filter((d): d is Date => !!d);
+    const first = picked[0];
+    const sameMonth = picked.every(
+      (d) => d.getFullYear() === first.getFullYear() && d.getMonth() === first.getMonth(),
+    );
+    if (!sameMonth) return ev.dates!.trim();
+    const monthName = first.toLocaleDateString('en-US', { month: 'long' });
+    return `${picked.map((d) => d.getDate()).join(', ')} - ${monthName} ${first.getFullYear()}`;
+  }
 
   if (end.getFullYear() === start.getFullYear() && end.getMonth() === start.getMonth()) {
     const days: number[] = [];

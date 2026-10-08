@@ -1,5 +1,5 @@
 import type { Event } from '../../types';
-import { buildMonthGrid, getEventDateRange } from '../../utils/calendarDates';
+import { buildMonthGrid, getEventDateRange, getEventProgramDays } from '../../utils/calendarDates';
 import { getEventLead, isPersonOnEvent, parseAssignedTeam } from '../../utils/teamAssignment';
 import { getPersonColor } from '../../utils/personColors';
 import { PersonAvatar } from './PersonAvatar';
@@ -20,8 +20,8 @@ export function MonthView({ month, events, selectedEventRowId, selectedPersonEma
   const days = buildMonthGrid(month, 'monday');
 
   const withRanges = events
-    .map((ev) => ({ ev, range: getEventDateRange(ev) }))
-    .filter((x): x is { ev: Event; range: NonNullable<ReturnType<typeof getEventDateRange>> } => !!x.range);
+    .map((ev) => ({ ev, range: getEventDateRange(ev), days: new Set(getEventProgramDays(ev)) }))
+    .filter((x): x is { ev: Event; range: NonNullable<ReturnType<typeof getEventDateRange>>; days: Set<string> } => !!x.range);
 
   return (
     <div className="mv">
@@ -32,7 +32,7 @@ export function MonthView({ month, events, selectedEventRowId, selectedPersonEma
       </div>
       <div className="mv__grid">
         {days.map((day) => {
-          const dayEvents = withRanges.filter((x) => x.range.start <= day.iso && day.iso <= x.range.end);
+          const dayEvents = withRanges.filter((x) => x.days.has(day.iso));
           const visible = dayEvents.slice(0, MAX_CHIPS_PER_DAY);
           const overflow = dayEvents.length - visible.length;
 

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { updateEvent } from '../api/client';
 import type { Event } from '../types';
-import { expandDateRange, getEventDateRange } from '../utils/calendarDates';
+import { getEventProgramDays } from '../utils/calendarDates';
 import { formatMonthYear, formatProgramDates } from '../utils/dateFormat';
 import { normalizeSupportLevel, type SupportLevel } from '../utils/supportLevel';
 import { ProgramDatesPicker } from './ProgramDatesPicker';
@@ -15,8 +15,7 @@ interface Props {
 }
 
 function initialProgramDates(event: Event): string[] {
-  const range = getEventDateRange(event);
-  return range ? expandDateRange(range.start, range.end) : [];
+  return getEventProgramDays(event);
 }
 
 export function EditEventModal({ event, actorEmail, onSaved, onClose }: Props) {
