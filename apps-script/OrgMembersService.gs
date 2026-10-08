@@ -108,7 +108,7 @@ function sendInvitationEmail_(member, invitedByEmail) {
       escapeHtml_(invitedByLabel),
       inviteLink,
     );
-    MailApp.sendEmail({ to: member.email, subject: subject, htmlBody: htmlBody });
+    sendAppEmail_({ to: member.email, subject: subject, htmlBody: htmlBody });
   } catch (e) {
     Logger.log('sendInvitationEmail_ failed for ' + member.email + ': ' + e);
   }

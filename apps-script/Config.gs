@@ -7,6 +7,7 @@
  * Optional:
  *   GEMINI_API_KEY     — for AI digest / draft emails
  *   EVENT_MANAGER_EMAIL — default recipient for digests (falls back to script owner)
+ *   MAIL_FROM           — address app emails are sent from (default zboston@connectmice.com)
  *   SHEET_NAME         — tab name (default: Events)
  */
 
@@ -154,6 +155,42 @@ function getEventManagerEmail_() {
   var em = getScriptProperty_('EVENT_MANAGER_EMAIL', true);
   if (em) return em;
   return Session.getEffectiveUser().getEmail();
+}
+
+/** Address every outgoing email (invitations, reminders, digests) is sent from. */
+var DEFAULT_MAIL_FROM = 'zboston@connectmice.com';
+
+function getMailFromAddress_() {
+  return getScriptProperty_('MAIL_FROM', true) || DEFAULT_MAIL_FROM;
+}
+
+/**
+ * Single send path for all app emails so they come from getMailFromAddress_().
+ * Apps Script can only send as the account that deployed the script or as one
+ * of that account's Gmail "Send mail as" aliases — so if the deploying account
+ * is neither, this falls back to sending from the deploying account with
+ * Reply-To set to the desired address, rather than dropping the email.
+ */
+function sendAppEmail_(opts) {
+  var from = String(getMailFromAddress_() || '').trim();
+  var me = String(Session.getEffectiveUser().getEmail() || '').trim().toLowerCase();
+  if (!from || from.toLowerCase() === me) {
+    MailApp.sendEmail({ to: opts.to, subject: opts.subject, htmlBody: opts.htmlBody });
+    return;
+  }
+  try {
+    var aliases = GmailApp.getAliases().map(function (a) {
+      return String(a).toLowerCase();
+    });
+    if (aliases.indexOf(from.toLowerCase()) >= 0) {
+      GmailApp.sendEmail(opts.to, opts.subject, '', { htmlBody: opts.htmlBody, from: from });
+      return;
+    }
+    Logger.log('sendAppEmail_: ' + from + ' is not a "Send mail as" alias of ' + me + ' — sending with Reply-To instead');
+  } catch (e) {
+    Logger.log('sendAppEmail_: alias send failed, falling back to Reply-To: ' + e);
+  }
+  MailApp.sendEmail({ to: opts.to, subject: opts.subject, htmlBody: opts.htmlBody, replyTo: from });
 }
 
 // ── Admin access (Auth.gs re-exports these; kept here so partial deploys still work) ──

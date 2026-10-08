@@ -75,7 +75,7 @@ function sendWeeklyDigestEmail() {
     body += '</ul>';
   }
 
-  MailApp.sendEmail({
+  sendAppEmail_({
     to: getEventManagerEmail_(),
     subject: '[Event Ops] Weekly digest — ' + digest.needsAttention + ' items need attention',
     htmlBody: wrapEmailHtml_(body),

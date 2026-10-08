@@ -89,7 +89,7 @@ function sendReminderIfNew_(ev, type, recipients, htmlBody) {
 
   var subject = '[Event Ops] ' + ev.code + ' — ' + type.replace(/_/g, ' ');
   recipients.forEach(function (to) {
-    MailApp.sendEmail({
+    sendAppEmail_({
       to: to,
       subject: subject,
       htmlBody: htmlBody,
