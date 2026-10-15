@@ -1,0 +1,163 @@
+.ws-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.ws-readiness {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.ws-readiness__pct,
+.ws-readiness__count {
+  font-weight: 800;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.ws-readiness__pct {
+  color: var(--eo-accent);
+}
+
+.ws-readiness__sub {
+  font-size: 13px;
+  opacity: 0.6;
+  white-space: nowrap;
+}
+
+.ws-bar {
+  height: 6px;
+  margin-top: 12px;
+  border-radius: 999px;
+  background: var(--eo-accent-100);
+  overflow: hidden;
+}
+
+.ws-bar__fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--eo-accent);
+  transition: width 0.3s;
+}
+
+.ws-summary .ws-link-btn {
+  margin-top: 10px;
+  padding: 0;
+  color: var(--eo-accent-700);
+}
+
+/* City now */
+.ws-city__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ws-city__clock {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+.ws-city__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--ws-n-400);
+}
+
+.ws-city__dot--live {
+  background: var(--eo-award);
+}
+
+.ws-city__weather {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.ws-city__icon {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--eo-accent-100);
+  color: var(--eo-accent-700);
+}
+
+.ws-city__reading {
+  min-width: 0;
+}
+
+.ws-city__temp {
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1;
+}
+
+.ws-city__detail {
+  margin-top: 3px;
+  font-size: 12px;
+  opacity: 0.6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ws-city__fx {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--ws-divider);
+  font-size: 13px;
+}
+
+.ws-city__fx-label {
+  opacity: 0.6;
+}
+
+.ws-city__fx-updated {
+  margin-left: auto;
+  font-size: 11px;
+  opacity: 0.5;
+}
+
+/* Vendor portal */
+.ws-vendor__title {
+  margin-top: 10px;
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.ws-vendor__help {
+  margin-top: 4px;
+  font-size: 13px;
+  opacity: 0.6;
+}
+
+.ws-vendor__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.ws-vendor__actions .ws-link-btn {
+  margin-top: 0;
+  padding: 6px 4px;
+  font-size: 12px;
+}

@@ -192,6 +192,35 @@ export function getMockVendorWorkspace(token: string): VendorWorkspaceData {
   };
 }
 
+export function createMockTask(payload: {
+  eventCode: string;
+  eventRowId: string;
+  title: string;
+  category?: string;
+  createdBy: string;
+}): Task {
+  const now = new Date().toISOString();
+  const task: Task = {
+    taskId: `mock-task-${payload.eventCode}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    eventCode: payload.eventCode,
+    eventRowId: payload.eventRowId,
+    title: payload.title,
+    category: payload.category || 'General',
+    status: 'todo',
+    assigneeEmail: '',
+    assigneeName: '',
+    dueDate: '',
+    instructions: '',
+    templateId: '',
+    vendorVisible: 'yes',
+    createdAt: now,
+    updatedAt: now,
+    createdBy: payload.createdBy,
+  };
+  appendTask(task);
+  return task;
+}
+
 export function updateMockTask(taskId: string, updates: Partial<Task>, actorEmail?: string): Task {
   const existing = getMockState().tasksByEvent;
   // Find the task to check previous status
@@ -222,6 +251,7 @@ export function addMockComment(payload: {
   authorEmail: string;
   authorName: string;
   body: string;
+  visibility?: 'team' | 'internal';
 }): Comment {
   const c: Comment = {
     commentId: 'c-' + Date.now(),
@@ -231,6 +261,7 @@ export function addMockComment(payload: {
     authorName: payload.authorName,
     body: payload.body,
     createdAt: new Date().toISOString(),
+    visibility: payload.visibility === 'internal' ? 'internal' : 'team',
   };
   appendComment(c);
   return c;

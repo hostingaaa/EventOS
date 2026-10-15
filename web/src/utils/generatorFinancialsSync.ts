@@ -2,7 +2,7 @@
  * Shared create-or-update (never delete) reconciliation used by generator
  * pages (AV Equipment, Transfer List, Service Report) to sync their current
  * selection into the event's Financials cost items. Each synced item is
- * tagged via its `notes` field (never rendered in FinancialsPanel) so a
+ * tagged via its `notes` field (never rendered in the Financials tab) so a
  * later re-sync can find and update it instead of creating a duplicate.
  *
  * `unitRate` is optional: AV Equipment/Transfer List omit it, so a team

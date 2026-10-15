@@ -26,7 +26,7 @@ function isOwnSubmission(item: CostItem): boolean {
   return (item.createdBy || '').startsWith('vendor:');
 }
 
-/** Vendor-portal sibling of FinancialsPanel — no revenue/profit, category is
+/** Vendor-portal sibling of the event page Financials tab — no revenue/profit, category is
  * locked to the link's own scope. A vendor can freely edit a row they
  * submitted themselves; a row the team (or a generator, e.g. the AV
  * Equipment list) created is theirs to quote a rate on, but the quantity/

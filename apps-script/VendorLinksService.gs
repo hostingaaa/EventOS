@@ -116,10 +116,8 @@ function getOrCreateVendorLink_(eventCode, eventRowId, actorEmail, options) {
   setCol(VENDOR_LINK_COLS.CREATED_BY, actorEmail || '');
   setCol(VENDOR_LINK_COLS.ACTIVE, 'yes');
 
-  var summary = category
-    ? category + ' link created'
-    : (vendorName ? vendorName + ' link created' : 'Vendor link created');
-  logActivity_('vendor_link_created', event.code, '', summary, actorEmail || '');
+  var scope = category || vendorName || 'full-event';
+  logActivity_('vendor_link_added', event.code, '', 'created the ' + scope + ' vendor link', actorEmail || '');
   return findVendorLinkByToken_(token);
 }
 
@@ -161,7 +159,10 @@ function revokeVendorLink_(linkId, actorEmail) {
     if (String(data[r][idCol - 1]) === linkId) {
       sheet.getRange(r + 2, activeCol).setValue('no');
       var ev = codeCol ? String(data[r][codeCol - 1] || '') : '';
-      logActivity_('vendor_link_revoked', ev, '', 'Vendor link revoked', actorEmail || '');
+      var catCol = colIndex_(map, VENDOR_LINK_COLS.VENDOR_CATEGORY);
+      var nameCol = colIndex_(map, VENDOR_LINK_COLS.VENDOR_NAME);
+      var scope = String((catCol && data[r][catCol - 1]) || (nameCol && data[r][nameCol - 1]) || 'full-event');
+      logActivity_('vendor_link_removed', ev, '', 'revoked the ' + scope + ' vendor link', actorEmail || '');
       return { ok: true };
     }
   }

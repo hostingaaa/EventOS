@@ -261,6 +261,7 @@ export function createMockEvent(payload: Partial<Event> & { code: string }): Eve
     ownerEmail: payload.ownerEmail || '',
     lastReminder: '',
     supportLevel: payload.supportLevel || '',
+    capacity: payload.capacity || '',
   };
 
   appendExtraEvent(event);

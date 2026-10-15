@@ -37,6 +37,8 @@ export interface Event {
   assignedTeam?: string;
   /** LEM support level selected on the SOW Generator: 'full' | 'minimal' | ''. */
   supportLevel?: string;
+  /** Free-text venue capacity note, e.g. "Full" or "120 pax". Shown as a pill in the event header. */
+  capacity?: string;
   /** Set when the Service Report generator saves a report for this event. */
   serviceReportDriveUrl?: string;
   serviceReportDriveFileId?: string;
@@ -69,7 +71,7 @@ export interface EventsResponse {
 }
 
 export type EventUpdates = Partial<
-  Pick<Event, 'location' | 'dates' | 'startDate' | 'endDate' | 'monthGroup' | 'lem' | 'av' | 'interpreters' | 'venue' | 'psaCldp' | 'sow' | 'notes' | 'ownerEmail' | 'perDiemRate' | 'maxVisaAllowance' | 'maxGroundTransport' | 'awarded' | 'revenue' | 'status' | 'assignedTeam' | 'supportLevel' | 'serviceReportDriveUrl' | 'serviceReportDriveFileId' | 'serviceReportSavedAt' | 'serviceReportSavedBy'>
+  Pick<Event, 'location' | 'dates' | 'startDate' | 'endDate' | 'monthGroup' | 'lem' | 'av' | 'interpreters' | 'venue' | 'psaCldp' | 'sow' | 'notes' | 'ownerEmail' | 'perDiemRate' | 'maxVisaAllowance' | 'maxGroundTransport' | 'awarded' | 'revenue' | 'status' | 'assignedTeam' | 'supportLevel' | 'capacity' | 'serviceReportDriveUrl' | 'serviceReportDriveFileId' | 'serviceReportSavedAt' | 'serviceReportSavedBy'>
 >;
 
 export type TaskStatus = 'todo' | 'in_progress' | 'blocked' | 'done';
@@ -108,6 +110,8 @@ export interface Comment {
   authorName: string;
   body: string;
   createdAt: string;
+  /** 'internal' notes are admin-only and never reach vendors; missing means 'team'. */
+  visibility?: 'team' | 'internal';
 }
 
 export interface TaskFile {
@@ -167,6 +171,20 @@ export interface EventHealth {
   overdueTasks: number;
   /** Specific signals that contributed to the risk. */
   signals: string[];
+}
+
+/** Live "city now" data for an event's location (served by the backend's cityLive action). */
+export interface CityLive {
+  city: string;
+  country: string;
+  /** IANA zone, e.g. Asia/Tashkent. Empty when the city could not be found. */
+  timezone: string;
+  /** Local currency code. Empty when unknown. */
+  currency: string;
+  weather: { temp: number; code: number; wind: number } | null;
+  /** Units of local currency per 1 USD; null for USD countries or when unavailable. */
+  fx: { rate: number; updated: number } | null;
+  errors: string[];
 }
 
 export interface WorkspaceData {

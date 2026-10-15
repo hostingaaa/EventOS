@@ -14,7 +14,11 @@ function getActivitySheet_() {
 
 // logActivity_ is defined in SheetService.gs
 
-function listActivity_(eventCode, limit) {
+/** Activity types only admins may see (they reveal that an internal note exists). */
+var INTERNAL_ACTIVITY_TYPES_ = { note_internal: true };
+
+/** includeInternal must only be true for admins. */
+function listActivity_(eventCode, limit, includeInternal) {
   var sheet = getActivitySheet_();
   var map = getHeaderMap_(sheet);
   var lastRow = sheet.getLastRow();
@@ -35,6 +39,7 @@ function listActivity_(eventCode, limit) {
     if (!id) continue;
     var code = cell(ACTIVITY_COLS.EVENT_CODE);
     if (eventCode && code !== eventCode) continue;
+    if (!includeInternal && INTERNAL_ACTIVITY_TYPES_[cell(ACTIVITY_COLS.TYPE)]) continue;
 
     items.push({
       activityId: id,

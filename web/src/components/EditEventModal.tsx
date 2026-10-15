@@ -22,6 +22,7 @@ export function EditEventModal({ event, actorEmail, onSaved, onClose }: Props) {
   const [location, setLocation] = useState(event.location ?? '');
   const [programDates, setProgramDates] = useState<string[]>(() => initialProgramDates(event));
   const [venue, setVenue] = useState(event.venue ?? '');
+  const [capacity, setCapacity] = useState(event.capacity ?? '');
   const [supportLevel, setSupportLevel] = useState<SupportLevel>(() => normalizeSupportLevel(event.supportLevel));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,12 +38,14 @@ export function EditEventModal({ event, actorEmail, onSaved, onClose }: Props) {
     setError(null);
     try {
       const nextLocation = location.trim();
+      const nextCapacity = capacity.trim();
       const updated = await updateEvent(
         event.rowId,
         event.code,
         {
           location: nextLocation,
           venue: venue.trim(),
+          capacity: nextCapacity,
           supportLevel,
           // Only rewrite the date fields when the picker was actually touched,
           // so opening and saving never reformats an event's existing dates.
@@ -52,10 +55,13 @@ export function EditEventModal({ event, actorEmail, onSaved, onClose }: Props) {
         },
         actorEmail,
       );
-      // An older backend ignores fields it doesn't know instead of failing.
-      if ((updated.location ?? '').trim() !== nextLocation) {
+      // An older backend ignores fields it doesn't know instead of failing, so check the fields it echoes back.
+      const lost: string[] = [];
+      if ((updated.location ?? '').trim() !== nextLocation) lost.push('location');
+      if (nextCapacity !== (event.capacity ?? '').trim() && (updated.capacity ?? '').trim() !== nextCapacity) lost.push('capacity');
+      if (lost.length) {
         onSaved(updated);
-        setError('The location was not saved — the backend script needs to be updated. Other changes were saved.');
+        setError(`The ${lost.join(' and ')} was not saved — the backend script needs to be updated. Other changes were saved.`);
         return;
       }
       onSaved(updated);
@@ -72,7 +78,7 @@ export function EditEventModal({ event, actorEmail, onSaved, onClose }: Props) {
       <form className="modal-card new-project" onClick={(e) => e.stopPropagation()} onSubmit={handleSubmit}>
         <header>
           <h2>Edit event {event.code}</h2>
-          <p>Change the event&rsquo;s location, dates, venue or support level.</p>
+          <p>Change the event&rsquo;s location, dates, venue, capacity or support level.</p>
           <button type="button" className="modal-close" onClick={onClose} aria-label="Close">
             ×
           </button>
@@ -96,6 +102,10 @@ export function EditEventModal({ event, actorEmail, onSaved, onClose }: Props) {
             <label className="new-project__full">
               Venue
               <input value={venue} onChange={(e) => setVenue(e.target.value)} placeholder="Optional" />
+            </label>
+            <label className="new-project__full">
+              Capacity
+              <input value={capacity} onChange={(e) => setCapacity(e.target.value)} placeholder="Optional — e.g. Full, or 120 pax" />
             </label>
             <label className="new-project__full">
               LEM support level

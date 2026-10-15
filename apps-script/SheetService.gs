@@ -110,7 +110,46 @@ function getEventsSheet_() {
     sheet.appendRow(headers);
     sheet.setFrozenRows(1);
   }
+  ensureSheetColumns_(sheet, [CONFIG.COLS.CAPACITY]);
   return sheet;
+}
+
+/**
+ * Appends any of `headers` that row 1 is missing — never reorders, renames or overwrites an existing
+ * header. New fields therefore no longer depend on someone remembering to add the sheet column by hand
+ * (a missing column otherwise makes writes to that field silently do nothing). Runs at most once per
+ * sheet per request, under a script lock so two simultaneous requests can't both append it.
+ */
+var ENSURED_SHEETS_ = {};
+function ensureSheetColumns_(sheet, headers) {
+  var key = String(sheet.getSheetId());
+  if (ENSURED_SHEETS_[key]) return;
+  ENSURED_SHEETS_[key] = true;
+  function missingHeaders() {
+    var lastCol = sheet.getLastColumn();
+    var present = lastCol > 0
+      ? sheet.getRange(CONFIG.HEADER_ROW, 1, 1, lastCol).getValues()[0].map(function (h) { return String(h || '').trim(); })
+      : [];
+    return { lastCol: lastCol, missing: headers.filter(function (h) { return present.indexOf(h) < 0; }) };
+  }
+  if (!missingHeaders().missing.length) return;
+  var lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000);
+    var again = missingHeaders();
+    if (!again.missing.length) return;
+    var target = sheet.getRange(CONFIG.HEADER_ROW, again.lastCol + 1, 1, again.missing.length);
+    target.setValues([again.missing]);
+    if (again.lastCol > 0) {
+      try {
+        sheet.getRange(CONFIG.HEADER_ROW, again.lastCol).copyTo(target, SpreadsheetApp.CopyPasteType.PASTE_FORMAT, false);
+      } catch (fmtErr) {}
+    }
+  } catch (e) {
+    Logger.log('ensureSheetColumns_ skipped: ' + e);
+  } finally {
+    try { lock.releaseLock(); } catch (ignore) {}
+  }
 }
 
 function getHeaderMap_(sheet) {
@@ -211,6 +250,7 @@ function rowToEvent_(row, rowNum, map) {
     status: cell(CONFIG.COLS.STATUS),
     assignedTeam: cell(CONFIG.COLS.ASSIGNED_TEAM),
     supportLevel: cell(CONFIG.COLS.SUPPORT_LEVEL),
+    capacity: cell(CONFIG.COLS.CAPACITY),
     serviceReportDriveUrl: cell(CONFIG.COLS.SERVICE_REPORT_DRIVE_URL),
     serviceReportDriveFileId: cell(CONFIG.COLS.SERVICE_REPORT_DRIVE_FILE_ID),
     serviceReportSavedAt: cell(CONFIG.COLS.SERVICE_REPORT_SAVED_AT),
@@ -306,6 +346,7 @@ function updateEventFields_(rowNumber, updates) {
     status: CONFIG.COLS.STATUS,
     assignedTeam: CONFIG.COLS.ASSIGNED_TEAM,
     supportLevel: CONFIG.COLS.SUPPORT_LEVEL,
+    capacity: CONFIG.COLS.CAPACITY,
     serviceReportDriveUrl: CONFIG.COLS.SERVICE_REPORT_DRIVE_URL,
     serviceReportDriveFileId: CONFIG.COLS.SERVICE_REPORT_DRIVE_FILE_ID,
     serviceReportSavedAt: CONFIG.COLS.SERVICE_REPORT_SAVED_AT,
@@ -361,6 +402,7 @@ function createEvent_(payload) {
   setCol(CONFIG.COLS.END_DATE, payload.endDate || payload.startDate || '');
   setCol(CONFIG.COLS.OWNER_EMAIL, payload.ownerEmail || '');
   setCol(CONFIG.COLS.SUPPORT_LEVEL, payload.supportLevel || '');
+  setCol(CONFIG.COLS.CAPACITY, payload.capacity || '');
   setCol(CONFIG.COLS.ROW_ID, rowId);
 
   // Create Google Drive folder structure for this event
@@ -382,7 +424,7 @@ function createEvent_(payload) {
     }
     var applied = applyTemplatesToEvent_(payload.code, rowId, templateIds, payload.createdBy || '');
     createdTasks = applied.tasks || [];
-  } else if (typeof seedDefaultTasks_ === 'function') {
+  } else if (typeof seedDefaultTasks_ === 'function' && !payload.skipDefaultTasks) {
     seedDefaultTasks_(payload.code, rowId);
   }
 
@@ -584,4 +626,125 @@ function repairEventDates_(apply) {
   }
 
   return { checked: checked, changed: changed, applied: !!apply, sheetTimeZone: getSheetTz_() };
+}
+
+/**
+ * Copies an event — its details and its task list — under a new code.
+ * Tasks that came from a task template are re-rendered from that template for the NEW event, so the codes and
+ * dates in their instructions are the new event's, not the source's; tasks without a (still active) template are
+ * copied as-is with the old code swapped for the new one. Status, revenue, awarded flag, files, comments, cost
+ * items and vendor links are deliberately not copied: a duplicate starts fresh as a proposal.
+ */
+function duplicateEvent_(rowId, code, newCode, actorEmail) {
+  if (!canActor_(actorEmail, 'events.create')) {
+    throw new Error('Permission denied: create events is not enabled for your role');
+  }
+  newCode = String(newCode || '').trim();
+  if (!newCode) throw new Error('A code for the new event is required');
+
+  var src = findEventRow_(rowId, code);
+  if (!src) throw new Error('Event not found');
+
+  var created = createEvent_({
+    code: newCode,
+    location: src.location,
+    dates: src.dates,
+    startDate: src.startDate,
+    endDate: src.endDate,
+    monthGroup: src.monthGroup,
+    lem: src.lem,
+    av: src.av,
+    interpreters: src.interpreters,
+    venue: src.venue,
+    psaCldp: src.psaCldp,
+    notes: src.notes,
+    ownerEmail: src.ownerEmail,
+    supportLevel: src.supportLevel,
+    capacity: src.capacity,
+    createdBy: actorEmail || '',
+    skipDefaultTasks: true,
+  });
+  var copy = created.event;
+  if (src.assignedTeam) {
+    updateEventFields_(copy.rowNumber, { assignedTeam: src.assignedTeam });
+  }
+
+  var templateIds = [];
+  var plainTasks = [];
+  listTasks_(src.code, src.rowId).forEach(function (t) {
+    var tmpl = t.templateId && typeof findTemplate_ === 'function' ? findTemplate_(t.templateId) : null;
+    if (tmpl && String(tmpl.active).toLowerCase() !== 'no') templateIds.push(t.templateId);
+    else plainTasks.push(t);
+  });
+
+  var tasks = [];
+  if (templateIds.length) {
+    tasks = tasks.concat(applyTemplatesToEvent_(copy.code, copy.rowId, templateIds, actorEmail).tasks);
+  }
+  plainTasks.forEach(function (t) {
+    tasks.push(createTask_({
+      eventCode: copy.code,
+      eventRowId: copy.rowId,
+      title: t.title,
+      category: t.category,
+      status: 'todo',
+      instructions: String(t.instructions || '').split(src.code).join(copy.code),
+      vendorVisible: t.vendorVisible,
+      templateId: t.templateId,
+      createdBy: actorEmail || '',
+    }));
+  });
+
+  logActivity_('event_duplicated', copy.code, '', 'created this event as a copy of ' + src.code, actorEmail || '');
+  return { event: findEventRow_(copy.rowId, copy.code), tasks: tasks };
+}
+
+var EVENT_CHANGE_LABELS_ = {
+  location: 'location',
+  dates: 'dates',
+  startDate: 'dates',
+  endDate: 'dates',
+  venue: 'venue',
+  supportLevel: 'support level',
+  capacity: 'capacity',
+  lem: 'LEM',
+  av: 'AV',
+  interpreters: 'interpreters',
+  psaCldp: 'PSA/CLDP',
+  sow: 'SOW link',
+  notes: 'notes',
+  ownerEmail: 'assigned member',
+  assignedTeam: 'assigned team',
+};
+
+/** Writes one readable Activity entry per kind of change actually made to an event (not per request field). */
+function logEventChanges_(before, updates, actorEmail) {
+  function same(a, b) {
+    return String(a == null ? '' : a).trim() === String(b == null ? '' : b).trim();
+  }
+  var labels = [];
+  Object.keys(updates || {}).forEach(function (key) {
+    if (key === 'status') {
+      if (!same(updates.status, before.status)) {
+        logActivity_('event_status_changed', before.code, '', 'changed status to ' + updates.status, actorEmail || '');
+      }
+      return;
+    }
+    if (key === 'revenue') {
+      if (!same(updates.revenue, before.revenue)) {
+        var amount = parseFloat(updates.revenue);
+        var phrase = isNaN(amount)
+          ? 'cleared the contract value'
+          : 'set the contract value to ' + String(amount).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        logActivity_('contract_value_changed', before.code, '', phrase, actorEmail || '');
+      }
+      return;
+    }
+    var label = EVENT_CHANGE_LABELS_[key];
+    if (!label || same(updates[key], before[key])) return;
+    if (labels.indexOf(label) < 0) labels.push(label);
+  });
+  if (labels.length) {
+    logActivity_('event_updated', before.code, '', 'updated the ' + labels.join(', '), actorEmail || '');
+  }
 }

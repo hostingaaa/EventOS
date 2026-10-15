@@ -1,0 +1,206 @@
+.ws-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 24px;
+  padding-bottom: 24px;
+}
+
+.ws-header__main {
+  flex: 1;
+  min-width: 300px;
+}
+
+.ws-header__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  margin: 0;
+  font-size: 40px;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  font-weight: 800;
+}
+
+.ws-header__place {
+  font-weight: 400;
+  opacity: 0.55;
+}
+
+.ws-header__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  font-size: 14px;
+}
+
+.ws-header__dates {
+  opacity: 0.65;
+}
+
+.ws-header__sep {
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--ws-n-400);
+}
+
+.ws-header__link {
+  color: var(--eo-accent-700);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Small uppercase pills in the meta row: support level + capacity. */
+.ws-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.ws-badge--capacity {
+  background: var(--ws-n-200);
+  color: #222b2f;
+}
+
+.ws-badge--full {
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+.ws-badge--minimal {
+  background: #fed7aa;
+  color: #c2410c;
+  font-weight: 700;
+}
+
+.ws-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+/* ─── Status ─────────────────────────────────────────────────────────────── */
+
+.ws-status-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ws-status-select__saving {
+  font-size: 12px;
+  color: var(--eo-muted);
+}
+
+.ws-status-select__control,
+.ws-status-pill {
+  height: 40px;
+  border: none;
+  border-radius: 999px;
+  color: #fff;
+  font-weight: 800;
+  font-size: 13px;
+  background-color: var(--ws-n-800);
+}
+
+.ws-status-select__control {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0 36px 0 18px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='white'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z' clip-rule='evenodd'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+}
+
+.ws-status-select__control:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ws-status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 18px;
+}
+
+/* The handoff's colours where a status exists in both; the app's own for Postponed/Cancelled/Archived. */
+.ws-status-select__control--proposed  { background-color: var(--ws-n-800); }
+.ws-status-select__control--awarded   { background-color: var(--eo-award); }
+.ws-status-select__control--completed { background-color: var(--eo-accent); }
+.ws-status-select__control--postponed { background-color: #d97706; }
+.ws-status-select__control--cancelled { background-color: #b91c1c; }
+.ws-status-select__control--archived  { background-color: var(--ws-n-700); }
+
+/* ─── ⋯ menu ─────────────────────────────────────────────────────────────── */
+
+.ws-menu {
+  position: relative;
+}
+
+.ws-menu__panel {
+  position: absolute;
+  right: 0;
+  top: 48px;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  min-width: 220px;
+  padding: 6px;
+  border-radius: 12px;
+  background: var(--eo-surface);
+  box-shadow: var(--ws-shadow-lg);
+}
+
+.ws-menu__panel button {
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  color: var(--eo-text);
+}
+
+.ws-menu__panel button:hover:not(:disabled) {
+  background: var(--ws-n-100);
+}
+
+.ws-menu__panel .ws-menu__danger {
+  color: var(--ws-danger);
+}
+
+.ws-menu__panel .ws-menu__danger:hover:not(:disabled) {
+  background: var(--ws-danger-bg);
+}
+
+.ws-menu__divider {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--ws-divider);
+}
+
+@media (max-width: 600px) {
+  .ws-header__title {
+    font-size: 32px;
+  }
+
+  .ws-header__main {
+    min-width: 0;
+    flex-basis: 100%;
+  }
+}
