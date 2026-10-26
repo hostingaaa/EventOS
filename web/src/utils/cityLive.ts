@@ -45,6 +45,22 @@ export function localClock(timezone: string, now: number): string {
   }
 }
 
+/** Hour of day (0–23) in an IANA zone; null when the zone is missing or invalid. */
+export function localHour(timezone: string, now: number): number | null {
+  if (!timezone) return null;
+  try {
+    const h = parseInt(new Date(now).toLocaleTimeString('en-GB', { hour: '2-digit', hour12: false, timeZone: timezone }), 10);
+    return Number.isNaN(h) ? null : h % 24;
+  } catch {
+    return null;
+  }
+}
+
+/** True between 20:00 and 06:00 local time. */
+export function isNight(hour: number | null): boolean {
+  return hour !== null && (hour >= 20 || hour < 6);
+}
+
 /** The city portion of an event's Location cell ("Tashkent, Uzbekistan" → "Tashkent"). */
 export function cityOf(location: string): string {
   return (location || '').split(',')[0].trim();

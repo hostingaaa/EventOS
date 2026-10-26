@@ -53,17 +53,32 @@
 /* City now */
 .ws-city__head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 4px 8px;
 }
 
 .ws-city__clock {
   display: flex;
-  align-items: center;
-  gap: 5px;
+  align-items: baseline;
+  gap: 6px;
   margin-left: auto;
+}
+
+.ws-city__clock .ws-city__dot {
+  align-self: center;
+}
+
+.ws-city__time {
+  font-weight: 800;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.ws-city__tz {
   font-size: 11px;
-  opacity: 0.6;
 }
 
 .ws-city__dot {
@@ -160,4 +175,81 @@
   margin-top: 0;
   padding: 6px 4px;
   font-size: 12px;
+}
+
+/* ─── City now: a green card that shifts with the weather ───────────────────
+ * White-on-gradient; every variant stays dark enough for the text. */
+.ws-card.ws-city {
+  position: relative;
+  overflow: hidden;
+  color: #fff;
+  background: linear-gradient(135deg, #0b6a5b 0%, #14a08a 100%);
+  transition: background 0.4s;
+}
+
+.ws-card.ws-city--sun {
+  background: linear-gradient(135deg, #0b6a5b 0%, #23926f 60%, #6fae58 100%);
+}
+
+.ws-card.ws-city--sun::after {
+  content: '';
+  position: absolute;
+  top: -42px;
+  right: -42px;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 214, 102, 0.6) 0%, rgba(255, 214, 102, 0) 70%);
+  pointer-events: none;
+}
+
+.ws-card.ws-city--cloud {
+  background: linear-gradient(135deg, #0b6a5b 0%, #3f8a86 65%, #5d8f9c 100%);
+}
+
+.ws-card.ws-city--rain {
+  background: linear-gradient(135deg, #0a5046 0%, #2a6c80 65%, #31607f 100%);
+}
+
+.ws-card.ws-city--snow {
+  background: linear-gradient(135deg, #1b6b77 0%, #3f8d9b 100%);
+}
+
+.ws-card.ws-city--night {
+  background: linear-gradient(135deg, #072f2a 0%, #123f3a 60%, #1b4a58 100%);
+}
+
+.ws-city .ws-label,
+.ws-city__tz,
+.ws-city__detail,
+.ws-city__fx-label,
+.ws-city__fx-updated {
+  color: #fff;
+  opacity: 0.78;
+}
+
+.ws-city__time {
+  color: #fff;
+}
+
+.ws-city__icon {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
+.ws-city__dot {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.ws-city__dot--live {
+  background: #9bf0b8;
+  box-shadow: 0 0 0 3px rgba(155, 240, 184, 0.25);
+}
+
+.ws-city__fx {
+  border-top-color: rgba(255, 255, 255, 0.25);
+}
+
+.ws-city__fx strong {
+  color: #fff;
 }
