@@ -49,7 +49,12 @@ export function CityNowCard({ location }: { location: string }) {
         <span className="ws-label">{city} now</span>
         <span className="ws-city__clock">
           <span className={`ws-city__dot${weather ? ' ws-city__dot--live' : ''}`} />
-          {clock ? `${clock} local` : ''}
+          {clock && (
+            <>
+              <span className="ws-city__time">{clock}</span>
+              <span className="ws-city__tz">local</span>
+            </>
+          )}
         </span>
       </div>
       <div className="ws-city__weather">

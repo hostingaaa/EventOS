@@ -53,17 +53,32 @@
 /* City now */
 .ws-city__head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 4px 8px;
 }
 
 .ws-city__clock {
   display: flex;
-  align-items: center;
-  gap: 5px;
+  align-items: baseline;
+  gap: 6px;
   margin-left: auto;
+}
+
+.ws-city__clock .ws-city__dot {
+  align-self: center;
+}
+
+.ws-city__time {
+  font-weight: 800;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.ws-city__tz {
   font-size: 11px;
-  opacity: 0.6;
 }
 
 .ws-city__dot {
@@ -205,12 +220,16 @@
 }
 
 .ws-city .ws-label,
-.ws-city__clock,
+.ws-city__tz,
 .ws-city__detail,
 .ws-city__fx-label,
 .ws-city__fx-updated {
   color: #fff;
   opacity: 0.78;
+}
+
+.ws-city__time {
+  color: #fff;
 }
 
 .ws-city__icon {
