@@ -4,7 +4,6 @@ import { StatusChip } from './StatusChip';
 import { updateEvent } from '../api/client';
 import { useUser } from '../context/UserContext';
 import { getAssignableMembers } from '../utils/roleStore';
-import { formatEventHeaderDates } from '../utils/calendarDates';
 import { parseAssignedTeam, serializeAssignedTeam } from '../utils/teamAssignment';
 import { PersonAvatar } from './calendar/PersonAvatar';
 import './EventDetail.css';
@@ -89,13 +88,6 @@ export function EventDetail({ event, onUpdated }: Props) {
 
   return (
     <div className="detail">
-      <header className="detail__header">
-        <h2>{ev.code}</h2>
-        <p>
-          {ev.location} · {formatEventHeaderDates(ev)}
-        </p>
-      </header>
-
       {error && <p className="detail__error">{error}</p>}
       {saving && <p className="detail__saving">Saving…</p>}
 

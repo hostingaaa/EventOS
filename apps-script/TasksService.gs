@@ -166,6 +166,11 @@ function updateTask_(taskId, updates, actorEmail) {
   var task = findTask_(taskId);
   if (!task) throw new Error('Task not found');
 
+  var requested = {};
+  Object.keys(updates).forEach(function (k) {
+    requested[k] = updates[k];
+  });
+
   var sheet = getTasksSheet_();
   var map = getHeaderMap_(sheet);
   var fieldMap = {
@@ -201,8 +206,68 @@ function updateTask_(taskId, updates, actorEmail) {
   var updatedCol = colIndex_(map, TASK_COLS.UPDATED_AT);
   if (updatedCol) sheet.getRange(task.rowNumber, updatedCol).setValue(new Date().toISOString());
 
-  logActivity_('task_updated', task.eventCode, taskId, updates.status || task.title, actorEmail || '');
+  logTaskChanges_(task, requested, actorEmail || '');
   return findTask_(taskId);
+}
+
+var TASK_STATUS_LABELS_ = { todo: 'To do', in_progress: 'In progress', blocked: 'Blocked', done: 'Done' };
+
+/** One readable Activity entry per kind of change (status, owner, due date…), written as the sentence that follows the actor's name. */
+function logTaskChanges_(before, requested, actor) {
+  var code = before.eventCode;
+  var id = before.taskId;
+  var title = before.title;
+  var logged = false;
+  function log(type, phrase) {
+    logActivity_(type, code, id, phrase, actor);
+    logged = true;
+  }
+  function changed(key) {
+    return requested[key] !== undefined && String(requested[key] == null ? '' : requested[key]) !== String(before[key] == null ? '' : before[key]);
+  }
+
+  if (changed('status')) {
+    if (requested.status === 'done') log('task_completed', 'completed ' + title);
+    else if (before.status === 'done') log('task_reopened', 'reopened ' + title);
+    else log('task_status_changed', 'set ' + title + ' to ' + (TASK_STATUS_LABELS_[requested.status] || requested.status));
+  }
+  if (changed('assigneeEmail') || changed('assigneeName')) {
+    var newName = requested.assigneeName !== undefined ? requested.assigneeName : before.assigneeName;
+    var newEmail = requested.assigneeEmail !== undefined ? requested.assigneeEmail : before.assigneeEmail;
+    if (!newName && !newEmail) log('task_unassigned', 'removed the owner of ' + title);
+    else if (newEmail && String(newEmail).toLowerCase() === String(actor).toLowerCase()) log('task_assigned', 'took ownership of ' + title);
+    else log('task_assigned', 'assigned ' + title + ' to ' + (newName || newEmail));
+  }
+  if (changed('dueDate')) {
+    log('task_due_changed', requested.dueDate ? 'set the due date of ' + title + ' to ' + requested.dueDate : 'cleared the due date of ' + title);
+  }
+  if (changed('vendorVisible')) {
+    log('task_edited', (String(requested.vendorVisible).toLowerCase() === 'yes' ? 'shared ' : 'hid ') + title + (String(requested.vendorVisible).toLowerCase() === 'yes' ? ' with vendors' : ' from vendors'));
+  }
+  if (changed('internalNotes')) {
+    log('note_internal', 'updated the internal notes on ' + title);
+  }
+  if (!logged && (changed('title') || changed('category') || changed('instructions'))) {
+    log('task_edited', 'edited ' + title);
+  }
+}
+
+/** Internal notes are admin-only: strip them from any task payload leaving the server for a non-admin. */
+function redactTaskForActor_(task, actorEmail) {
+  if (!task || isAdmin_(actorEmail)) return task;
+  var copy = {};
+  Object.keys(task).forEach(function (k) {
+    copy[k] = task[k];
+  });
+  copy.internalNotes = '';
+  return copy;
+}
+
+function redactTasksForActor_(tasks, actorEmail) {
+  if (isAdmin_(actorEmail)) return tasks;
+  return tasks.map(function (t) {
+    return redactTaskForActor_(t, actorEmail);
+  });
 }
 
 /** Remove all task rows for an event (bottom-up to keep row indices stable). */

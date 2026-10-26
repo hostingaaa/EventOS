@@ -116,6 +116,7 @@ function handleRequest_(e, method) {
         );
       }
       updateEventFields_(target.rowNumber, updates);
+      logEventChanges_(target, updates, actorEmail);
       return jsonResponse_(findEventRow_(target.rowId, target.code));
     }
 
@@ -133,6 +134,14 @@ function handleRequest_(e, method) {
     // Maintenance: re-derive Start/End Date + Month Group from each event's
     // (reliable, plain-text) Dates label. Admin-only; POST {apply:true} to
     // actually write fixes, otherwise it only reports what would change.
+    if (action === 'eventDuplicate' && acceptsWrite_(method, e)) {
+      return jsonResponse_(duplicateEvent_(body.rowId, body.code, body.newCode, actorEmail));
+    }
+
+    if (action === 'cityLive') {
+      return jsonResponse_(getCityLive_(e.parameter.location || body.location || ''));
+    }
+
     if (action === 'eventDatesRepair' && acceptsWrite_(method, e)) {
       requireAdmin_(actorEmail);
       return jsonResponse_(repairEventDates_(body.apply === true));
@@ -143,12 +152,13 @@ function handleRequest_(e, method) {
       var eventRowId = e.parameter.eventRowId || body.eventRowId || '';
       var event = findEventRow_(eventRowId, eventCode);
       if (!event) return jsonResponse_({ error: 'Event not found' }, 404);
+      var viewerIsAdmin = isAdmin_(actorEmail);
       return jsonResponse_({
         event: event,
-        tasks: listTasks_(event.code, event.rowId),
-        comments: listComments_(event.code, null),
+        tasks: redactTasksForActor_(listTasks_(event.code, event.rowId), actorEmail),
+        comments: listComments_(event.code, null, viewerIsAdmin),
         files: listFiles_(event.code, null),
-        activity: listActivity_(event.code, 50),
+        activity: listActivity_(event.code, 200, viewerIsAdmin),
         vendorLink: getActiveVendorLinkForEvent_(event.code),
         costItems: listCostItems_(event.code, event.rowId),
       });
@@ -278,16 +288,22 @@ function handleRequest_(e, method) {
     // ——— Tasks ———
     if (action === 'tasksList') {
       return jsonResponse_({
-        tasks: listTasks_(e.parameter.eventCode || body.eventCode, e.parameter.eventRowId || body.eventRowId),
+        tasks: redactTasksForActor_(
+          listTasks_(e.parameter.eventCode || body.eventCode, e.parameter.eventRowId || body.eventRowId),
+          actorEmail
+        ),
       });
     }
 
     if (action === 'taskCreate' && acceptsWrite_(method, e)) {
-      return jsonResponse_(createTask_(body));
+      return jsonResponse_(redactTaskForActor_(createTask_(body), actorEmail));
     }
 
     if (action === 'taskUpdate' && acceptsWrite_(method, e)) {
-      return jsonResponse_(updateTask_(body.taskId, body.updates || {}, actorEmail));
+      if ((body.updates || {}).internalNotes !== undefined && !isAdmin_(actorEmail)) {
+        return jsonResponse_({ error: 'Permission denied: only admins can edit internal notes' }, 403);
+      }
+      return jsonResponse_(redactTaskForActor_(updateTask_(body.taskId, body.updates || {}, actorEmail), actorEmail));
     }
 
     // ——— Cost items (event financials) ———
@@ -312,11 +328,16 @@ function handleRequest_(e, method) {
     // ——— Comments ———
     if (action === 'commentsList') {
       return jsonResponse_({
-        comments: listComments_(e.parameter.eventCode || body.eventCode, e.parameter.taskId || body.taskId || null),
+        comments: listComments_(
+          e.parameter.eventCode || body.eventCode,
+          e.parameter.taskId || body.taskId || null,
+          isAdmin_(actorEmail)
+        ),
       });
     }
 
     if (action === 'commentAdd' && acceptsWrite_(method, e)) {
+      if (actorEmail) body.authorEmail = actorEmail;
       return jsonResponse_(addComment_(body));
     }
 
@@ -356,12 +377,20 @@ function handleRequest_(e, method) {
     // ——— Team ———
     if (action === 'activity') {
       return jsonResponse_({
-        activity: listActivity_(e.parameter.eventCode || body.eventCode || null, Number(e.parameter.limit) || 30),
+        activity: listActivity_(
+          e.parameter.eventCode || body.eventCode || null,
+          Number(e.parameter.limit) || 30,
+          isAdmin_(actorEmail)
+        ),
       });
     }
 
     if (action === 'team') {
-      return jsonResponse_(getTeamOverview_());
+      var overview = getTeamOverview_();
+      overview.members.forEach(function (m) {
+        m.tasks = redactTasksForActor_(m.tasks, actorEmail);
+      });
+      return jsonResponse_(overview);
     }
 
     if (action === 'digest') {

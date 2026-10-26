@@ -1,4 +1,5 @@
 import type {
+  CityLive,
   Comment,
   CostItem,
   Event,
@@ -243,14 +244,37 @@ export async function deleteEvent(
   await post('eventDelete', { rowId, code, actorEmail });
 }
 
-export async function fetchWorkspace(eventCode: string, eventRowId: string): Promise<WorkspaceData> {
+/** `actorEmail` lets the backend decide whether to include admin-only internal notes. */
+export async function fetchWorkspace(eventCode: string, eventRowId: string, actorEmail = ''): Promise<WorkspaceData> {
   if (useMockData()) {
     const { getMockWorkspace } = await import('../data/mockCollaboration');
     return getMockWorkspace(eventCode, eventRowId);
   }
   return parseJson(
-    await fetch(buildUrl('workspace', { eventCode, eventRowId })),
+    await fetch(buildUrl('workspace', { eventCode, eventRowId, actorEmail })),
   );
+}
+
+/** Weather, local time zone and USD exchange rate for an event's city — cached server-side. */
+export async function fetchCityLive(location: string): Promise<CityLive> {
+  if (useMockData()) throw new Error('Live city data needs the real backend');
+  return parseJson(await fetch(buildUrl('cityLive', { location })));
+}
+
+/** Copies an event (details + task list) under a new code. */
+export async function duplicateEvent(
+  rowId: string,
+  code: string,
+  newCode: string,
+  actorEmail: string,
+): Promise<CreateEventResult> {
+  if (useMockData()) {
+    const { findMockEvent, createMockEvent } = await import('../data/mockEvents');
+    const src = findMockEvent({ code, rowId });
+    if (!src) throw new Error('Event not found');
+    return { event: createMockEvent({ ...src, code: newCode, status: '', awarded: '', revenue: '' }), tasks: [] };
+  }
+  return post('eventDuplicate', { rowId, code, newCode, actorEmail });
 }
 
 // ——— Tasks ———
@@ -291,12 +315,8 @@ export async function createTask(payload: {
   createdBy: string;
 }): Promise<Task> {
   if (useMockData()) {
-    const { getMockWorkspace, updateMockTask } = await import('../data/mockCollaboration');
-    const ws = getMockWorkspace(payload.eventCode, payload.eventRowId);
-    return updateMockTask(ws.tasks[0].taskId, {
-      title: payload.title,
-      category: payload.category || 'General',
-    });
+    const { createMockTask } = await import('../data/mockCollaboration');
+    return createMockTask(payload);
   }
   return post('taskCreate', payload);
 }
@@ -338,12 +358,14 @@ export async function addComment(payload: {
   authorEmail: string;
   authorName: string;
   body: string;
+  /** 'internal' notes are admin-only; the backend rejects them from anyone else. */
+  visibility?: 'team' | 'internal';
 }): Promise<Comment> {
   if (useMockData()) {
     const { addMockComment } = await import('../data/mockCollaboration');
     return addMockComment(payload);
   }
-  return post('commentAdd', payload);
+  return post('commentAdd', { ...payload, actorEmail: payload.authorEmail });
 }
 
 // ——— Files ———
