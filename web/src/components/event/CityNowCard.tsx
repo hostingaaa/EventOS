@@ -1,8 +1,9 @@
 import type { WeatherKind } from '../../utils/cityLive';
-import { cityOf, formatRate, formatRateUpdated, localClock, weatherKind, weatherName } from '../../utils/cityLive';
+import { cityOf, formatRate, formatRateUpdated, isNight, localClock, localHour, weatherKind, weatherName } from '../../utils/cityLive';
 import { useCityLive } from './useCityLive';
 
-const ICONS: Record<WeatherKind, React.ReactNode> = {
+const ICONS: Record<WeatherKind | 'moon', React.ReactNode> = {
+  moon: <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />,
   sun: (
     <>
       <circle cx="12" cy="12" r="4" />
@@ -27,6 +28,8 @@ export function CityNowCard({ location }: { location: string }) {
   const weather = data?.weather ?? null;
   const kind: WeatherKind = weather ? weatherKind(weather.code) : 'cloud';
   const clock = data ? localClock(data.timezone, now) : '';
+  // Background follows the weather, and goes dark at night in the city; plain green until the weather is known.
+  const tone = !weather ? 'plain' : isNight(localHour(data?.timezone ?? '', now)) ? 'night' : kind;
 
   const temp = weather ? `${Math.round(weather.temp)}°C` : '—';
   const detail = weather
@@ -41,7 +44,7 @@ export function CityNowCard({ location }: { location: string }) {
   const rateText = rate ?? (loading ? 'Loading…' : 'Rate unavailable');
 
   return (
-    <div className="ws-card ws-city">
+    <div className={`ws-card ws-city ws-city--${tone}`}>
       <div className="ws-city__head">
         <span className="ws-label">{city} now</span>
         <span className="ws-city__clock">
@@ -52,7 +55,7 @@ export function CityNowCard({ location }: { location: string }) {
       <div className="ws-city__weather">
         <span className="ws-city__icon">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            {ICONS[kind]}
+            {ICONS[tone === 'night' && kind === 'sun' ? 'moon' : kind]}
           </svg>
         </span>
         <div className="ws-city__reading">
