@@ -1,215 +1,204 @@
 import { useEffect, useMemo, useState } from 'react';
-import { fetchAllCostItems, fetchEvents } from '../api/client';
+import { fetchReportData, saveReportSettings } from '../api/client';
 import { useUser } from '../context/UserContext';
-import type { CostItem, Event } from '../types';
-import { computeEventFinancials } from '../utils/financials';
+import type { ReportData } from '../types';
+import { CostBreakdown } from '../components/reports/CostBreakdown';
+import { CountryList } from '../components/reports/CountryList';
+import { KpiCards } from '../components/reports/KpiCards';
+import { OwnerCards } from '../components/reports/OwnerCards';
+import { PeriodSwitcher } from '../components/reports/PeriodSwitcher';
+import { PnlTable } from '../components/reports/PnlTable';
+import { ReportSection } from '../components/reports/ReportSection';
+import { RevenueCostChart } from '../components/reports/RevenueCostChart';
+import { getMemberByEmail } from '../utils/roleStore';
 import {
-  computeCategoryBreakdown,
-  computeCountryBreakdown,
-  computeMonthlyTrend,
-  computeOwnerBreakdown,
-  filterEventsByYear,
-  groupCostItemsByEvent,
-  yearsInUse,
-} from '../utils/reportingAggregates';
-import { BreakdownBarList } from '../components/reports/BreakdownBarList';
-import { MonthlyTrendChart } from '../components/reports/MonthlyTrendChart';
+  buildReport,
+  defaultDir,
+  defaultPeriod,
+  periodOptions,
+  prepareEvents,
+  reportCsv,
+  type PeriodId,
+  type SortKey,
+} from '../utils/reports';
 import './ReportsPage.css';
 
-type SortKey = 'code' | 'location' | 'owner' | 'revenue' | 'cost' | 'profit';
-type SortDir = 'asc' | 'desc';
+/** A person's display name for an owner email: their member name, else the part before the @. */
+function ownerName(email: string): string {
+  if (!email) return 'Unassigned';
+  return getMemberByEmail(email)?.name || email.split('@')[0];
+}
 
-function money(n: number): string {
-  return n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+function downloadCsv(csv: string, filename: string) {
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 export function ReportsPage() {
-  const { isAdmin } = useUser();
-  const [events, setEvents] = useState<Event[]>([]);
-  const [costItems, setCostItems] = useState<CostItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [year, setYear] = useState<number>(new Date().getFullYear());
-  const [sortKey, setSortKey] = useState<SortKey>('profit');
-  const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const { user, can, isAdmin } = useUser();
+  const allowed = can('reports.view');
+  const today = useMemo(() => new Date(), []);
+  const thisYear = today.getFullYear();
+
+  const [year, setYear] = useState(thisYear);
+  const [periodId, setPeriodId] = useState<PeriodId>(defaultPeriod(thisYear, today));
+  const [country, setCountry] = useState<string | null>(null);
+  const [sort, setSort] = useState<SortKey>('month');
+  const [dir, setDir] = useState<1 | -1>(1);
+  const [years, setYears] = useState<number[]>([thisYear]);
+  const [loaded, setLoaded] = useState<{ year: number; data?: ReportData; error?: string } | null>(null);
+
+  const email = user?.email ?? '';
 
   useEffect(() => {
-    if (!isAdmin) return;
-    (async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const [eventsRes, allCostItems] = await Promise.all([fetchEvents(), fetchAllCostItems()]);
-        setEvents(eventsRes.events);
-        setCostItems(allCostItems);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Failed to load report data');
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [isAdmin]);
+    if (!allowed || !email) return;
+    let cancelled = false;
+    fetchReportData(year, email)
+      .then((data) => {
+        if (cancelled) return;
+        setLoaded({ year, data });
+        setYears(Array.from(new Set([thisYear, ...data.years])).sort((a, b) => b - a));
+      })
+      .catch((e) => {
+        if (!cancelled) setLoaded({ year, error: e instanceof Error ? e.message : 'Failed to load the report' });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [year, allowed, email, thisYear]);
 
-  const years = useMemo(() => yearsInUse(events), [events]);
-  const yearEvents = useMemo(() => filterEventsByYear(events, year), [events, year]);
-  const costItemsByEvent = useMemo(() => groupCostItemsByEvent(costItems), [costItems]);
+  const current = loaded && loaded.year === year ? loaded : null;
+  const data = current?.data;
 
-  const monthlyTrend = useMemo(
-    () => computeMonthlyTrend(events, costItemsByEvent, year),
-    [events, costItemsByEvent, year],
+  const events = useMemo(() => (data ? prepareEvents(data.rows, today, ownerName) : []), [data, today]);
+  const options = useMemo(() => periodOptions(year, today), [year, today]);
+  const period = options.find((o) => o.id === periodId) ?? options.find((o) => o.id === defaultPeriod(year, today)) ?? options[0];
+
+  const view = useMemo(
+    () => buildReport({ events, year, period, country, monthlyTarget: data?.monthlyTarget ?? 0, today, sort, dir }),
+    [events, year, period, country, data?.monthlyTarget, today, sort, dir],
   );
 
-  const categoryBreakdown = useMemo(() => {
-    const codesInYear = new Set(yearEvents.map((e) => e.code));
-    return computeCategoryBreakdown(costItems.filter((c) => codesInYear.has(c.eventCode)));
-  }, [costItems, yearEvents]);
-
-  const ownerBreakdown = useMemo(
-    () => computeOwnerBreakdown(yearEvents, costItemsByEvent),
-    [yearEvents, costItemsByEvent],
-  );
-
-  const countryBreakdown = useMemo(
-    () => computeCountryBreakdown(yearEvents, costItemsByEvent),
-    [yearEvents, costItemsByEvent],
-  );
-
-  const tableRows = useMemo(() => {
-    const rows = yearEvents.map((ev) => {
-      const f = computeEventFinancials(ev, costItemsByEvent[ev.code] ?? []);
-      return {
-        code: ev.code,
-        location: ev.location,
-        owner: ev.ownerEmail,
-        revenue: f.revenue ?? 0,
-        cost: f.totalCost,
-        profit: (f.revenue ?? 0) - f.totalCost,
-      };
-    });
-    const dir = sortDir === 'asc' ? 1 : -1;
-    return rows.sort((a, b) => {
-      const av = a[sortKey];
-      const bv = b[sortKey];
-      if (typeof av === 'string' && typeof bv === 'string') return av.localeCompare(bv) * dir;
-      return ((av as number) - (bv as number)) * dir;
-    });
-  }, [yearEvents, costItemsByEvent, sortKey, sortDir]);
-
-  const kpis = useMemo(() => {
-    let revenue = 0;
-    let cost = 0;
-    for (const ev of yearEvents) {
-      const f = computeEventFinancials(ev, costItemsByEvent[ev.code] ?? []);
-      revenue += f.revenue ?? 0;
-      cost += f.totalCost;
-    }
-    return { revenue, cost, profit: revenue - cost, count: yearEvents.length };
-  }, [yearEvents, costItemsByEvent]);
-
-  if (!isAdmin) {
+  if (!allowed) {
     return (
-      <div className="reports__denied">
+      <div className="rp-denied">
         <h2>Access denied</h2>
-        <p>You need Admin privileges to view Reports.</p>
+        <p>Reports show company revenue and margins. Ask an admin to enable Reports for your role.</p>
       </div>
     );
   }
 
+  function pickYear(next: number) {
+    setYear(next);
+    setPeriodId(defaultPeriod(next, today));
+    setCountry(null);
+  }
+
   function toggleSort(key: SortKey) {
-    if (key === sortKey) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortKey(key);
-      setSortDir('desc');
+    if (key === sort) setDir((d) => (d === 1 ? -1 : 1));
+    else {
+      setSort(key);
+      setDir(defaultDir(key));
     }
   }
 
-  function sortIndicator(key: SortKey) {
-    if (key !== sortKey) return '';
-    return sortDir === 'asc' ? ' ▲' : ' ▼';
+  async function saveTarget(monthlyTarget: number) {
+    const saved = await saveReportSettings({ monthlyTarget }, email);
+    setLoaded((l) => (l && l.data ? { ...l, data: { ...l.data, monthlyTarget: saved.monthlyTarget } } : l));
   }
 
-  if (loading) return <p className="reports__msg">Loading reports…</p>;
-  if (error) return <p className="reports__msg reports__msg--err">{error}</p>;
+  const caption = period.caption + (country ? ` · ${country}` : '');
+  const empty = !!data && data.rows.length === 0;
 
   return (
-    <div className="reports">
-      <header className="reports__header">
-        <h1>Reports</h1>
-        <select value={year} onChange={(e) => setYear(Number(e.target.value))}>
-          {years.map((y) => (
-            <option key={y} value={y}>{y}</option>
-          ))}
-        </select>
+    <div className="reports rp">
+      <header className="rp-title">
+        <div className="rp-title__main">
+          <div className="rp-kicker">Admins &amp; management</div>
+          <h1>Reports</h1>
+          <p className="rp-title__caption">{caption}</p>
+        </div>
+        <div className="rp-title__controls">
+          {years.length > 1 && (
+            <select className="rp-year" value={year} onChange={(e) => pickYear(Number(e.target.value))} aria-label="Year">
+              {years.map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          )}
+          <PeriodSwitcher options={options} value={period.id} onChange={setPeriodId} />
+          <button
+            type="button"
+            className="rp-btn"
+            disabled={!data || view.rows.length === 0}
+            onClick={() => downloadCsv(reportCsv(view.rows), `eventos-report-${year}-${period.id}.csv`)}
+          >
+            Export CSV
+          </button>
+        </div>
       </header>
 
-      <div className="reports__kpis">
-        <div className="reports__kpi-card">
-          <div className="reports__kpi-figure">{money(kpis.revenue)}</div>
-          <div className="reports__kpi-label">Total revenue</div>
-        </div>
-        <div className="reports__kpi-card">
-          <div className="reports__kpi-figure">{money(kpis.cost)}</div>
-          <div className="reports__kpi-label">Total cost</div>
-        </div>
-        <div className={`reports__kpi-card${kpis.profit < 0 ? ' reports__kpi-card--negative' : ''}`}>
-          <div className="reports__kpi-figure">{money(kpis.profit)}</div>
-          <div className="reports__kpi-label">Total profit</div>
-        </div>
-        <div className="reports__kpi-card">
-          <div className="reports__kpi-figure">{kpis.count}</div>
-          <div className="reports__kpi-label">Events in {year}</div>
-        </div>
-      </div>
+      {!data && !current?.error && <p className="rp-msg">Loading report…</p>}
+      {current?.error && <p className="rp-msg rp-msg--err">{current.error}</p>}
 
-      <MonthlyTrendChart points={monthlyTrend} />
+      {data && (
+        <>
+          {data.unconvertedCurrencies.length > 0 && (
+            <p className="rp-banner">
+              Some costs are in {data.unconvertedCurrencies.join(', ')}, which couldn&rsquo;t be converted to USD, so they&rsquo;re counted at face value.
+            </p>
+          )}
 
-      <div className="reports__breakdowns">
-        <BreakdownBarList
-          title="By cost category"
-          entries={categoryBreakdown.map((c) => ({ key: c.category, label: c.category, value: c.total }))}
-        />
-        <BreakdownBarList
-          title="By team member"
-          entries={ownerBreakdown.map((o) => ({ key: o.key, label: o.label, value: o.profit }))}
-        />
-        <BreakdownBarList
-          title="By country"
-          entries={countryBreakdown.map((c) => ({ key: c.key, label: c.label, value: c.profit }))}
-        />
-      </div>
+          {empty ? (
+            <div className="rp-card rp-emptycard">
+              <h3>No awarded or completed events in {year} yet</h3>
+              <p>
+                Reports counts events marked Awarded or Completed. Add each event&rsquo;s contract value on its Financials tab and it
+                will appear here.
+              </p>
+            </div>
+          ) : (
+            <>
+              <KpiCards kpis={view.kpis} />
+              {view.missingRevenue > 0 && (
+                <p className="rp-note rp-note--kpis">
+                  {view.missingRevenue} delivered event{view.missingRevenue > 1 ? 's have' : ' has'} no contract value yet, so
+                  {view.missingRevenue > 1 ? ' they' : ' it'} add{view.missingRevenue > 1 ? '' : 's'} nothing to revenue. Enter it on the event&rsquo;s Financials tab.
+                </p>
+              )}
 
-      <div className="reports__table-wrap">
-        <table className="reports__table">
-          <thead>
-            <tr>
-              <th onClick={() => toggleSort('code')}>Event{sortIndicator('code')}</th>
-              <th onClick={() => toggleSort('location')}>Location{sortIndicator('location')}</th>
-              <th onClick={() => toggleSort('owner')}>Owner{sortIndicator('owner')}</th>
-              <th onClick={() => toggleSort('revenue')}>Revenue{sortIndicator('revenue')}</th>
-              <th onClick={() => toggleSort('cost')}>Cost{sortIndicator('cost')}</th>
-              <th onClick={() => toggleSort('profit')}>Profit{sortIndicator('profit')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tableRows.map((row) => (
-              <tr key={row.code}>
-                <td>{row.code}</td>
-                <td>{row.location}</td>
-                <td>{row.owner || '—'}</td>
-                <td>{money(row.revenue)}</td>
-                <td>{money(row.cost)}</td>
-                <td className={row.profit < 0 ? 'reports__profit-negative' : ''}>{money(row.profit)}</td>
-              </tr>
-            ))}
-            {tableRows.length === 0 && (
-              <tr>
-                <td colSpan={6} className="reports__table-empty">No events in {year}.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+              <ReportSection title="Company financials" />
+              <div className="rp-grid">
+                <div className="rp-grid__full">
+                  <RevenueCostChart
+                    year={year}
+                    months={view.months}
+                    chartMax={view.chartMax}
+                    monthlyTarget={data.monthlyTarget}
+                    canEditTarget={isAdmin}
+                    onSaveTarget={saveTarget}
+                  />
+                </div>
+                <CountryList countries={view.countries} selected={country} onSelect={setCountry} />
+                <CostBreakdown categories={view.costCategories} total={view.deliveredCost} />
+              </div>
+
+              <ReportSection title="Operations by owner" />
+              <OwnerCards owners={view.owners} totalRevenue={view.kpis.revenue} />
+
+              <ReportSection
+                title="Event P&L"
+                caption={`${view.rows.length} event${view.rows.length === 1 ? '' : 's'}${country ? ` in ${country}` : ''} · margins under 25% flagged`}
+              />
+              <PnlTable rows={view.rows} totals={view.totals} sort={sort} dir={dir} onSort={toggleSort} />
+            </>
+          )}
+        </>
+      )}
     </div>
   );
 }
