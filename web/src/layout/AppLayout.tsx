@@ -234,7 +234,7 @@ export function AppLayout() {
             </NavLink>
           )}
 
-          {isAdmin && (
+          {can('reports.view') && (
             <NavLink
               to="/reports"
               className={({ isActive }) => `layout__link${isActive ? ' active' : ''}`}

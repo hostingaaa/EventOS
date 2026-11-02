@@ -6,6 +6,7 @@ import type {
   EventHealth,
   EventsResponse,
   EventUpdates,
+  ReportData,
   Task,
   TaskFile,
   TaskStatus,
@@ -253,6 +254,24 @@ export async function fetchWorkspace(eventCode: string, eventRowId: string, acto
   return parseJson(
     await fetch(buildUrl('workspace', { eventCode, eventRowId, actorEmail })),
   );
+}
+
+/** Per-event financials for the Reports page. The backend refuses anyone without the Reports permission. */
+export async function fetchReportData(year: number, actorEmail: string): Promise<ReportData> {
+  if (useMockData()) {
+    const { getMockReportData } = await import('../data/mockReports');
+    return getMockReportData(year);
+  }
+  return parseJson(await fetch(buildUrl('reportData', { year: String(year), actorEmail })));
+}
+
+/** Saves the Reports settings (admin only). A monthly target of 0 clears it. */
+export async function saveReportSettings(settings: { monthlyTarget: number }, actorEmail: string): Promise<{ monthlyTarget: number }> {
+  if (useMockData()) {
+    const { saveMockReportTarget } = await import('../data/mockReports');
+    return { monthlyTarget: saveMockReportTarget(settings.monthlyTarget) };
+  }
+  return post('reportSettingsSave', { settings, actorEmail });
 }
 
 /** Weather, local time zone and USD exchange rate for an event's city — cached server-side. */

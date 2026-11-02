@@ -39,6 +39,8 @@ export interface Event {
   supportLevel?: string;
   /** Free-text venue capacity note, e.g. "Full" or "120 pax". Shown as a pill in the event header. */
   capacity?: string;
+  /** 'Paid' once the client has paid; empty otherwise. Admin-only to change. Feeds Reports' receivables. */
+  paymentStatus?: string;
   /** Set when the Service Report generator saves a report for this event. */
   serviceReportDriveUrl?: string;
   serviceReportDriveFileId?: string;
@@ -71,7 +73,7 @@ export interface EventsResponse {
 }
 
 export type EventUpdates = Partial<
-  Pick<Event, 'location' | 'dates' | 'startDate' | 'endDate' | 'monthGroup' | 'lem' | 'av' | 'interpreters' | 'venue' | 'psaCldp' | 'sow' | 'notes' | 'ownerEmail' | 'perDiemRate' | 'maxVisaAllowance' | 'maxGroundTransport' | 'awarded' | 'revenue' | 'status' | 'assignedTeam' | 'supportLevel' | 'capacity' | 'serviceReportDriveUrl' | 'serviceReportDriveFileId' | 'serviceReportSavedAt' | 'serviceReportSavedBy'>
+  Pick<Event, 'location' | 'dates' | 'startDate' | 'endDate' | 'monthGroup' | 'lem' | 'av' | 'interpreters' | 'venue' | 'psaCldp' | 'sow' | 'notes' | 'ownerEmail' | 'perDiemRate' | 'maxVisaAllowance' | 'maxGroundTransport' | 'awarded' | 'revenue' | 'status' | 'assignedTeam' | 'supportLevel' | 'capacity' | 'paymentStatus' | 'serviceReportDriveUrl' | 'serviceReportDriveFileId' | 'serviceReportSavedAt' | 'serviceReportSavedBy'>
 >;
 
 export type TaskStatus = 'todo' | 'in_progress' | 'blocked' | 'done';
@@ -185,6 +187,33 @@ export interface CityLive {
   /** Units of local currency per 1 USD; null for USD countries or when unavailable. */
   fx: { rate: number; updated: number } | null;
   errors: string[];
+}
+
+/** One awarded/completed event's financials, as served (permission-gated) to the Reports page. */
+export interface ReportRow {
+  code: string;
+  location: string;
+  startDate: string;
+  endDate: string;
+  ownerEmail: string;
+  status: string;
+  /** Contract value, in USD. */
+  revenue: number;
+  /** Total cost converted to USD. */
+  cost: number;
+  costByCategory: Record<string, number>;
+  paid: boolean;
+}
+
+export interface ReportData {
+  year: number;
+  /** Years that have at least one awarded/completed event, newest first. */
+  years: number[];
+  rows: ReportRow[];
+  /** Monthly revenue target in USD; 0 = none set. */
+  monthlyTarget: number;
+  /** Currencies with no exchange rate, whose costs were counted at face value. */
+  unconvertedCurrencies: string[];
 }
 
 export interface WorkspaceData {

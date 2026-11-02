@@ -110,7 +110,7 @@ function getEventsSheet_() {
     sheet.appendRow(headers);
     sheet.setFrozenRows(1);
   }
-  ensureSheetColumns_(sheet, [CONFIG.COLS.CAPACITY]);
+  ensureSheetColumns_(sheet, [CONFIG.COLS.CAPACITY, CONFIG.COLS.PAYMENT_STATUS]);
   return sheet;
 }
 
@@ -251,6 +251,7 @@ function rowToEvent_(row, rowNum, map) {
     assignedTeam: cell(CONFIG.COLS.ASSIGNED_TEAM),
     supportLevel: cell(CONFIG.COLS.SUPPORT_LEVEL),
     capacity: cell(CONFIG.COLS.CAPACITY),
+    paymentStatus: cell(CONFIG.COLS.PAYMENT_STATUS),
     serviceReportDriveUrl: cell(CONFIG.COLS.SERVICE_REPORT_DRIVE_URL),
     serviceReportDriveFileId: cell(CONFIG.COLS.SERVICE_REPORT_DRIVE_FILE_ID),
     serviceReportSavedAt: cell(CONFIG.COLS.SERVICE_REPORT_SAVED_AT),
@@ -347,6 +348,7 @@ function updateEventFields_(rowNumber, updates) {
     assignedTeam: CONFIG.COLS.ASSIGNED_TEAM,
     supportLevel: CONFIG.COLS.SUPPORT_LEVEL,
     capacity: CONFIG.COLS.CAPACITY,
+    paymentStatus: CONFIG.COLS.PAYMENT_STATUS,
     serviceReportDriveUrl: CONFIG.COLS.SERVICE_REPORT_DRIVE_URL,
     serviceReportDriveFileId: CONFIG.COLS.SERVICE_REPORT_DRIVE_FILE_ID,
     serviceReportSavedAt: CONFIG.COLS.SERVICE_REPORT_SAVED_AT,
@@ -737,6 +739,18 @@ function logEventChanges_(before, updates, actorEmail) {
           ? 'cleared the contract value'
           : 'set the contract value to ' + String(amount).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         logActivity_('contract_value_changed', before.code, '', phrase, actorEmail || '');
+      }
+      return;
+    }
+    if (key === 'paymentStatus') {
+      if (!same(updates.paymentStatus, before.paymentStatus)) {
+        logActivity_(
+          'payment_status_changed',
+          before.code,
+          '',
+          String(updates.paymentStatus || '').toLowerCase() === 'paid' ? 'marked the event as paid' : 'marked the event as unpaid',
+          actorEmail || ''
+        );
       }
       return;
     }

@@ -539,3 +539,26 @@
     grid-template-columns: 120px minmax(0, 1fr);
   }
 }
+
+.ws-fin__payment {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+.ws-fin__payment span {
+  opacity: 0.6;
+}
+
+.ws-fin__payment select {
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--ws-n-300);
+  border-radius: 8px;
+  background: var(--eo-surface);
+  color: var(--eo-text);
+  font-size: 13px;
+  font-weight: 600;
+}

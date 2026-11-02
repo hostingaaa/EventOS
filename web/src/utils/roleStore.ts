@@ -31,6 +31,7 @@ export type AppCapability =
   | 'designs'
   | 'generators'
   | 'sow_generator'
+  | 'reports.view'
   | 'admin_panel';
 
 export interface CapabilityMeta {
@@ -139,6 +140,12 @@ export const CAPABILITY_LIST: CapabilityMeta[] = [
     description: 'Parse SOW PDFs and create fully templated events.',
   },
   {
+    key: 'reports.view',
+    label: 'Reports (company financials)',
+    group: 'Admin',
+    description: 'See revenue, costs and margins on the Reports page. Off by default — contract values are sensitive.',
+  },
+  {
     key: 'admin_panel',
     label: 'Admin Panel',
     group: 'Admin',
@@ -169,6 +176,7 @@ const DEFAULT_MATRIX: CapMatrix = {
     'designs':           true,
     'generators':        true,
     'sow_generator':     false,
+    'reports.view':      false,
     'admin_panel':       false,
   },
 
@@ -187,6 +195,7 @@ const DEFAULT_MATRIX: CapMatrix = {
     'designs':           true,
     'generators':        false,
     'sow_generator':     false,
+    'reports.view':      false,
     'admin_panel':       false,
   },
 };

@@ -103,6 +103,12 @@ function handleRequest_(e, method) {
           403,
         );
       }
+      if (updates.paymentStatus !== undefined && !isAdmin_(actorEmail)) {
+        return jsonResponse_(
+          { error: 'Permission denied: only admins can change Payment status' },
+          403,
+        );
+      }
       if (updates.status !== undefined && !isAdmin_(actorEmail)) {
         return jsonResponse_(
           { error: 'Permission denied: only admins can change event Status' },
@@ -136,6 +142,14 @@ function handleRequest_(e, method) {
     // actually write fixes, otherwise it only reports what would change.
     if (action === 'eventDuplicate' && acceptsWrite_(method, e)) {
       return jsonResponse_(duplicateEvent_(body.rowId, body.code, body.newCode, actorEmail));
+    }
+
+    if (action === 'reportData') {
+      return jsonResponse_(getReportData_(actorEmail, e.parameter.year || body.year));
+    }
+
+    if (action === 'reportSettingsSave' && acceptsWrite_(method, e)) {
+      return jsonResponse_(saveReportSettings_(actorEmail, body.settings || {}));
     }
 
     if (action === 'cityLive') {

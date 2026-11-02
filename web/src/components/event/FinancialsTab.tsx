@@ -43,6 +43,7 @@ export function FinancialsTab({
   const [error, setError] = useState<string | null>(null);
   const [revenueInput, setRevenueInput] = useState(event.revenue ?? '');
   const [savingRevenue, setSavingRevenue] = useState(false);
+  const [savingPayment, setSavingPayment] = useState(false);
   const [busyItemId, setBusyItemId] = useState<string | null>(null);
 
   const financials = useMemo(() => computeEventFinancials(event, costItems), [event, costItems]);
@@ -130,6 +131,23 @@ export function FinancialsTab({
     }
   }
 
+  async function handlePayment(next: string) {
+    setSavingPayment(true);
+    setError(null);
+    try {
+      const updated = await updateEvent(event.rowId, event.code, { paymentStatus: next }, actorEmail);
+      onEventUpdated(updated);
+      // An older backend ignores fields it doesn't know instead of failing.
+      if ((updated.paymentStatus ?? '') !== next) {
+        setError('The payment status was not saved — the backend script needs to be updated.');
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to save the payment status');
+    } finally {
+      setSavingPayment(false);
+    }
+  }
+
   const canAdd = !!draft.category.trim() && !!draft.description.trim() && !adding;
 
   return (
@@ -158,6 +176,17 @@ export function FinancialsTab({
                 {savingRevenue ? 'Saving…' : revenueClean && event.revenue ? 'Saved' : 'Save'}
               </button>
             </div>
+            <label className="ws-fin__payment">
+              <span>Payment from client</span>
+              <select
+                value={event.paymentStatus === 'Paid' ? 'Paid' : ''}
+                disabled={savingPayment}
+                onChange={(e) => void handlePayment(e.target.value)}
+              >
+                <option value="">Unpaid</option>
+                <option value="Paid">Paid</option>
+              </select>
+            </label>
           </div>
         )}
 
