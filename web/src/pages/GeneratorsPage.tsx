@@ -52,6 +52,24 @@ const GENERATORS: GeneratorCard[] = [
     label: 'Open Generator',
   },
   {
+    title: 'Supplies & Materials Generator',
+    description:
+      'Build the conference supplies and materials list for any event — briefing ' +
+      'folders, table tent cards, notepads, name badges, or your own items — and ' +
+      'export a styled .xlsx matching the PSA template.',
+    detail: [
+      'Pick from common supplies or add your own',
+      'Set the amount for each item (always listed as 1 day)',
+      'Saves to the event\'s Drive folder and syncs to Financials',
+      'Exports: {code}_{city}_{date}_Supplies.xlsx',
+    ],
+    href:  '/supplies-materials',
+    icon:  '📦',
+    color: '#0f766e',
+    bg:    '#f0fdfa',
+    label: 'Open Generator',
+  },
+  {
     title: 'Per Diem Form Generator',
     description:
       'Generate the PSA cash disbursement form for each traveler. Enter the ' +
