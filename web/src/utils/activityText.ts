@@ -29,6 +29,9 @@ const LEGACY: Record<string, (summary: string) => string> = {
   event_created: () => 'created the event',
   event_deleted: () => 'deleted the event',
   templates_applied: (s) => `added ${s}`,
+  av_equipment_saved: (s) => `saved ${s} to Drive`,
+  transfer_list_saved: (s) => `saved ${s} to Drive`,
+  service_report_saved: (s) => `saved ${s} to Drive`,
 };
 
 export function activityPhrase(item: Pick<ActivityItem, 'type' | 'summary'>): string {

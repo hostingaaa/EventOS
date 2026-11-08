@@ -544,3 +544,21 @@
 .av-pt__footer--total td {
   background: #efefef;
 }
+
+/* Pointers between the AV Equipment and Supplies & Materials generators. */
+.av-supplies-moved a,
+.av-supplies-carried {
+  font-weight: 600;
+}
+
+.av-supplies-moved a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.av-supplies-carried {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #fffbeb;
+  color: #92400e;
+}

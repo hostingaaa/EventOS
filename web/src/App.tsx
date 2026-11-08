@@ -12,6 +12,7 @@ import { VendorPortalPage } from './pages/VendorPortalPage';
 import { PerDiemFormPage } from './pages/PerDiemFormPage';
 import { TransferListPage } from './pages/TransferListPage';
 import { AVEquipmentPage } from './pages/AVEquipmentPage';
+import { SuppliesMaterialsPage } from './pages/SuppliesMaterialsPage';
 import { ServiceReportPage } from './pages/ServiceReportPage';
 import { QRCodePage } from './pages/QRCodePage';
 import { GeneratorsPage } from './pages/GeneratorsPage';
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="/per-diem-form" element={<PerDiemFormPage />} />
           <Route path="/transfer-list" element={<TransferListPage />} />
           <Route path="/av-equipment" element={<AVEquipmentPage />} />
+          <Route path="/supplies-materials" element={<SuppliesMaterialsPage />} />
           <Route path="/service-report" element={<ServiceReportPage />} />
           <Route path="/qr-code" element={<QRCodePage />} />
           <Route element={<AppLayout />}>

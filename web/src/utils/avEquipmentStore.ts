@@ -1,11 +1,13 @@
 /**
  * Persists AV equipment list state per event in localStorage.
  */
-import type { AVItemState, AVSetup, SupplyItemState } from '../pages/AVEquipmentPage';
+import type { AVItemState, AVSetup } from '../pages/AVEquipmentPage';
+import type { SupplyItemState } from './supplies';
 
 export interface SavedAVEquipment {
   setup:        AVSetup;
   items:        AVItemState[];
+  /** Legacy: supplies now live in suppliesStore. Kept so lists saved here are carried over. */
   supplies?:    SupplyItemState[];
   savedAt:      string;
   savedBy:      string;
