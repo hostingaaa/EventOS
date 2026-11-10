@@ -213,12 +213,10 @@ function getTaskFolder_(eventCode, taskId) {
 }
 
 function listFiles_(eventCode, taskId) {
-  var sheet = getFilesSheet_();
-  var map = getHeaderMap_(sheet);
-  var lastRow = sheet.getLastRow();
-  if (lastRow <= 1) return [];
-
-  var data = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
+  var table = readTable_(getFilesSheet_());
+  var map = table.map;
+  var data = table.rows;
+  if (data.length === 0) return [];
   var files = [];
 
   for (var i = 0; i < data.length; i++) {

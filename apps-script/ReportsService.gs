@@ -120,5 +120,6 @@ function saveReportSettings_(actorEmail, settings) {
   var target = Number(settings.monthlyTarget);
   if (isNaN(target) || target < 0) throw new Error('Monthly target must be a number of 0 or more');
   PropertiesService.getScriptProperties().setProperty(REPORT_TARGET_PROP_, String(Math.round(target)));
+  resetScriptPropertyMemo_();
   return { monthlyTarget: getReportMonthlyTarget_() };
 }

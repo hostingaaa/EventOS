@@ -21,16 +21,15 @@ function getCostItemsSheet_() {
 }
 
 function listCostItems_(eventCode, eventRowId) {
-  var sheet = getCostItemsSheet_();
-  var map = getHeaderMap_(sheet);
-  return listCostItemsFromSheet_(sheet, map, eventCode, eventRowId);
+  return listCostItemsFromSheet_(getCostItemsSheet_(), null, eventCode, eventRowId);
 }
 
+/** `map` is accepted for older callers but ignored — the table is read once here, header included. */
 function listCostItemsFromSheet_(sheet, map, eventCode, eventRowId) {
-  var lastRow = sheet.getLastRow();
-  if (lastRow <= 1) return [];
-
-  var data = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
+  var table = readTable_(sheet);
+  map = table.map;
+  var data = table.rows;
+  if (data.length === 0) return [];
   var items = [];
 
   for (var i = 0; i < data.length; i++) {
@@ -108,7 +107,7 @@ function createCostItem_(payload) {
 
 function findCostItem_(costItemId) {
   var sheet = getCostItemsSheet_();
-  var items = listCostItemsFromSheet_(sheet, getHeaderMap_(sheet), null, null);
+  var items = listCostItemsFromSheet_(sheet, null, null, null);
   for (var i = 0; i < items.length; i++) {
     if (items[i].costItemId === costItemId) return items[i];
   }

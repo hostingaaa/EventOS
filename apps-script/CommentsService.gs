@@ -22,12 +22,10 @@ function normalizeVisibility_(v) {
 
 /** includeInternal must only be true for admins — internal notes never leave the server otherwise. */
 function listComments_(eventCode, taskId, includeInternal) {
-  var sheet = getCommentsSheet_();
-  var map = getHeaderMap_(sheet);
-  var lastRow = sheet.getLastRow();
-  if (lastRow <= 1) return [];
-
-  var data = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
+  var table = readTable_(getCommentsSheet_());
+  var map = table.map;
+  var data = table.rows;
+  if (data.length === 0) return [];
   var comments = [];
 
   for (var i = 0; i < data.length; i++) {

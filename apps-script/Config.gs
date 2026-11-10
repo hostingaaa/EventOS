@@ -92,8 +92,19 @@ var CONFIG = {
   MISSING_VENUE_DAYS: 14,
 };
 
+// Per-execution memo (Apps Script globals live for one request): every sheet helper asks for the same few
+// properties and the spreadsheet handle, and each lookup is a call to Google's services.
+var SCRIPT_PROPS_MEMO_ = null;
+var SPREADSHEET_MEMO_ = null;
+
+/** Call after writing a script property so the rest of this request sees the new value. */
+function resetScriptPropertyMemo_() {
+  SCRIPT_PROPS_MEMO_ = null;
+}
+
 function getScriptProperty_(key, optional) {
-  var v = PropertiesService.getScriptProperties().getProperty(key);
+  if (SCRIPT_PROPS_MEMO_ === null) SCRIPT_PROPS_MEMO_ = PropertiesService.getScriptProperties().getProperties();
+  var v = SCRIPT_PROPS_MEMO_[key];
   if (!v && !optional) {
     throw new Error('Missing Script property: ' + key);
   }
@@ -110,8 +121,12 @@ function getApiToken_() {
  * in Script properties. Sheet-bound scripts can omit it.
  */
 function getSpreadsheet_() {
+  if (SPREADSHEET_MEMO_) return SPREADSHEET_MEMO_;
   var id = getScriptProperty_('SPREADSHEET_ID', true);
-  if (id) return SpreadsheetApp.openById(id);
+  if (id) {
+    SPREADSHEET_MEMO_ = SpreadsheetApp.openById(id);
+    return SPREADSHEET_MEMO_;
+  }
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   if (!ss) {
     throw new Error(
@@ -120,6 +135,7 @@ function getSpreadsheet_() {
       'Extensions → Apps Script inside the spreadsheet.'
     );
   }
+  SPREADSHEET_MEMO_ = ss;
   return ss;
 }
 
@@ -213,7 +229,7 @@ function requireAdmin_(email) {
 function findMemberByEmail_(email) {
   if (!email || typeof listMembers_ !== 'function') return null;
   var lower = String(email).toLowerCase().trim();
-  var members = listMembers_();
+  var members = typeof listMembersCached_ === 'function' ? listMembersCached_() : listMembers_();
   for (var i = 0; i < members.length; i++) {
     if (String(members[i].email).toLowerCase().trim() === lower) return members[i];
   }
@@ -265,7 +281,7 @@ function canActor_(email, cap) {
   if (!member || String(member.status).toLowerCase() !== 'active') return false;
   if (String(member.role).toLowerCase() === 'admin') return true;
 
-  var matrix = resolveRoleCaps_(getCapMatrixFromSheet_());
+  var matrix = resolveRoleCaps_(typeof getCapMatrixCached_ === 'function' ? getCapMatrixCached_() : getCapMatrixFromSheet_());
   var role = member.role;
   if (!role || !matrix[role]) return false;
   return matrix[role][cap] === true;

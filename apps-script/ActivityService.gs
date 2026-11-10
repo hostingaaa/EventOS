@@ -19,12 +19,10 @@ var INTERNAL_ACTIVITY_TYPES_ = { note_internal: true };
 
 /** includeInternal must only be true for admins. */
 function listActivity_(eventCode, limit, includeInternal) {
-  var sheet = getActivitySheet_();
-  var map = getHeaderMap_(sheet);
-  var lastRow = sheet.getLastRow();
-  if (lastRow <= 1) return [];
-
-  var data = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
+  var table = readTable_(getActivitySheet_());
+  var map = table.map;
+  var data = table.rows;
+  if (data.length === 0) return [];
   var items = [];
 
   for (var i = data.length - 1; i >= 0; i--) {
@@ -57,7 +55,7 @@ function listActivity_(eventCode, limit, includeInternal) {
 }
 
 function getTeamOverview_() {
-  var tasks = listTasksFromSheet_(getTasksSheet_(), getHeaderMap_(getTasksSheet_()), null, null);
+  var tasks = listTasksFromSheet_(getTasksSheet_(), null, null, null);
   var byAssignee = {};
 
   tasks.forEach(function (t) {
