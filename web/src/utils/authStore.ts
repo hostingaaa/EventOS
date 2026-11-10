@@ -174,14 +174,19 @@ export async function initAuthStore(): Promise<void> {
 async function initRealMode_(): Promise<void> {
   const { fetchAndCacheMembers, fetchAndCacheCapMatrix } = await import('./roleStore');
 
-  // Fetch accounts from GAS → populate cache
+  // Accounts, members and capabilities are independent reads, so fetch them together
+  // (each Apps Script call takes seconds; one after another they dominated startup).
   let remoteAccounts: AuthAccount[] = [];
-  try {
-    const listed = await apiAuthList();
-    remoteAccounts = Array.isArray(listed) ? listed : [];
+  const [accountsResult] = await Promise.allSettled([
+    apiAuthList(),
+    fetchAndCacheMembers(),
+    fetchAndCacheCapMatrix(),
+  ]);
+  if (accountsResult.status === 'fulfilled') {
+    remoteAccounts = Array.isArray(accountsResult.value) ? accountsResult.value : [];
     setCachedAccounts(remoteAccounts);
-  } catch (err) {
-    console.warn('[authStore] Failed to fetch accounts from server:', err);
+  } else {
+    console.warn('[authStore] Failed to fetch accounts from server:', accountsResult.reason);
     // Continue with whatever is cached locally
   }
 
@@ -205,8 +210,6 @@ async function initRealMode_(): Promise<void> {
     } catch { /* admin may already exist — ignore */ }
   }
 
-  // Fetch members + capabilities in parallel
-  await Promise.allSettled([fetchAndCacheMembers(), fetchAndCacheCapMatrix()]);
 }
 
 async function initMockMode_(): Promise<void> {

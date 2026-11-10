@@ -21,6 +21,7 @@ import type {
 import type { AuthAccount } from '../utils/authStore';
 import type { CapMatrix, OrgMember } from '../utils/roleStore';
 import { computeEventHealth } from '../utils/health';
+import { clearPersisted, readPersisted, writePersisted, type Stamped } from './cache';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 const API_TOKEN = import.meta.env.VITE_API_TOKEN || '';
@@ -124,25 +125,140 @@ async function post<T>(action: string, body: Record<string, unknown>): Promise<T
 
 // ——— Events ———
 
-export async function fetchEvents(): Promise<EventsResponse> {
+// ——— Read caching ———
+// Every Apps Script call costs seconds, so reads are shared and remembered: the events list is reused
+// for a minute across pages (and across reloads, as a stale-while-revalidate copy), and the dashboard
+// fetches its two datasets side by side instead of one after the other.
+
+const EVENTS_FRESH_MS = 60_000;
+const WORKSPACE_FRESH_MS = 30_000;
+
+let eventsMem: Stamped<EventsResponse> | null = null;
+let eventsInflight: Promise<EventsResponse> | null = null;
+/** Bumped by every write so a read that started before it can't repopulate the cache with old data. */
+let eventsGen = 0;
+
+/** The last events list we know about (memory, then localStorage) — possibly stale. Never hits the network. */
+export function peekEvents(): EventsResponse | null {
+  if (useMockData()) return null;
+  if (!eventsMem) eventsMem = readPersisted<EventsResponse>('events');
+  return eventsMem?.value ?? null;
+}
+
+/** Marks the cached events list stale after a write, so the next read goes to the server. */
+export function invalidateEvents(): void {
+  eventsGen += 1;
+  eventsInflight = null;
+  if (eventsMem) eventsMem = { ...eventsMem, at: 0 };
+}
+
+/** Forgets everything cached from the server (called on sign-out / account switch). */
+export function clearApiCaches(): void {
+  eventsGen += 1;
+  eventsMem = null;
+  eventsInflight = null;
+  healthMem = null;
+  healthInflight = null;
+  workspaceMem.clear();
+  workspaceInflight.clear();
+  clearPersisted();
+}
+
+/**
+ * The events list. Served from memory when it was fetched in the last minute; concurrent callers share
+ * one request. Pass `force` for an explicit refresh.
+ */
+export async function fetchEvents(opts?: { force?: boolean }): Promise<EventsResponse> {
   if (useMockData()) {
     const { mockEventsResponse } = await import('../data/mockEvents');
     return mockEventsResponse;
   }
-  const data = await parseJson<EventsResponse>(await fetch(buildUrl('list')));
-  return {
-    months: Array.isArray(data.months) ? data.months : [],
-    events: Array.isArray(data.events) ? data.events : [],
-  };
+  if (!opts?.force) {
+    if (!eventsMem) eventsMem = readPersisted<EventsResponse>('events');
+    if (eventsMem && Date.now() - eventsMem.at < EVENTS_FRESH_MS) return eventsMem.value;
+    if (eventsInflight) return eventsInflight;
+  }
+  const gen = eventsGen;
+  const request: Promise<EventsResponse> = (async () => {
+    const data = await parseJson<EventsResponse>(await fetch(buildUrl('list')));
+    const result: EventsResponse = {
+      months: Array.isArray(data.months) ? data.months : [],
+      events: Array.isArray(data.events) ? data.events : [],
+    };
+    if (gen === eventsGen) {
+      eventsMem = { value: result, at: Date.now() };
+      writePersisted('events', eventsMem);
+    }
+    return result;
+  })().finally(() => {
+    if (eventsInflight === request) eventsInflight = null;
+  });
+  eventsInflight = request;
+  return request;
+}
+
+/** Raw bulk data behind the dashboard's per-event health. */
+export interface DashboardHealthData {
+  tasksByEvent: Record<string, Pick<Task, 'status' | 'dueDate'>[]>;
+  fileCountByEvent: Record<string, number>;
+}
+
+let healthMem: Stamped<DashboardHealthData> | null = null;
+let healthInflight: Promise<DashboardHealthData | null> | null = null;
+
+function buildHealthMap(events: Event[], raw: DashboardHealthData): Record<string, EventHealth> {
+  const map: Record<string, EventHealth> = {};
+  events.forEach((ev) => {
+    const tasks = (raw.tasksByEvent?.[ev.code] || []) as unknown as Task[];
+    const fileCount = raw.fileCountByEvent?.[ev.code] || 0;
+    map[ev.code] = computeEventHealth(ev, tasks, new Array(fileCount) as TaskFile[]);
+  });
+  return map;
+}
+
+/** Last-known dashboard health for these events (stale is fine — it is refreshed right after). */
+export function peekDashboardHealth(events: Event[]): Record<string, EventHealth> {
+  if (useMockData()) return {};
+  if (!healthMem) healthMem = readPersisted<DashboardHealthData>('dashboardHealth');
+  return healthMem ? buildHealthMap(events, healthMem.value) : {};
+}
+
+/**
+ * Starts the bulk health request without waiting for the events list, so the two run side by side.
+ * Resolves to null when the request fails (health is decoration; the dashboard still works without it).
+ */
+export function startDashboardHealth(): Promise<DashboardHealthData | null> {
+  if (useMockData()) return Promise.resolve(null);
+  if (healthInflight) return healthInflight;
+  const request: Promise<DashboardHealthData | null> = fetch(buildUrl('dashboardHealth'))
+    .then((res) => parseJson<DashboardHealthData>(res))
+    .then((raw) => {
+      const value: DashboardHealthData = {
+        tasksByEvent: raw.tasksByEvent ?? {},
+        fileCountByEvent: raw.fileCountByEvent ?? {},
+      };
+      healthMem = { value, at: Date.now() };
+      writePersisted('dashboardHealth', healthMem);
+      return value;
+    })
+    .catch(() => null)
+    .finally(() => {
+      if (healthInflight === request) healthInflight = null;
+    });
+  healthInflight = request;
+  return request;
 }
 
 /**
  * Returns per-event health summaries for the dashboard. In mock mode this
- * pulls task/file data from the local store; in real mode it hits a
- * lightweight `dashboardHealth` endpoint on the backend for bulk task/file
- * data and computes health client-side with `computeEventHealth`.
+ * pulls task/file data from the local store; in real mode it uses the
+ * `dashboardHealth` endpoint (pass `prefetched` from `startDashboardHealth()`
+ * to avoid waiting for the events list first) and computes health client-side.
  */
-export async function fetchDashboardHealth(events: Event[]): Promise<Record<string, EventHealth>> {
+export async function fetchDashboardHealth(
+  events: Event[],
+  prefetched?: Promise<DashboardHealthData | null>,
+): Promise<Record<string, EventHealth>> {
   if (useMockData()) {
     const [{ mockEventsResponse }, { getMockState }] = await Promise.all([
       import('../data/mockEvents'),
@@ -159,21 +275,8 @@ export async function fetchDashboardHealth(events: Event[]): Promise<Record<stri
     });
     return map;
   }
-  try {
-    const res = await parseJson<{
-      tasksByEvent: Record<string, Pick<Task, 'status' | 'dueDate'>[]>;
-      fileCountByEvent: Record<string, number>;
-    }>(await fetch(buildUrl('dashboardHealth')));
-    const map: Record<string, EventHealth> = {};
-    events.forEach((ev) => {
-      const tasks = (res.tasksByEvent[ev.code] || []) as unknown as Task[];
-      const fileCount = res.fileCountByEvent[ev.code] || 0;
-      map[ev.code] = computeEventHealth(ev, tasks, new Array(fileCount) as TaskFile[]);
-    });
-    return map;
-  } catch {
-    return {};
-  }
+  const raw = await (prefetched ?? startDashboardHealth());
+  return raw ? buildHealthMap(events, raw) : {};
 }
 
 /** Every cost item across every event, for the admin reporting dashboard. */
@@ -216,7 +319,10 @@ export async function createEvent(
     }
     return { event, tasks };
   }
-  return post('eventCreate', { ...input, actorEmail });
+  invalidateEvents();
+  const created = await post<CreateEventResult>('eventCreate', { ...input, actorEmail });
+  invalidateEvents();
+  return created;
 }
 
 export async function updateEvent(
@@ -229,7 +335,10 @@ export async function updateEvent(
     const { updateMockEvent } = await import('../data/mockEvents');
     return updateMockEvent(rowId, updates);
   }
-  return post('update', { rowId, code, updates, actorEmail: actorEmail ?? '' });
+  invalidateEvents();
+  const updated = await post<Event>('update', { rowId, code, updates, actorEmail: actorEmail ?? '' });
+  invalidateEvents();
+  return updated;
 }
 
 export async function deleteEvent(
@@ -243,6 +352,71 @@ export async function deleteEvent(
     return;
   }
   await post('eventDelete', { rowId, code, actorEmail });
+  invalidateEvents();
+  dropWorkspace(code);
+}
+
+const workspaceMem = new Map<string, Stamped<WorkspaceData>>();
+const workspaceInflight = new Map<string, Promise<WorkspaceData>>();
+
+function workspaceKey(eventCode: string, actorEmail: string): string {
+  return `${actorEmail.trim().toLowerCase()}|${eventCode}`;
+}
+
+/** The last workspace we loaded for this event (this session only) — possibly stale. */
+export function peekWorkspace(eventCode: string, actorEmail: string): WorkspaceData | null {
+  if (useMockData()) return null;
+  return workspaceMem.get(workspaceKey(eventCode, actorEmail))?.value ?? null;
+}
+
+/** Keeps the cached copy in step with edits made on the page, so coming back never shows old values. */
+export function rememberWorkspace(eventCode: string, actorEmail: string, ws: WorkspaceData): void {
+  if (useMockData()) return;
+  workspaceMem.set(workspaceKey(eventCode, actorEmail), { value: ws, at: Date.now() });
+}
+
+function dropWorkspace(eventCode: string): void {
+  const suffix = `|${eventCode}`;
+  for (const k of [...workspaceMem.keys()]) if (k.endsWith(suffix)) workspaceMem.delete(k);
+  for (const k of [...workspaceInflight.keys()]) if (k.endsWith(suffix)) workspaceInflight.delete(k);
+}
+
+/**
+ * Starts loading an event's workspace ahead of time (e.g. when the pointer rests on its row). The page's
+ * own load then picks up this request instead of starting another one.
+ */
+export function prefetchWorkspace(eventCode: string, actorEmail: string): void {
+  if (useMockData() || !eventCode) return;
+  const key = workspaceKey(eventCode, actorEmail);
+  if (workspaceInflight.has(key)) return;
+  const cached = workspaceMem.get(key);
+  if (cached && Date.now() - cached.at < WORKSPACE_FRESH_MS) return;
+  fetchWorkspaceRaw(eventCode, '', actorEmail, true).catch(() => {
+    /* a failed prefetch is silent; the page load reports real errors */
+  });
+}
+
+function fetchWorkspaceRaw(
+  eventCode: string,
+  eventRowId: string,
+  actorEmail: string,
+  shareable: boolean,
+): Promise<WorkspaceData> {
+  const key = workspaceKey(eventCode, actorEmail);
+  const request: Promise<WorkspaceData> = fetch(buildUrl('workspace', { eventCode, eventRowId, actorEmail }))
+    .then((res) => parseJson<WorkspaceData>(res))
+    .then((ws) => {
+      workspaceMem.set(key, { value: ws, at: Date.now() });
+      return ws;
+    });
+  if (shareable) {
+    workspaceInflight.set(key, request);
+    const clear = () => {
+      if (workspaceInflight.get(key) === request) workspaceInflight.delete(key);
+    };
+    request.then(clear, clear);
+  }
+  return request;
 }
 
 /** `actorEmail` lets the backend decide whether to include admin-only internal notes. */
@@ -251,9 +425,19 @@ export async function fetchWorkspace(eventCode: string, eventRowId: string, acto
     const { getMockWorkspace } = await import('../data/mockCollaboration');
     return getMockWorkspace(eventCode, eventRowId);
   }
-  return parseJson(
-    await fetch(buildUrl('workspace', { eventCode, eventRowId, actorEmail })),
-  );
+  return fetchWorkspaceRaw(eventCode, eventRowId, actorEmail, false);
+}
+
+/**
+ * Same as `fetchWorkspace` but joins a prefetch that is already under way for this event, if any.
+ * Use for opening a page; use `fetchWorkspace` when you need a read that starts now (e.g. after a write).
+ */
+export async function loadWorkspace(eventCode: string, actorEmail = ''): Promise<WorkspaceData> {
+  if (!useMockData()) {
+    const pending = workspaceInflight.get(workspaceKey(eventCode, actorEmail));
+    if (pending) return pending;
+  }
+  return fetchWorkspace(eventCode, '', actorEmail);
 }
 
 /** Per-event financials for the Reports page. The backend refuses anyone without the Reports permission. */
@@ -275,9 +459,32 @@ export async function saveReportSettings(settings: { monthlyTarget: number }, ac
 }
 
 /** Weather, local time zone and USD exchange rate for an event's city — cached server-side. */
+const CITY_FRESH_MS = 9 * 60 * 1000; // the backend itself caches weather for 10 minutes
+const cityMem = new Map<string, Stamped<CityLive>>();
+const cityInflight = new Map<string, Promise<CityLive>>();
+
+/** The last weather / FX we fetched for this city this session (may be a few minutes old). */
+export function peekCityLive(location: string): CityLive | null {
+  return cityMem.get(location)?.value ?? null;
+}
+
 export async function fetchCityLive(location: string): Promise<CityLive> {
   if (useMockData()) throw new Error('Live city data needs the real backend');
-  return parseJson(await fetch(buildUrl('cityLive', { location })));
+  const cached = cityMem.get(location);
+  if (cached && Date.now() - cached.at < CITY_FRESH_MS) return cached.value;
+  const pending = cityInflight.get(location);
+  if (pending) return pending;
+  const request: Promise<CityLive> = fetch(buildUrl('cityLive', { location }))
+    .then((res) => parseJson<CityLive>(res))
+    .then((data) => {
+      cityMem.set(location, { value: data, at: Date.now() });
+      return data;
+    })
+    .finally(() => {
+      if (cityInflight.get(location) === request) cityInflight.delete(location);
+    });
+  cityInflight.set(location, request);
+  return request;
 }
 
 /** Copies an event (details + task list) under a new code. */
@@ -293,7 +500,9 @@ export async function duplicateEvent(
     if (!src) throw new Error('Event not found');
     return { event: createMockEvent({ ...src, code: newCode, status: '', awarded: '', revenue: '' }), tasks: [] };
   }
-  return post('eventDuplicate', { rowId, code, newCode, actorEmail });
+  const copy = await post<CreateEventResult>('eventDuplicate', { rowId, code, newCode, actorEmail });
+  invalidateEvents();
+  return copy;
 }
 
 // ——— Tasks ———

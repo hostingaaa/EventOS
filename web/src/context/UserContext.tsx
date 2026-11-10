@@ -1,5 +1,5 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { fetchWhoami, useMockData } from '../api/client';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { clearApiCaches, fetchWhoami, useMockData } from '../api/client';
 import type { TeamUser } from '../types';
 import {
   type AppCapability,
@@ -11,6 +11,29 @@ import {
 import { initAuthStore } from '../utils/authStore';
 
 const STORAGE_KEY = 'event-ops-user';
+const ROLE_CACHE_KEY = 'event-ops-role-v1';
+
+/** The role the server last gave this user — lets the app render with the right menus before whoami returns. */
+function loadCachedRole(email: string | undefined): AppRole | null {
+  if (!email) return null;
+  try {
+    const raw = localStorage.getItem(ROLE_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { email?: string; role?: AppRole };
+    if (parsed.email === email.toLowerCase() && parsed.role) return parsed.role;
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+function saveCachedRole(email: string, role: AppRole): void {
+  try {
+    localStorage.setItem(ROLE_CACHE_KEY, JSON.stringify({ email: email.toLowerCase(), role }));
+  } catch {
+    /* ignore */
+  }
+}
 
 interface UserContextValue {
   user: TeamUser | null;
@@ -67,40 +90,58 @@ function resolveRoleFromEmail(email: string): AppRole {
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUserState] = useState<TeamUser | null>(() => loadUser());
-  const [role, setRole] = useState<AppRole | null>(null);
-  const [isReady, setIsReady] = useState(false);
+  // A returning user (real backend) starts with their last-known role and is ready immediately; the
+  // network round trips below then confirm it in the background instead of blocking the first paint.
+  const [cachedRole] = useState<AppRole | null>(() =>
+    useMockData() ? null : loadCachedRole(loadUser()?.email),
+  );
+  const [role, setRole] = useState<AppRole | null>(cachedRole);
+  const [isReady, setIsReady] = useState(cachedRole !== null);
 
-  const refreshRole = useCallback(async (u: TeamUser | null) => {
-    if (!u) {
-      setRole(null);
-      return;
-    }
-    if (useMockData()) {
-      setRole(resolveRoleFromEmail(u.email));
-      return;
-    }
-    try {
-      const who = await fetchWhoami(u.email);
-      // If API returns isAdmin, treat as admin; otherwise derive from org store
-      const r: AppRole = who.isAdmin ? 'admin' : resolveRoleFromEmail(u.email);
-      setRole(r);
-    } catch {
-      setRole(resolveRoleFromEmail(u.email));
-    }
-  }, []);
+  const refreshRole = useCallback(
+    async (u: TeamUser | null, whoRequest?: ReturnType<typeof fetchWhoami>) => {
+      if (!u) {
+        setRole(null);
+        return;
+      }
+      if (useMockData()) {
+        setRole(resolveRoleFromEmail(u.email));
+        return;
+      }
+      try {
+        const who = await (whoRequest ?? fetchWhoami(u.email));
+        // If API returns isAdmin, treat as admin; otherwise derive from org store
+        const r: AppRole = who.isAdmin ? 'admin' : resolveRoleFromEmail(u.email);
+        setRole(r);
+        saveCachedRole(u.email, r);
+      } catch {
+        // Keep the role we already have (cached) rather than demoting on a network blip.
+        setRole((prev) => prev ?? resolveRoleFromEmail(u.email));
+      }
+    },
+    [],
+  );
 
-  // Seed the default admin account on first run, then resolve the current user's role
+  // Seed the default admin account on first run, then resolve the current user's role.
+  // whoami doesn't depend on the account/member sync, so it runs alongside it.
   useEffect(() => {
+    const whoRequest = user && !useMockData() ? fetchWhoami(user.email) : undefined;
+    whoRequest?.catch(() => {}); // handled in refreshRole; avoids an unhandled-rejection warning
     initAuthStore()
-      .then(() => refreshRole(user))
+      .then(() => refreshRole(user, whoRequest))
       .finally(() => setIsReady(true));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Re-resolve role when user changes after initial mount
+  // Re-resolve role when the signed-in user changes after the initial mount
+  const skipFirstUserEffect = useRef(true);
   useEffect(() => {
-    if (isReady) refreshRole(user);
-  }, [user, refreshRole, isReady]);
+    if (skipFirstUserEffect.current) {
+      skipFirstUserEffect.current = false;
+      return;
+    }
+    refreshRole(user);
+  }, [user, refreshRole]);
 
   // Re-resolve if the capability matrix or members store changes
   // (triggered by admin panel saves via storage events)
@@ -131,11 +172,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const resolvedRole = resolveRoleFromEmail(u.email);
     const withRole: TeamUser = { ...u, isAdmin: resolvedRole === 'admin', role: resolvedRole };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(withRole));
+    clearApiCaches(); // never carry one account's cached data into another's session
     setUserState(withRole);
   }, []);
 
   const clearUser = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(ROLE_CACHE_KEY);
+    clearApiCaches();
     setUserState(null);
     setRole(null);
   }, []);

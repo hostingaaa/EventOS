@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { fetchCityLive } from '../../api/client';
+import { fetchCityLive, peekCityLive } from '../../api/client';
 import type { CityLive } from '../../types';
 
 const REFRESH_MS = 10 * 60 * 1000;
@@ -11,7 +11,11 @@ const CLOCK_MS = 30 * 1000;
  * a failed refresh keeps the last good data.
  */
 export function useCityLive(location: string): { loading: boolean; data: CityLive | null; now: number } {
-  const [result, setResult] = useState<{ location: string; data: CityLive | null } | null>(null);
+  // Reopening an event within a few minutes shows the weather / FX we already have instead of a spinner.
+  const [result, setResult] = useState<{ location: string; data: CityLive | null } | null>(() => {
+    const known = peekCityLive(location);
+    return known ? { location, data: known } : null;
+  });
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
