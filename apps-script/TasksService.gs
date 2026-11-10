@@ -49,17 +49,15 @@ function getOrCreateSheet_(name, headers) {
 }
 
 function listTasks_(eventCode, eventRowId) {
-  var sheet = getTasksSheet_();
-  var map = getHeaderMap_(sheet);
-  var lastRow = sheet.getLastRow();
-  return listTasksFromSheet_(sheet, map, eventCode, eventRowId);
+  return listTasksFromSheet_(getTasksSheet_(), null, eventCode, eventRowId);
 }
 
+/** `map` is accepted for older callers but ignored — the table is read once here, header included. */
 function listTasksFromSheet_(sheet, map, eventCode, eventRowId) {
-  var lastRow = sheet.getLastRow();
-  if (lastRow <= 1) return [];
-
-  var data = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
+  var table = readTable_(sheet);
+  map = table.map;
+  var data = table.rows;
+  if (data.length === 0) return [];
   var tasks = [];
 
   for (var i = 0; i < data.length; i++) {
@@ -155,7 +153,7 @@ function createTask_(payload) {
 }
 
 function findTask_(taskId) {
-  var tasks = listTasksFromSheet_(getTasksSheet_(), getHeaderMap_(getTasksSheet_()), null, null);
+  var tasks = listTasksFromSheet_(getTasksSheet_(), null, null, null);
   for (var i = 0; i < tasks.length; i++) {
     if (tasks[i].taskId === taskId) return tasks[i];
   }

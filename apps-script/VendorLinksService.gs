@@ -18,12 +18,10 @@ function getVendorLinksSheet_() {
 }
 
 function listVendorLinks_(eventCode) {
-  var sheet = getVendorLinksSheet_();
-  var map = getHeaderMap_(sheet);
-  var lastRow = sheet.getLastRow();
-  if (lastRow <= 1) return [];
-
-  var data = sheet.getRange(2, 1, lastRow - 1, sheet.getLastColumn()).getValues();
+  var table = readTable_(getVendorLinksSheet_());
+  var map = table.map;
+  var data = table.rows;
+  if (data.length === 0) return [];
   var links = [];
   for (var i = 0; i < data.length; i++) {
     var link = rowToVendorLink_(data[i], map);

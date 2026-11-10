@@ -36,6 +36,69 @@ function getRoleCapabilitiesSheet_() {
 
 // ── Members helpers ───────────────────────────────────────────────────────
 
+// Every request checks who the caller is (isAdmin_ / canActor_), which used to re-read the Members and
+// Capabilities tabs several times per request. They are now read at most once per request and kept in the
+// script cache for a minute; every write below clears them, so changes made in the Admin Panel apply at once.
+// (Edits typed straight into the sheet can take up to a minute to be noticed.)
+var MEMBERS_CACHE_KEY_ = 'eventos_members_v1';
+var CAPS_CACHE_KEY_ = 'eventos_caps_v1';
+var DIRECTORY_CACHE_SECONDS_ = 60;
+var MEMBERS_MEMO_ = null;
+var CAPS_MEMO_ = { loaded: false, value: null };
+
+function cacheGetJson_(key) {
+  try {
+    var raw = CacheService.getScriptCache().get(key);
+    return raw === null ? undefined : JSON.parse(raw);
+  } catch (e) {
+    return undefined;
+  }
+}
+
+function cachePutJson_(key, value) {
+  try {
+    CacheService.getScriptCache().put(key, JSON.stringify(value), DIRECTORY_CACHE_SECONDS_);
+  } catch (e) {
+    // Cache is an optimisation only (e.g. value too large) — the sheet read already succeeded.
+  }
+}
+
+function clearDirectoryCache_() {
+  MEMBERS_MEMO_ = null;
+  CAPS_MEMO_ = { loaded: false, value: null };
+  try {
+    CacheService.getScriptCache().removeAll([MEMBERS_CACHE_KEY_, CAPS_CACHE_KEY_]);
+  } catch (e) {
+    // ignore
+  }
+}
+
+function listMembersCached_() {
+  if (MEMBERS_MEMO_) return MEMBERS_MEMO_;
+  var cached = cacheGetJson_(MEMBERS_CACHE_KEY_);
+  if (cached) {
+    MEMBERS_MEMO_ = cached;
+    return cached;
+  }
+  var fresh = listMembers_();
+  cachePutJson_(MEMBERS_CACHE_KEY_, fresh);
+  MEMBERS_MEMO_ = fresh;
+  return fresh;
+}
+
+function getCapMatrixCached_() {
+  if (CAPS_MEMO_.loaded) return CAPS_MEMO_.value;
+  var cached = cacheGetJson_(CAPS_CACHE_KEY_);
+  if (cached !== undefined) {
+    CAPS_MEMO_ = { loaded: true, value: cached };
+    return cached;
+  }
+  var fresh = getCapMatrixFromSheet_();
+  cachePutJson_(CAPS_CACHE_KEY_, fresh);
+  CAPS_MEMO_ = { loaded: true, value: fresh };
+  return fresh;
+}
+
 function listMembers_() {
   var sheet   = getOrgMembersSheet_();
   var data    = sheet.getDataRange().getValues();
@@ -83,6 +146,7 @@ function upsertMember_(member) {
   } else {
     getOrgMembersSheet_().appendRow(row);
   }
+  clearDirectoryCache_();
   return member;
 }
 
@@ -256,6 +320,7 @@ function deactivateMember_(id) {
   getOrgMembersSheet_()
     .getRange(found.rowIndex, statusColIndex)
     .setValue('inactive');
+  clearDirectoryCache_();
 }
 
 /** Permanently removes the row — unlike deactivateMember_, this can't be
@@ -267,6 +332,7 @@ function deleteMember_(id) {
   var found = findMemberRow_(id);
   if (!found) throw new Error('Member not found: ' + id);
   getOrgMembersSheet_().deleteRow(found.rowIndex);
+  clearDirectoryCache_();
 }
 
 // ── Capability matrix ─────────────────────────────────────────────────────
@@ -288,4 +354,5 @@ function saveCapMatrixToSheet_(matrix) {
   } else {
     sheet.getRange(2, 1).setValue(json);
   }
+  clearDirectoryCache_();
 }

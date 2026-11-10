@@ -164,6 +164,22 @@ function getHeaderMap_(sheet) {
   return map;
 }
 
+/**
+ * Reads a whole tab in ONE call: the header map plus every data row (row i of `rows` is sheet row
+ * CONFIG.HEADER_ROW + 1 + i). Replaces the getLastColumn / getRange(header) / getLastRow / getRange(data)
+ * sequence the list functions used, each step of which is its own round trip to the Sheets service.
+ */
+function readTable_(sheet) {
+  var values = sheet.getDataRange().getValues();
+  var headers = values.length >= CONFIG.HEADER_ROW ? values[CONFIG.HEADER_ROW - 1] : [];
+  var map = {};
+  for (var i = 0; i < headers.length; i++) {
+    var h = String(headers[i] || '').trim();
+    if (h) map[h] = i + 1;
+  }
+  return { map: map, rows: values.slice(CONFIG.HEADER_ROW) };
+}
+
 function colIndex_(map, colName) {
   var idx = map[colName];
   if (!idx) return null;
@@ -180,8 +196,11 @@ function colIndex_(map, colName) {
  * or the calendar day drifts by one (see setCol_/setDateCol_ below, which
  * avoid this entirely for new writes by keeping these columns plain text).
  */
+var SHEET_TZ_MEMO_ = null;
 function getSheetTz_() {
-  return getSpreadsheet_().getSpreadsheetTimeZone() || 'UTC';
+  // Looked up once per request — rowToEvent_ asks for it for every date cell it formats.
+  if (SHEET_TZ_MEMO_ === null) SHEET_TZ_MEMO_ = getSpreadsheet_().getSpreadsheetTimeZone() || 'UTC';
+  return SHEET_TZ_MEMO_;
 }
 
 /** Columns that must never be auto-converted to a Date-typed cell — see
@@ -260,26 +279,24 @@ function rowToEvent_(row, rowNum, map) {
 }
 
 function listEvents_() {
-  var sheet = getEventsSheet_();
-  var map = getHeaderMap_(sheet);
-  var lastRow = sheet.getLastRow();
-  if (lastRow <= CONFIG.HEADER_ROW) {
+  var table = readTable_(getEventsSheet_());
+  var mapCols = table.map;
+  var data = table.rows;
+  if (data.length === 0) {
     return { months: [], events: [] };
   }
 
-  var data = sheet.getRange(CONFIG.HEADER_ROW + 1, 1, lastRow - CONFIG.HEADER_ROW, sheet.getLastColumn()).getValues();
+  var codeCol = colIndex_(mapCols, CONFIG.COLS.CODE);
+  var monthCol = colIndex_(mapCols, CONFIG.COLS.MONTH_GROUP);
   var events = [];
   var currentMonth = '';
 
   for (var i = 0; i < data.length; i++) {
     var rowNum = CONFIG.HEADER_ROW + 1 + i;
     var row = data[i];
-    var mapCols = getHeaderMap_(sheet);
 
     // Detect month header row: Code empty but first col or Month Group has month label
-    var codeCol = colIndex_(mapCols, CONFIG.COLS.CODE);
     var codeVal = codeCol ? String(row[codeCol - 1] || '').trim() : '';
-    var monthCol = colIndex_(mapCols, CONFIG.COLS.MONTH_GROUP);
     var monthVal = monthCol ? String(row[monthCol - 1] || '').trim() : '';
 
     if (!codeVal && monthVal) {
