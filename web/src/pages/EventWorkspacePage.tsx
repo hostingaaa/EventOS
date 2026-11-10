@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { deleteEvent, fetchWorkspace, updateEvent, updateTask } from '../api/client';
+import {
+  deleteEvent,
+  fetchWorkspace,
+  loadWorkspace,
+  peekWorkspace,
+  rememberWorkspace,
+  updateEvent,
+  updateTask,
+} from '../api/client';
 import { useUser } from '../context/UserContext';
 import type { ActivityItem, Comment, CostItem, Event, Task, TaskFile, WorkspaceData } from '../types';
 import { EditEventModal } from '../components/EditEventModal';
@@ -64,10 +72,20 @@ export function EventWorkspacePage() {
 
   const load = useCallback(async () => {
     if (!code) return;
-    setLoading(true);
     setError(null);
+    // Revisiting an event shows what we last had straight away and refreshes it behind the scenes.
+    const cached = peekWorkspace(code, actorEmail);
+    if (cached) {
+      setData(cached);
+      setSelectedTaskId((prev) =>
+        prev && cached.tasks.some((t) => t.taskId === prev) ? prev : (cached.tasks[0]?.taskId ?? null),
+      );
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
     try {
-      const ws = await fetchWorkspace(code, '', actorEmail);
+      const ws = await loadWorkspace(code, actorEmail);
       setData(ws);
       setSelectedTaskId((prev) => {
         // Only keep the prior selection if the task belongs to the newly-loaded event.
@@ -75,7 +93,8 @@ export function EventWorkspacePage() {
         return ws.tasks[0]?.taskId ?? null;
       });
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load workspace');
+      // With cached data on screen a failed refresh is not worth replacing it with an error page.
+      if (!cached) setError(e instanceof Error ? e.message : 'Failed to load workspace');
     } finally {
       setLoading(false);
     }
@@ -89,6 +108,11 @@ export function EventWorkspacePage() {
     setError(null);
     load();
   }, [code, load]);
+
+  // Keep the cached copy in step with edits made on this page (only ever for the event on screen).
+  useEffect(() => {
+    if (data && data.event.code === code) rememberWorkspace(code, actorEmail, data);
+  }, [data, code, actorEmail]);
 
   /** Re-reads just the activity feed, so the Activity tab shows what the user did since the page loaded. */
   const refreshActivity = useCallback(async () => {

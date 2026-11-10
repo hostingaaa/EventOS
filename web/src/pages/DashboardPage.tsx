@@ -1,6 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { fetchDashboardHealth, fetchEvents } from '../api/client';
+import {
+  fetchDashboardHealth,
+  fetchEvents,
+  peekDashboardHealth,
+  peekEvents,
+  prefetchWorkspace,
+  startDashboardHealth,
+} from '../api/client';
 import { useUser } from '../context/UserContext';
 import type { Event, EventHealth } from '../types';
 import { NewProjectModal } from '../components/NewProjectModal';
@@ -250,6 +257,18 @@ interface RowProps {
 }
 
 function EventRow({ ev, health, isCompleted: done }: RowProps) {
+  const { user } = useUser();
+  const hoverTimer = useRef<number | undefined>(undefined);
+  // Opening an event takes several seconds on the backend, so start loading it when the pointer rests
+  // on the row (or on focus / touch) — by the time the click lands it is usually already on its way.
+  const warm = () => {
+    if (user) prefetchWorkspace(ev.code, user.email);
+  };
+  const onHoverStart = () => {
+    window.clearTimeout(hoverTimer.current);
+    hoverTimer.current = window.setTimeout(warm, 150);
+  };
+  const onHoverEnd = () => window.clearTimeout(hoverTimer.current);
   const days = daysUntilStart(ev);
   const happening = isHappening(ev);
   const showTag = !done && days !== null && days >= 0 && days <= IMMINENT_DAYS;
@@ -266,6 +285,10 @@ function EventRow({ ev, health, isCompleted: done }: RowProps) {
     <div className={`dashboard__row-wrap${done ? ' dashboard__row-wrap--completed' : ''}`}>
       <Link
         to={`/event/${encodeURIComponent(ev.code)}`}
+        onMouseEnter={onHoverStart}
+        onMouseLeave={onHoverEnd}
+        onFocus={warm}
+        onTouchStart={warm}
         className={`dashboard__row${awarded ? ' dashboard__row--awarded' : ''}${supportLevel === 'minimal' ? ' dashboard__row--min' : ''}`}
       >
         {/* Event code */}
@@ -373,32 +396,39 @@ export function DashboardPage() {
   const { user } = useUser();
   const navigate = useNavigate();
 
-  const [events, setEvents] = useState<Event[]>([]);
+  // Show the last-known list straight away and refresh it in the background (see api/client peekEvents).
+  const [events, setEvents] = useState<Event[]>(() => peekEvents()?.events ?? []);
   const [filter, setFilter] = useState<Filter>('all');
   const [search, setSearch] = useState('');
   const [ownerFilter, setOwnerFilter] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortDir, setSortDir] = useState<1 | -1>(1);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => peekEvents() === null);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showNewProject, setShowNewProject] = useState(false);
-  const [healthByCode, setHealthByCode] = useState<Record<string, EventHealth>>({});
+  const [healthByCode, setHealthByCode] = useState<Record<string, EventHealth>>(() =>
+    peekDashboardHealth(peekEvents()?.events ?? []),
+  );
   const [completedOpen, setCompletedOpen] = useState(false);
   const [setAsideOpen, setSetAsideOpen] = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (force = false) => {
+    setRefreshing(true);
     setError(null);
     try {
-      const data = await fetchEvents();
+      // Health is requested at the same time as the events: it doesn't need them to be fetched.
+      const healthRequest = startDashboardHealth();
+      const data = await fetchEvents({ force });
       const loadedEvents = data.events ?? [];
       setEvents(loadedEvents);
-      const health = await fetchDashboardHealth(loadedEvents);
-      setHealthByCode(health);
+      setLoading(false); // the list is usable now; health fills in when it arrives
+      setHealthByCode(await fetchDashboardHealth(loadedEvents, healthRequest));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
@@ -481,9 +511,9 @@ export function DashboardPage() {
           <h1>Event Operations</h1>
           <button
             type="button"
-            className={`dashboard__refresh${loading ? ' loading' : ''}`}
-            onClick={load}
-            disabled={loading}
+            className={`dashboard__refresh${loading || refreshing ? ' loading' : ''}`}
+            onClick={() => load(true)}
+            disabled={loading || refreshing}
             title="Refresh"
             aria-label="Refresh"
           >

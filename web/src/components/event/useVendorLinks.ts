@@ -20,7 +20,7 @@ export function useVendorLinks(eventCode: string, eventRowId: string, actorEmail
     return () => {
       cancelled = true;
     };
-  }, [eventCode, eventRowId]);
+  }, [eventCode]); // not eventRowId: it only resolves after the workspace loads and would refetch the same list
 
   // Never show another event's links while this event's are still loading.
   const links = loaded.eventCode === eventCode ? loaded.links : [];
