@@ -779,3 +779,73 @@ function logEventChanges_(before, updates, actorEmail) {
     logActivity_('event_updated', before.code, '', 'updated the ' + labels.join(', '), actorEmail || '');
   }
 }
+
+
+/**
+ * Diagnostic for slow requests: times each step of the read path against the live spreadsheet and reports the
+ * size of every tab. Read-only; reached with the API token like `health` and returns no event data — only
+ * timings, tab names and row/column counts. Call: ?action=perfProbe&token=...
+ */
+function getPerfProbe_() {
+  var steps = [];
+  var started = Date.now();
+  var last = started;
+  function mark(name, extra) {
+    var now = Date.now();
+    var entry = { step: name, ms: now - last };
+    if (extra) entry.info = extra;
+    steps.push(entry);
+    last = Date.now();
+  }
+  function timed(name, fn) {
+    try {
+      var out = fn();
+      mark(name, out);
+    } catch (err) {
+      mark(name, { error: String(err) });
+    }
+  }
+
+  var ss;
+  timed('open spreadsheet', function () { ss = getSpreadsheet_(); });
+  timed('timezone', function () { return { tz: getSheetTz_() }; });
+  var tabs = [];
+  timed('list tab dimensions', function () {
+    tabs = ss.getSheets().map(function (s) {
+      return {
+        name: s.getName(),
+        maxRows: s.getMaxRows(),
+        maxCols: s.getMaxColumns(),
+        lastRow: s.getLastRow(),
+        lastCol: s.getLastColumn(),
+      };
+    });
+    return { tabs: tabs.length };
+  });
+  var sheet;
+  timed('events sheet + ensure columns', function () { sheet = getEventsSheet_(); });
+  var table;
+  timed('read events table (1 call)', function () {
+    table = readTable_(sheet);
+    return { rows: table.rows.length, columns: Object.keys(table.map).length };
+  });
+  timed('listEvents_ (read + convert)', function () { return { events: listEvents_().events.length }; });
+  timed('members (cached lookup)', function () {
+    return { members: (typeof listMembersCached_ === 'function' ? listMembersCached_() : listMembers_()).length };
+  });
+  timed('listTasks_ (all)', function () { return { rows: listTasks_(null, null).length }; });
+  timed('listComments_ (all)', function () { return { rows: listComments_(null, null, true).length }; });
+  timed('listFiles_ (all)', function () { return { rows: listFiles_(null, null).length }; });
+  timed('listActivity_ (200)', function () { return { rows: listActivity_(null, 200, true).length }; });
+  timed('listCostItems_ (all)', function () { return { rows: listCostItems_(null, null).length }; });
+
+  return {
+    totalMs: Date.now() - started,
+    steps: steps,
+    tabs: tabs,
+    deployed: {
+      readTable: typeof readTable_ === 'function',
+      directoryCache: typeof listMembersCached_ === 'function',
+    },
+  };
+}

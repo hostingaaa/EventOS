@@ -68,6 +68,10 @@ function handleRequest_(e, method) {
       });
     }
 
+    if (action === 'perfProbe') {
+      return jsonResponse_(getPerfProbe_());
+    }
+
     // ——— Events ———
     if (action === 'list' || action === '' || !action) {
       return jsonResponse_(listEvents_());
