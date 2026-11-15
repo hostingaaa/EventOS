@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { fetchEvents } from '../api/client';
 import { fetchAndCacheMembers, getAssignableMembers } from '../utils/roleStore';
 import { startOfMonth } from '../utils/calendarDates';
+import { getEventStatus } from '../utils/eventLifecycle';
 import type { Event } from '../types';
 import { MonthView } from '../components/calendar/MonthView';
 import { PeopleView } from '../components/calendar/PeopleView';
@@ -15,6 +16,13 @@ import { PeopleListCard } from '../components/calendar/PeopleListCard';
 import './CalendarPage.css';
 
 type View = 'month' | 'people';
+
+/** Postponed and cancelled events aren't happening on their dates, so they stay off the calendar entirely —
+ * the month grid, the people timeline, the staffing counts and the double-booking check. */
+function isOnCalendar(ev: Event): boolean {
+  const status = getEventStatus(ev);
+  return status !== 'Postponed' && status !== 'Cancelled';
+}
 
 export function CalendarPage() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -40,7 +48,7 @@ export function CalendarPage() {
     let cancelled = false;
     fetchEvents()
       .then((res) => {
-        if (!cancelled) setEvents(res.events ?? []);
+        if (!cancelled) setEvents((res.events ?? []).filter(isOnCalendar));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
