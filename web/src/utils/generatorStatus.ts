@@ -16,7 +16,7 @@ import { loadSupplies } from './suppliesStore';
 import { loadServiceReport } from './serviceReportStore';
 import { loadPerDiemPrint, perDiemFileStem } from './perDiemStore';
 import { transferListFilename } from './exportTransferList';
-import { avEquipmentFilename } from './exportAVEquipment';
+import { avEquipmentFilename, fileDayFromIso } from './avEquipment';
 import { suppliesFilename } from './supplies';
 import { serviceReportFilename } from './exportServiceReport';
 import { formatIsoDate } from './dateFormat';
@@ -87,7 +87,7 @@ export function defaultFileNames(ev: Event): Record<GeneratorId, string> {
   return {
     transfer: transferListFilename({ ...base, eventDates: ev.dates ?? '', hotel: '', arrivalAirport: '', departureAirport: '' } as TransferSetup),
     // The filename helpers only read code / city / date from their setup objects.
-    av: avEquipmentFilename(base as Parameters<typeof avEquipmentFilename>[0]),
+    av: avEquipmentFilename({ ...base, fileDay: fileDayFromIso(ev.startDate) }),
     supplies: suppliesFilename(base),
     perdiem: `${perDiemFileStem(ev.code, cityOfLocation(ev.location ?? ''), '')}.pdf`,
     service: serviceReportFilename(base as Parameters<typeof serviceReportFilename>[0]),

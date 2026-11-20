@@ -9,8 +9,8 @@ import { fetchEventActivity, fetchEvents, peekEvents } from '../api/client';
 import { useUser } from '../context/UserContext';
 import { GENERATORS } from '../components/generators/generatorDefs';
 import { GeneratorIcon } from '../components/generators/GeneratorIcon';
-import { isEventSetAside } from '../utils/eventLifecycle';
-import { cityOfLocation, countryOfLocation, UNKNOWN_COUNTRY } from '../utils/countries';
+import { cityOfLocation } from '../utils/countries';
+import { generatorEventLabel, generatorEventOptions } from '../utils/generatorEvents';
 import {
   type DocGeneratorId,
   type GeneratorState,
@@ -19,13 +19,10 @@ import {
   formatAgo,
   generatorHref,
   generatorStatuses,
-  shortEventDates,
 } from '../utils/generatorStatus';
 import type { ActivityItem, Event } from '../types';
 import './GeneratorsPage.css';
 
-/** Finished events stay pickable this long — service reports and late re-exports happen after the event. */
-const RECENT_PAST_DAYS = 60;
 const ACTIVITY_FRESH_MS = 30_000;
 
 const DOCS = GENERATORS.filter((g) => !g.tool) as (typeof GENERATORS[number] & { id: DocGeneratorId })[];
@@ -34,27 +31,6 @@ const CTA: Record<GeneratorState | 'tool', string> = { done: 'Re-export', draft:
 
 // Activity per event, kept for the session so switching back and forth doesn't refetch every time.
 const activityCache = new Map<string, { items: ActivityItem[]; at: number }>();
-
-function eventOptions(events: Event[], keepCode: string | null): Event[] {
-  const today = new Date();
-  const ranked = events
-    .map((ev) => ({ ev, phase: eventPhase(ev, today) }))
-    .filter(({ ev, phase }) => {
-      if (ev.code === keepCode) return true;
-      if (isEventSetAside(ev)) return false;
-      return phase.rank !== 2 || phase.days <= RECENT_PAST_DAYS;
-    });
-  // Happening now, then upcoming (soonest first), then undated, then finished (most recent first).
-  ranked.sort((a, b) => a.phase.rank - b.phase.rank || a.phase.days - b.phase.days || a.ev.code.localeCompare(b.ev.code));
-  return ranked.map((r) => r.ev);
-}
-
-function optionLabel(ev: Event): string {
-  const city = cityOfLocation(ev.location ?? '');
-  const country = countryOfLocation(ev.location ?? '');
-  const place = [city, country !== UNKNOWN_COUNTRY && country !== city ? country : ''].filter(Boolean).join(', ');
-  return [ev.code, place, shortEventDates(ev)].filter(Boolean).join(' · ');
-}
 
 export function GeneratorsPage() {
   const { user } = useUser();
@@ -85,7 +61,7 @@ export function GeneratorsPage() {
   }, []);
 
   const urlCode = sp.get('code');
-  const options = useMemo(() => eventOptions(events, urlCode), [events, urlCode]);
+  const options = useMemo(() => generatorEventOptions(events, urlCode), [events, urlCode]);
   const ev = options.find((e) => e.code === urlCode) ?? options[0] ?? null;
   const code = ev?.code ?? '';
 
@@ -162,7 +138,7 @@ export function GeneratorsPage() {
             {options.length === 0 && <option value="">{loadingEvents ? 'Loading events…' : 'No events'}</option>}
             {options.map((o) => (
               <option key={o.rowId || o.code} value={o.code}>
-                {optionLabel(o)}
+                {generatorEventLabel(o)}
               </option>
             ))}
           </select>

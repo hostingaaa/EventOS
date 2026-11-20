@@ -7,8 +7,9 @@
  *  - Footer rows:    "Equipment Total" + "Total Sum" — merged A:F, value in G
  */
 import XLSXStyle from 'xlsx-js-style';
-import type { AVSetup, AVItemState } from '../pages/AVEquipmentPage';
-import { buildDescription } from '../pages/AVEquipmentPage';
+import { type AVItemState, type AVSetup, avEquipmentFilename, avTitleLines, buildAVLines } from './avEquipment';
+
+export { avEquipmentFilename };
 
 // ─── Style helpers ──────────────────────────────────────────────────────────
 
@@ -83,15 +84,6 @@ function c(v: unknown, s: CS) { return { v, s }; }
 function blank(s: CS) { return { v: '', s }; }
 
 // ─── Main export ─────────────────────────────────────────────────────────────
-
-export function avEquipmentFilename(setup: AVSetup): string {
-  const safeName = [
-    setup.eventCode || 'EVENT',
-    setup.eventCity || 'City',
-    setup.eventDate || 'Date',
-  ].join('_').replace(/[/\\:*?"<>|]/g, '-');
-  return `${safeName}_Equipment.xlsx`;
-}
 
 export interface PsaRow {
   desc:   string;
@@ -181,22 +173,18 @@ export function buildPsaWorkbook(titleLines: string[], sections: PsaSection[], s
   ws['!rows'] = rowHeights;
 
   const wb = XLSXStyle.utils.book_new();
-  XLSXStyle.utils.book_append_sheet(wb, ws, sheetName.slice(0, 31));
+  XLSXStyle.utils.book_append_sheet(wb, ws, sheetName.replace(/[:\\/?*[\]]/g, '-').slice(0, 31) || 'Sheet1');
   return wb;
 }
 
 export function buildAVEquipmentWorkbook(setup: AVSetup, items: AVItemState[]) {
-  const enabled = items.filter((it) => it.enabled);
   return buildPsaWorkbook(
-    [
-      `${setup.eventCode} - ${setup.eventCity} - Date: ${setup.eventDate}`,
-      `Set up: ${setup.setupStyle}${setup.pax ? ` - ${setup.pax} PAX` : ''}`,
-    ],
+    avTitleLines(setup),
     [
       {
         title: 'Conference Equipment',
         totalLabel: 'Equipment Total',
-        rows: enabled.map((item) => ({ desc: buildDescription(item), day: setup.days, amount: resolveAmount(item) })),
+        rows: buildAVLines(setup, items).map((l) => ({ desc: l.description, day: l.day, amount: l.amt })),
       },
     ],
     setup.eventDate || 'Equipment',
@@ -211,23 +199,3 @@ export function exportAVEquipment(setup: AVSetup, items: AVItemState[]): void {
   XLSXStyle.writeFile(buildAVEquipmentWorkbook(setup, items), avEquipmentFilename(setup));
 }
 
-// ─── Resolve the "Amount" column value for an item ──────────────────────────
-
-function resolveAmount(item: AVItemState): number {
-  switch (item.id) {
-    case 'sound':        return 1;
-    case 'lcd':          return item.amount ?? 1;
-    case 'screen':       return item.amount ?? 1;
-    case 'laptop':       return item.amount ?? 1;
-    case 'feedback':     return item.amount ?? 1;
-    case 'printer':      return item.amount ?? 1;
-    case 'mic-fixed':    return item.amount ?? 10;
-    case 'mic-head':     return item.amount ?? 1;
-    case 'podium':       return 1;
-    case 'mic-wireless': return (item.lapel ?? 0) + (item.handheld ?? 0);
-    case 'internet':     return item.amount ?? 1;
-    case 'camera':       return item.amount ?? 1;
-    case 'interp':       return item.booths ?? 1;
-    default:             return 1;
-  }
-}
