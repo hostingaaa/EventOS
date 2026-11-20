@@ -8,6 +8,9 @@
  */
 import { useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { useUser } from '../context/UserContext';
+import { perDiemFileStem, savePerDiemPrint } from '../utils/perDiemStore';
+import { cityOfLocation } from '../utils/countries';
 import './PerDiemFormPage.css';
 
 interface Amounts {
@@ -42,6 +45,7 @@ function usd(n: number) {
 
 export function PerDiemFormPage() {
   const [params] = useSearchParams();
+  const { user } = useUser();
   const [a, setA] = useState<Amounts>({
     perDiemRate: params.get('rate')     ?? DEFAULTS.perDiemRate,
     days:        params.get('days')     ?? DEFAULTS.days,
@@ -69,7 +73,18 @@ export function PerDiemFormPage() {
   }
 
   function handlePrint() {
+    // Browsers name the saved PDF after the page title, so title it the way the Generators page lists it.
+    const stem = perDiemFileStem(a.eventCode, cityOfLocation(a.location), a.travelerName);
+    const previousTitle = document.title;
+    document.title = stem;
     window.print();
+    document.title = previousTitle;
+    savePerDiemPrint(a.eventCode, {
+      printedAt: new Date().toISOString(),
+      printedBy: user?.name || user?.email || '',
+      traveler: a.travelerName,
+      fileName: `${stem}.pdf`,
+    });
   }
 
   const mieTotal = (parseFloat(a.perDiemRate) || 0) * (parseInt(a.days) || 1);

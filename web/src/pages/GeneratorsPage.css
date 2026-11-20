@@ -1,161 +1,337 @@
-.gen-page {
-  padding: 2rem 2.5rem;
-  max-width: 1000px;
+/* ─── Generators ─────────────────────────────────────────────────────────────
+ * Design handoff "generators-page.html". Same token family as the Reports and
+ * event pages (accent #0f7d69, 16px cards, soft shadows); tokens are scoped to
+ * .gx so nothing leaks. The app's sidebar replaces the prototype's top bar. */
+
+.gx {
+  --gx-bg: #f1f4f7;
+  --gx-surface: #ffffff;
+  --gx-text: #14212b;
+  --gx-accent: #0f7d69;
+  --gx-accent-100: #e6f4f1;
+  --gx-accent-200: #c6e7e0;
+  --gx-accent-700: #0b6a5b;
+  --gx-accent-800: #0a5046;
+  --gx-n-100: #f4f7f7;
+  --gx-n-200: #e6ebec;
+  --gx-n-300: #d2d9db;
+  --gx-n-700: #596266;
+  --gx-warn-100: #fdf3e1;
+  --gx-warn-700: #8a5a12;
+  --gx-draft-bar: #d99a2b;
+  --gx-shadow-sm: 0 1px 2px rgba(20, 33, 43, 0.05), 0 1px 3px rgba(20, 33, 43, 0.04);
+  --gx-shadow-md: 0 6px 20px rgba(20, 33, 43, 0.09);
+  --gx-font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  max-width: 1320px;
+  margin: 0 auto;
+  color: var(--gx-text);
+  /* Body copy in Plus Jakarta Sans (loaded at 400–700); Archivo is only loaded at 700/800, so it is used for
+   * the headings — regular-weight text in Archivo would be synthesised bold. */
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
 }
 
-.gen-page__header {
-  margin-bottom: 2rem;
+.gx-intro h1,
+.gx-card__title h2 {
+  font-family: 'Archivo', 'Plus Jakarta Sans', system-ui, sans-serif;
 }
 
-.gen-page__header h1 {
-  font-family: 'Archivo', sans-serif;
-  font-size: 32px;
+.gx button,
+.gx select {
+  font-family: inherit;
+}
+
+.gx a:focus-visible,
+.gx button:focus-visible,
+.gx select:focus-visible {
+  outline: 3px solid var(--gx-accent-200);
+  outline-offset: 2px;
+}
+
+/* ── Title row + event bar ── */
+.gx-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 28px;
+  padding: 0 0 20px;
+}
+
+.gx-intro {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.gx-intro h1 {
+  font-size: 34px;
+  line-height: 1.05;
   font-weight: 800;
-  letter-spacing: -0.01em;
-  color: var(--eo-text, var(--ink));
-  margin: 0 0 0.35rem;
-}
-
-.gen-page__header p {
-  font-size: 0.9rem;
-  color: var(--eo-muted, var(--muted));
   margin: 0;
+  letter-spacing: -0.02em;
+  color: var(--gx-text);
 }
 
-/* ─── Card grid ───────────────────────────────────────────────────────────── */
-
-.gen-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-  gap: 1.5rem;
+.gx-intro p {
+  font-size: 14px;
+  color: var(--gx-n-700);
+  margin: 6px 0 0;
 }
 
-.gen-card {
-  background: var(--eo-surface, var(--surface));
-  border: none;
-  border-radius: 16px;
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  box-shadow: var(--eo-shadow-sm, var(--shadow-sm));
-  transition: box-shadow 0.15s;
-}
-
-.gen-card:hover {
-  box-shadow: var(--eo-shadow-md, 0 4px 20px rgba(0, 0, 0, 0.08));
-}
-
-.gen-card__top {
+.gx-event-bar {
+  flex: 0 1 560px;
+  min-width: min(100%, 320px);
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: var(--gx-surface);
+  border-radius: 14px;
+  box-shadow: var(--gx-shadow-sm);
+  padding: 10px 12px 10px 16px;
 }
 
-.gen-card__icon {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius);
-  background: var(--card-bg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.35rem;
-  flex-shrink: 0;
-  border: 1px solid color-mix(in srgb, var(--card-color) 25%, transparent);
-}
-
-.gen-card__title {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--eo-text, var(--ink));
-  margin: 0;
-}
-
-.gen-card__desc {
-  font-size: 0.875rem;
-  color: var(--ink-secondary);
-  line-height: 1.6;
-  margin: 0;
-}
-
-/* ─── Feature list ────────────────────────────────────────────────────────── */
-
-.gen-card__features {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  border-top: 1px solid var(--border);
-  padding-top: 0.85rem;
-}
-
-.gen-card__features li {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  font-size: 0.8rem;
-  color: var(--eo-muted, var(--muted));
-  line-height: 1.45;
-}
-
-.gen-card__check {
-  color: var(--card-color);
-  font-weight: 700;
-  flex-shrink: 0;
-  font-size: 0.75rem;
-  margin-top: 0.05rem;
-}
-
-/* ─── CTA button ──────────────────────────────────────────────────────────── */
-
-.gen-card__btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: auto;
-  padding: 0.7rem 1.25rem;
-  background: var(--eo-accent, var(--primary));
-  color: white;
-  font-weight: 800;
-  font-family: 'Archivo', inherit;
-  font-size: 0.95rem;
-  border-radius: 999px;
-  text-decoration: none;
-  transition: background 0.15s;
-  letter-spacing: 0.01em;
-}
-
-.gen-card__btn:hover {
-  background: var(--eo-accent-700, var(--primary-hover));
-}
-
-/* ─── Featured card (SOW Generator) ──────────────────────────────────────── */
-
-.gen-card__admin-badge {
-  margin-left: auto;
-  font-size: 0.68rem;
-  font-weight: 700;
+.gx-event-bar label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
-  padding: 0.2rem 0.55rem;
-  background: #fef3c7;
-  color: #92400e;
-  border: 1px solid #fcd34d;
-  border-radius: 99px;
+  color: var(--gx-n-700);
+  font-weight: 600;
+}
+
+.gx-event-bar select {
+  flex: 1 1 220px;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gx-text);
+  padding: 8px 10px;
+  border-radius: 9px;
+  border: 1px solid var(--gx-n-300);
+  background: var(--gx-n-100);
+  cursor: pointer;
+}
+
+.gx-progress {
+  flex: 0 0 150px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.gx-progress__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
   white-space: nowrap;
 }
 
-/* ─── Responsive ──────────────────────────────────────────────────────────── */
+.gx-muted {
+  color: var(--gx-n-700);
+}
 
-@media (max-width: 600px) {
-  .gen-page {
-    padding: 1.25rem;
-  }
+.gx-segments {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 3px;
+}
 
-  .gen-grid {
-    grid-template-columns: 1fr;
-  }
+.gx-seg {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--gx-n-300);
+}
+
+.gx-seg--done { background: var(--gx-accent-700); }
+.gx-seg--draft { background: var(--gx-draft-bar); }
+
+.gx-msg {
+  font-size: 14px;
+  color: var(--gx-n-700);
+}
+
+/* ── Cards ── */
+.gx-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr));
+  gap: 16px;
+}
+
+.gx-card {
+  background: var(--gx-surface);
+  border-radius: 16px;
+  box-shadow: var(--gx-shadow-sm);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  transition: box-shadow 0.15s;
+}
+
+.gx-card:hover {
+  box-shadow: var(--gx-shadow-md);
+}
+
+.gx-card__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.gx-icon {
+  width: 42px;
+  height: 42px;
+  flex: none;
+  border-radius: 11px;
+  border: 1px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gx-card__title {
+  flex: 1;
+  min-width: 0;
+}
+
+.gx-card__title h2 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 3px;
+  letter-spacing: -0.01em;
+  color: var(--gx-text);
+}
+
+.gx-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--gx-n-700);
+}
+
+.gx-fmt {
+  font-family: var(--gx-font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--gx-n-300);
+}
+
+.gx-chip {
+  flex: none;
+  align-self: flex-start;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+  background: var(--gx-n-100);
+  color: var(--gx-n-700);
+}
+
+.gx-chip--done { background: var(--gx-accent-100); color: var(--gx-accent-800); }
+.gx-chip--draft { background: var(--gx-warn-100); color: var(--gx-warn-700); }
+
+.gx-desc {
+  font-size: 13.5px;
+  line-height: 1.5;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.gx-tags {
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 0;
+  color: var(--gx-n-700);
+}
+
+.gx-file {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--gx-n-100);
+  border: 1px solid var(--gx-n-200);
+  border-radius: 9px;
+  padding: 6px 6px 6px 10px;
+}
+
+.gx-file span {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--gx-font-mono);
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gx-file button {
+  flex: none;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--gx-n-300);
+  background: var(--gx-surface);
+  color: var(--gx-text);
+  cursor: pointer;
+}
+
+.gx-card__foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gx-status {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--gx-n-700);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gx-btn {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 16px;
+  border-radius: 999px;
+  text-decoration: none;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gx-btn--primary {
+  background: var(--gx-accent-700);
+  color: #fff;
+}
+
+.gx-btn--primary:hover {
+  background: var(--gx-accent-800);
+  color: #fff;
+}
+
+.gx-btn--secondary {
+  padding: 8px 12px;
+  border: 1px solid var(--gx-n-300);
+  background: var(--gx-surface);
+  color: var(--gx-text);
+}
+
+.gx-btn--secondary:hover {
+  background: var(--gx-n-100);
+  color: var(--gx-text);
 }
