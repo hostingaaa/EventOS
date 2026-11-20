@@ -9,10 +9,11 @@
  * Route: /qr-code
  */
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import QRCode from 'qrcode';
 import { fetchEvents } from '../api/client';
 import type { Event } from '../types';
+import { qrFilenameSlug as filenameSlug, qrDefaultLabel } from '../utils/qrFilename';
 import './QRCodePage.css';
 
 const SIZES = [
@@ -30,15 +31,14 @@ function normalizeUrl(url: string): string {
   return /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
 }
 
-function filenameSlug(s: string): string {
-  return s.trim().replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '') || 'qr-code';
-}
 
 export function QRCodePage() {
+  const [sp] = useSearchParams();
   const [events, setEvents] = useState<Event[]>([]);
-  const [eventCode, setEventCode] = useState('');
+  // ?code=J401 (from the Generators page) pre-selects the event and its default label.
+  const [eventCode, setEventCode] = useState(() => sp.get('code') ?? '');
   const [url, setUrl] = useState('');
-  const [label, setLabel] = useState('');
+  const [label, setLabel] = useState(() => qrDefaultLabel(sp.get('code') ?? ''));
   const [size, setSize] = useState(600);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
@@ -52,7 +52,7 @@ export function QRCodePage() {
 
   function pickEvent(code: string) {
     setEventCode(code);
-    if (code) setLabel(`${code} — Registration`);
+    if (code) setLabel(qrDefaultLabel(code));
   }
 
   const normalized = normalizeUrl(url);

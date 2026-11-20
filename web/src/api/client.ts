@@ -1,4 +1,5 @@
 import type {
+  ActivityItem,
   CityLive,
   Comment,
   CostItem,
@@ -438,6 +439,25 @@ export async function loadWorkspace(eventCode: string, actorEmail = ''): Promise
     if (pending) return pending;
   }
   return fetchWorkspace(eventCode, '', actorEmail);
+}
+
+/**
+ * An event's recent activity feed (newest first) — uses the existing `activity` action. The Generators page
+ * reads generator export records (`transfer_list_saved`, `av_equipment_saved`, `service_report_saved`) from it.
+ */
+export async function fetchEventActivity(eventCode: string, actorEmail = '', limit = 200): Promise<ActivityItem[]> {
+  if (useMockData()) {
+    const { getMockWorkspace } = await import('../data/mockCollaboration');
+    try {
+      return getMockWorkspace(eventCode, '').activity;
+    } catch {
+      return [];
+    }
+  }
+  const res = await parseJson<{ activity?: ActivityItem[] }>(
+    await fetch(buildUrl('activity', { eventCode, limit: String(limit), actorEmail })),
+  );
+  return Array.isArray(res.activity) ? res.activity : [];
 }
 
 /** Per-event financials for the Reports page. The backend refuses anyone without the Reports permission. */
