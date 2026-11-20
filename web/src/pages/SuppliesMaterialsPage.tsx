@@ -25,7 +25,7 @@ import {
   type SupplyItemState,
 } from '../utils/supplies';
 import { loadLegacyAVSupplies, loadSupplies, saveSupplies } from '../utils/suppliesStore';
-import './AVEquipmentPage.css';
+import './PsaGeneratorLegacy.css';
 
 function uid(): string {
   return Math.random().toString(36).slice(2, 10);

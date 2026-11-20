@@ -1,791 +1,85 @@
 /**
- * AV Equipment List Generator
+ * AV Equipment List Generator — design handoff "av-equipment-generator.html".
  *
- * Builds the PSA AV Equipment list for a conference event and exports
- * a styled .xlsx file matching the PSA template.
+ * Form on the left (event, conference setup, equipment), live PSA-template preview on the right.
+ * Save draft keeps the list in this browser; Download .xlsx downloads the file, saves it to the event's
+ * Drive folder (updating the same file on re-export) and syncs the lines to Financials.
  *
  * Route: /av-equipment
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { fetchEvents, saveAVEquipmentToDrive } from '../api/client';
-import {
-  avEquipmentFilename,
-  avEquipmentToArrayBuffer,
-  exportAVEquipment,
-} from '../utils/exportAVEquipment';
-import { loadAVEquipment, saveAVEquipment } from '../utils/avEquipmentStore';
+import { fetchEvents, peekEvents, saveAVEquipmentToDrive } from '../api/client';
+import { avEquipmentToArrayBuffer, exportAVEquipment } from '../utils/exportAVEquipment';
+import { loadAVEquipment, saveAVEquipment, type SavedAVEquipment } from '../utils/avEquipmentStore';
 import { buildAVCostLines } from '../utils/avFinancialsSync';
 import { syncGeneratorCostItems } from '../utils/generatorFinancialsSync';
+import { generatorEventLabel, generatorEventOptions } from '../utils/generatorEvents';
+import { formatAgo } from '../utils/generatorStatus';
 import { useUser } from '../context/UserContext';
 import type { Event } from '../types';
-import { formatIsoDate } from '../utils/dateFormat';
+import {
+  AV_ITEMS,
+  BANDWIDTHS,
+  BOOTH_OPTIONS,
+  DEFAULT_BANDWIDTH,
+  LUMENS,
+  MAX_DAYS,
+  MIC_OPTIONS,
+  RECEIVER_OPTIONS,
+  SETUP_STYLES,
+  type AVItemDef,
+  type AVItemState,
+  type AVSetup,
+  applySuggestion,
+  autoLumens,
+  avDateLabel,
+  avEquipmentFilename,
+  avTitleLines,
+  blankItems,
+  buildAVLines,
+  fileDayFromIso,
+  itemSummary,
+  normalizeItems,
+  paxFromCapacity,
+  paxNumber,
+  qtyOptions,
+  suggestionText,
+} from '../utils/avEquipment';
 import './AVEquipmentPage.css';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+type Status = 'new' | 'dirty' | 'saved' | 'exported';
 
-export interface AVSetup {
-  eventCode:  string;
-  eventRowId: string;
-  eventCity:  string;
-  eventDate:  string;
-  setupStyle: string;
-  pax:        string;
-  days:       number;
+/** The Drive file an export updates — only for the event it was saved for. */
+interface DriveMeta {
+  code: string;
+  url: string | null;
+  fileId: string | null;
 }
 
-export interface AVItemState {
-  id:          string;
-  enabled:     boolean;
-  // LCD projector (id: 'lcd')
-  luminosity?: number;
-  // Projector screen (id: 'screen')
-  screenSize?: string;
-  // Generic amount
-  amount?:     number;
-  // Wireless mics (id: 'mic-wireless')
-  lapel?:      number;
-  handheld?:   number;
-  // Interpretation system (id: 'interp')
-  receivers?:  number;
-  booths?:     number;
+const NO_DRIVE: DriveMeta = { code: '', url: null, fileId: null };
+
+function setupFromEvent(ev: Event, keep: Pick<AVSetup, 'setupStyle' | 'days'>): AVSetup {
+  return {
+    eventCode: ev.code,
+    eventRowId: ev.rowId ?? '',
+    eventCity: ev.location ?? '',
+    eventDate: avDateLabel(ev.startDate, ev.endDate) || ev.dates || '',
+    fileDay: fileDayFromIso(ev.startDate),
+    setupStyle: keep.setupStyle,
+    pax: paxFromCapacity(ev.capacity),
+    days: keep.days,
+  };
 }
 
-// ─── Build the description string written to the Excel cell ──────────────────
-
-export function buildDescription(item: AVItemState): string {
-  switch (item.id) {
-    case 'sound':
-      return 'Sound system in the conference room integrated with A/V and interpretation equipment';
-    case 'lcd':
-      return `LCD projectors (min ${item.luminosity ?? 4500} lumin)`;
-    case 'screen':
-      return `Projector screens (min ${item.screenSize ?? '2.5 x 3.5'} meters)`;
-    case 'laptop':
-      return 'Laptop with internet capability and licensed Microsoft Office Suite, Adobe and with clicker to advance two slides simultaneously';
-    case 'feedback':
-      return 'Feedback monitor';
-    case 'printer':
-      return 'Black and white and color printer with scanning and photocopying capabilities';
-    case 'mic-fixed':
-      return 'Fixed tabletop microphones';
-    case 'mic-head':
-      return 'Fixed tabletop microphones - Head Table for the speakers';
-    case 'podium':
-      return 'Podium with a mic';
-    case 'mic-wireless': {
-      const lapel    = item.lapel    ?? 0;
-      const handheld = item.handheld ?? 0;
-      const parts: string[] = [];
-      if (lapel    > 0) parts.push(`${lapel} Lapel`);
-      if (handheld > 0) parts.push(`${handheld} wireless handheld`);
-      return `Number of Wireless, portable and lapel microphones${parts.length ? `: (${parts.join(', ')})` : ''}`;
-    }
-    case 'internet':
-      return 'Dedicated internet connection (to support video conference capability for participants unable to attend who wish to join virtually)';
-    case 'camera':
-      return 'HD camera & interpretation sound transmitted to the Zoom';
-    case 'interp': {
-      const b = item.booths    ?? 1;
-      const r = item.receivers ?? 65;
-      return `Simultaneous Interpretation System / ${b} Fully covered interpretation booth${b !== 1 ? 's' : ''} for ${b * 2} interpreters and receivers for up to ${r} people`;
-    }
-    default:
-      return '';
-  }
+function driveFileIdFromUrl(url: string | undefined): string | undefined {
+  return url?.match(/\/file\/d\/([^/?#]+)/)?.[1];
 }
 
-// ─── Equipment item definitions ───────────────────────────────────────────────
-
-interface ItemDef {
-  id:    string;
-  label: string;
-}
-
-const ITEM_DEFS: ItemDef[] = [
-  { id: 'sound',       label: 'Sound system' },
-  { id: 'lcd',         label: 'LCD projector' },
-  { id: 'screen',      label: 'Projector screen' },
-  { id: 'laptop',      label: 'Laptop' },
-  { id: 'feedback',    label: 'Feedback monitor' },
-  { id: 'printer',     label: 'Printer' },
-  { id: 'mic-fixed',   label: 'Fixed tabletop microphone' },
-  { id: 'mic-head',    label: 'Fixed tabletop microphone — Head Table' },
-  { id: 'podium',      label: 'Podium with a mic' },
-  { id: 'mic-wireless',label: 'Wireless, portable & lapel microphones' },
-  { id: 'internet',    label: 'Dedicated internet connection' },
-  { id: 'camera',      label: 'HD camera' },
-  { id: 'interp',      label: 'Simultaneous Interpretation System' },
-];
-
-const SETUP_STYLES = ['Classroom', 'Cabaret', 'Theatre', 'U-Shape', 'Boardroom'];
-
-const SCREEN_SIZES = [
-  '2.5 x 3.5', '3 x 3.5', '3 x 4', '3.5 x 5',
-];
-
-// ─── Range helpers ────────────────────────────────────────────────────────────
-
-function range(from: number, to: number, step = 1): number[] {
-  const out: number[] = [];
-  for (let v = from; v <= to; v += step) out.push(v);
-  return out;
-}
-
-// ─── Default item state ───────────────────────────────────────────────────────
-
-function defaultItems(): AVItemState[] {
-  return [
-    { id: 'sound',        enabled: false },
-    { id: 'lcd',          enabled: false, luminosity: 4500, amount: 1 },
-    { id: 'screen',       enabled: false, screenSize: '2.5 x 3.5', amount: 1 },
-    { id: 'laptop',       enabled: false, amount: 1 },
-    { id: 'feedback',     enabled: false, amount: 1 },
-    { id: 'printer',      enabled: false, amount: 1 },
-    { id: 'mic-fixed',    enabled: false, amount: 84 },
-    { id: 'mic-head',     enabled: false, amount: 5 },
-    { id: 'podium',       enabled: false },
-    { id: 'mic-wireless', enabled: false, lapel: 2, handheld: 3 },
-    { id: 'internet',     enabled: false, amount: 1 },
-    { id: 'camera',       enabled: false, amount: 1 },
-    { id: 'interp',       enabled: false, receivers: 65, booths: 1 },
-  ];
-}
-
-// ─── Page component ───────────────────────────────────────────────────────────
-
-export function AVEquipmentPage() {
-  const [sp] = useSearchParams();
-  const { user } = useUser();
-
-  const [setup, setSetup] = useState<AVSetup>({
-    eventCode:  sp.get('code') ?? '',
-    eventRowId: '',
-    eventCity:  sp.get('city') ?? '',
-    eventDate:  sp.get('dates') ?? '',
-    setupStyle: 'Classroom',
-    pax:        '',
-    days:       1,
-  });
-
-  const [items, setItems]         = useState<AVItemState[]>(defaultItems);
-  const [exporting, setExporting] = useState(false);
-  const [saving, setSaving]       = useState(false);
-  const [savedAt, setSavedAt]     = useState<string | null>(null);
-  const [savedBy, setSavedBy]     = useState('');
-  const [driveLink, setDriveLink] = useState<string | null>(null);
-  const [driveFileId, setDriveFileId] = useState<string | null>(null);
-  const [linkCopied, setLinkCopied] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [financialsSyncError, setFinancialsSyncError] = useState<string | null>(null);
-  const [events, setEvents]       = useState<Event[]>([]);
-
-  useEffect(() => {
-    fetchEvents().then((res) => {
-      const now = Date.now();
-      const COMPLETED_MS = 15 * 24 * 60 * 60 * 1000;
-      const active = res.events.filter((ev) => {
-        const end = ev.endDate ? new Date(ev.endDate).getTime() : Infinity;
-        return now - end < COMPLETED_MS;
-      });
-      setEvents(active);
-    }).catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    const code = sp.get('code');
-    if (!code) return;
-    const saved = loadAVEquipment(code);
-    if (!saved) return;
-    setSetup(saved.setup);
-    setItems(saved.items);
-    setSavedAt(saved.savedAt);
-    setSavedBy(saved.savedBy);
-    applyDriveMeta(saved);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  function applyDriveMeta(saved: { driveUrl?: string; driveFileId?: string }) {
-    const id = saved.driveFileId || driveFileIdFromUrl(saved.driveUrl);
-    setDriveFileId(id ?? null);
-    setDriveLink(
-      saved.driveUrl ||
-        (id ? `https://drive.google.com/file/d/${id}/view?usp=sharing` : null),
-    );
-  }
-
-  function pickEvent(code: string) {
-    const ev = events.find((e) => e.code === code);
-    if (!ev) return;
-    setSetup((s) => ({
-      ...s,
-      eventCode: ev.code ?? '',
-      eventRowId: ev.rowId ?? '',
-      eventCity: ev.location ?? '',
-      eventDate: ev.startDate ? formatEventDate(ev.startDate) : '',
-    }));
-    const saved = loadAVEquipment(ev.code);
-    if (saved) {
-      setSetup(saved.setup);
-      setItems(saved.items);
-      setSavedAt(saved.savedAt);
-      setSavedBy(saved.savedBy);
-      applyDriveMeta(saved);
-    } else {
-      setSavedAt(null);
-      setSavedBy('');
-      setDriveLink(null);
-      setDriveFileId(null);
-    }
-  }
-
-  function patchSetup<K extends keyof AVSetup>(field: K, value: AVSetup[K]) {
-    setSetup((s) => ({ ...s, [field]: value }));
-  }
-
-  function patchItem(id: string, patch: Partial<AVItemState>) {
-    setItems((prev) => prev.map((it) => it.id === id ? { ...it, ...patch } : it));
-  }
-
-  function toggleItem(id: string) {
-    setItems((prev) => prev.map((it) => it.id === id ? { ...it, enabled: !it.enabled } : it));
-  }
-
-  async function handleExport() {
-    setExporting(true);
-    try {
-      exportAVEquipment(setup, items);
-    } finally {
-      setExporting(false);
-    }
-  }
-
-  async function handleSave() {
-    if (!setup.eventCode) return;
-    setSaving(true);
-    setSaveError(null);
-    setFinancialsSyncError(null);
-    const now = new Date().toISOString();
-    const name = user?.name ?? 'Unknown';
-    const email = user?.email ?? '';
-    const fileName = avEquipmentFilename(setup);
-    let nextDriveUrl = driveLink;
-    let nextDriveFileId = driveFileId;
-
-    try {
-      const buffer = avEquipmentToArrayBuffer(setup, items);
-      const result = await saveAVEquipmentToDrive({
-        eventCode: setup.eventCode,
-        fileName,
-        dataBase64: arrayBufferToBase64(buffer),
-        uploadedBy: name,
-        actorEmail: email,
-        eventLocation: setup.eventCity,
-        driveFileId: driveFileId ?? undefined,
-      });
-      nextDriveUrl = result.driveUrl;
-      nextDriveFileId = result.driveFileId;
-      setDriveLink(result.driveUrl);
-      setDriveFileId(result.driveFileId);
-    } catch (e) {
-      setSaveError(e instanceof Error ? e.message : 'Could not save to Google Drive');
-    }
-
-    saveAVEquipment(setup.eventCode, {
-      setup,
-      items,
-      // Supplies moved to their own generator; keep anything already saved here so it isn't lost.
-      supplies: loadAVEquipment(setup.eventCode)?.supplies,
-      savedAt: now,
-      savedBy: name,
-      savedByEmail: email,
-      driveUrl: nextDriveUrl ?? undefined,
-      driveFileId: nextDriveFileId ?? undefined,
-    });
-    setSavedAt(now);
-    setSavedBy(name);
-
-    try {
-      await syncGeneratorCostItems(setup.eventCode, setup.eventRowId, buildAVCostLines(items), email);
-    } catch (e) {
-      setFinancialsSyncError(e instanceof Error ? e.message : 'Could not sync to Financials');
-    }
-
-    setTimeout(() => setSaving(false), 800);
-  }
-
-  async function handleCopyLink() {
-    if (!driveLink) return;
-    try {
-      await navigator.clipboard.writeText(driveLink);
-    } catch {
-      const ta = document.createElement('textarea');
-      ta.value = driveLink;
-      ta.style.position = 'fixed';
-      ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-    }
-    setLinkCopied(true);
-    setTimeout(() => setLinkCopied(false), 2000);
-  }
-
-  const enabledItems = items.filter((it) => it.enabled);
-  const hasContent = enabledItems.length > 0;
-  const filename = avEquipmentFilename(setup);
-
-  return (
-    <div className="av-page">
-      {/* ── Nav ── */}
-      <nav className="av-nav">
-        <Link to="/generators" className="av-nav__back">← Generators</Link>
-        <span className="av-nav__title">AV Equipment List Generator</span>
-      </nav>
-
-      <div className="av-body">
-        {/* ══ LEFT PANEL ═══════════════════════════════════════════════════════ */}
-        <aside className="av-panel av-panel--left">
-
-          {/* Event picker */}
-          <section className="av-section">
-            <h3 className="av-section__title">Event</h3>
-            {events.length > 0 && (
-              <label className="av-label">
-                Select active event
-                <select
-                  className="av-select"
-                  value={setup.eventCode}
-                  onChange={(e) => pickEvent(e.target.value)}
-                >
-                  <option value="">— pick event —</option>
-                  {events.map((ev) => (
-                    <option key={ev.code} value={ev.code}>
-                      {ev.code} — {ev.location}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-            <div className="av-grid-3">
-              <label className="av-label">
-                Event code
-                <input className="av-input" value={setup.eventCode}
-                  onChange={(e) => patchSetup('eventCode', e.target.value)} placeholder="J027" />
-              </label>
-              <label className="av-label">
-                City
-                <input className="av-input" value={setup.eventCity}
-                  onChange={(e) => patchSetup('eventCity', e.target.value)} placeholder="Tbilisi" />
-              </label>
-              <label className="av-label">
-                Date
-                <input className="av-input" value={setup.eventDate}
-                  onChange={(e) => patchSetup('eventDate', e.target.value)} placeholder="June 5" />
-              </label>
-            </div>
-          </section>
-
-          {/* Conference setup */}
-          <section className="av-section">
-            <h3 className="av-section__title">Conference Setup</h3>
-            <div className="av-grid-3">
-              <label className="av-label">
-                Setup style
-                <select className="av-select" value={setup.setupStyle}
-                  onChange={(e) => patchSetup('setupStyle', e.target.value)}>
-                  {SETUP_STYLES.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </label>
-              <label className="av-label">
-                PAX (capacity)
-                <input className="av-input" type="number" min={1} value={setup.pax}
-                  onChange={(e) => patchSetup('pax', e.target.value)} placeholder="150" />
-              </label>
-              <label className="av-label">
-                Days AV needed
-                <select className="av-select" value={setup.days}
-                  onChange={(e) => patchSetup('days', parseInt(e.target.value))}>
-                  {range(1, 8).map((d) => (
-                    <option key={d} value={d}>{d} {d === 1 ? 'day' : 'days'}</option>
-                  ))}
-                </select>
-              </label>
-            </div>
-          </section>
-
-          {/* Equipment checklist */}
-          <section className="av-section">
-            <h3 className="av-section__title">Equipment Selection</h3>
-            <p className="av-section__hint">Check items to include in the list. Configure options below each item.</p>
-
-            <div className="av-equipment-list">
-              {ITEM_DEFS.map((def, idx) => {
-                const item = items.find((it) => it.id === def.id)!;
-                return (
-                  <div key={def.id} className={`av-item ${item.enabled ? 'av-item--on' : ''}`}>
-                    <label className="av-item__head">
-                      <input
-                        type="checkbox"
-                        className="av-item__check"
-                        checked={item.enabled}
-                        onChange={() => toggleItem(def.id)}
-                      />
-                      <span className="av-item__num">{idx + 1}</span>
-                      <span className="av-item__label">{def.label}</span>
-                    </label>
-
-                    {item.enabled && (
-                      <div className="av-item__opts">
-                        {/* Sound system — no extra options */}
-                        {def.id === 'podium' && (
-                          <span className="av-item__fixed">Qty: 1 (fixed)</span>
-                        )}
-
-                        {/* LCD projector */}
-                        {def.id === 'lcd' && (
-                          <div className="av-item__opt-row">
-                            <label className="av-opt-label">
-                              Luminosity
-                              <select className="av-select av-select--sm"
-                                value={item.luminosity ?? 4500}
-                                onChange={(e) => patchItem(def.id, { luminosity: parseInt(e.target.value) })}>
-                                {range(3000, 8000, 1000).map((l) => (
-                                  <option key={l} value={l}>{l.toLocaleString()} lm</option>
-                                ))}
-                              </select>
-                            </label>
-                            <label className="av-opt-label">
-                              Amount
-                              <select className="av-select av-select--sm"
-                                value={item.amount ?? 1}
-                                onChange={(e) => patchItem(def.id, { amount: parseInt(e.target.value) })}>
-                                {range(1, 10).map((n) => <option key={n} value={n}>{n}</option>)}
-                              </select>
-                            </label>
-                          </div>
-                        )}
-
-                        {/* Projector screen */}
-                        {def.id === 'screen' && (
-                          <div className="av-item__opt-row">
-                            <label className="av-opt-label">
-                              Size
-                              <select className="av-select av-select--sm"
-                                value={item.screenSize ?? '2.5 x 3.5'}
-                                onChange={(e) => patchItem(def.id, { screenSize: e.target.value })}>
-                                {SCREEN_SIZES.map((s) => (
-                                  <option key={s} value={s}>{s} m</option>
-                                ))}
-                              </select>
-                            </label>
-                            <label className="av-opt-label">
-                              Amount
-                              <select className="av-select av-select--sm"
-                                value={item.amount ?? 1}
-                                onChange={(e) => patchItem(def.id, { amount: parseInt(e.target.value) })}>
-                                {range(1, 10).map((n) => <option key={n} value={n}>{n}</option>)}
-                              </select>
-                            </label>
-                          </div>
-                        )}
-
-                        {/* Laptop */}
-                        {def.id === 'laptop' && (
-                          <label className="av-opt-label">
-                            Amount
-                            <select className="av-select av-select--sm"
-                              value={item.amount ?? 1}
-                              onChange={(e) => patchItem(def.id, { amount: parseInt(e.target.value) })}>
-                              {range(1, 15).map((n) => <option key={n} value={n}>{n}</option>)}
-                            </select>
-                          </label>
-                        )}
-
-                        {/* Feedback monitor */}
-                        {def.id === 'feedback' && (
-                          <label className="av-opt-label">
-                            Amount
-                            <select className="av-select av-select--sm"
-                              value={item.amount ?? 1}
-                              onChange={(e) => patchItem(def.id, { amount: parseInt(e.target.value) })}>
-                              {range(1, 3).map((n) => <option key={n} value={n}>{n}</option>)}
-                            </select>
-                          </label>
-                        )}
-
-                        {/* Printer */}
-                        {def.id === 'printer' && (
-                          <label className="av-opt-label">
-                            Amount
-                            <select className="av-select av-select--sm"
-                              value={item.amount ?? 1}
-                              onChange={(e) => patchItem(def.id, { amount: parseInt(e.target.value) })}>
-                              {range(1, 3).map((n) => <option key={n} value={n}>{n}</option>)}
-                            </select>
-                          </label>
-                        )}
-
-                        {/* Fixed tabletop mic */}
-                        {def.id === 'mic-fixed' && (
-                          <label className="av-opt-label">
-                            Amount
-                            <select className="av-select av-select--sm"
-                              value={item.amount ?? 10}
-                              onChange={(e) => patchItem(def.id, { amount: parseInt(e.target.value) })}>
-                              {range(10, 150, 1).map((n) => <option key={n} value={n}>{n}</option>)}
-                            </select>
-                          </label>
-                        )}
-
-                        {/* Head table mic */}
-                        {def.id === 'mic-head' && (
-                          <label className="av-opt-label">
-                            Amount
-                            <select className="av-select av-select--sm"
-                              value={item.amount ?? 1}
-                              onChange={(e) => patchItem(def.id, { amount: parseInt(e.target.value) })}>
-                              {range(1, 10).map((n) => <option key={n} value={n}>{n}</option>)}
-                            </select>
-                          </label>
-                        )}
-
-                        {/* Wireless / lapel mics */}
-                        {def.id === 'mic-wireless' && (
-                          <div className="av-item__opt-row">
-                            <label className="av-opt-label">
-                              Lapel mics
-                              <select className="av-select av-select--sm"
-                                value={item.lapel ?? 2}
-                                onChange={(e) => patchItem(def.id, { lapel: parseInt(e.target.value) })}>
-                                {range(1, 4).map((n) => <option key={n} value={n}>{n}</option>)}
-                              </select>
-                            </label>
-                            <label className="av-opt-label">
-                              Wireless handheld
-                              <select className="av-select av-select--sm"
-                                value={item.handheld ?? 3}
-                                onChange={(e) => patchItem(def.id, { handheld: parseInt(e.target.value) })}>
-                                {range(1, 10).map((n) => <option key={n} value={n}>{n}</option>)}
-                              </select>
-                            </label>
-                          </div>
-                        )}
-
-                        {/* Internet */}
-                        {def.id === 'internet' && (
-                          <label className="av-opt-label">
-                            Lines
-                            <select className="av-select av-select--sm"
-                              value={item.amount ?? 1}
-                              onChange={(e) => patchItem(def.id, { amount: parseInt(e.target.value) })}>
-                              {range(1, 2).map((n) => <option key={n} value={n}>{n}</option>)}
-                            </select>
-                          </label>
-                        )}
-
-                        {/* HD camera */}
-                        {def.id === 'camera' && (
-                          <label className="av-opt-label">
-                            Amount
-                            <select className="av-select av-select--sm"
-                              value={item.amount ?? 1}
-                              onChange={(e) => patchItem(def.id, { amount: parseInt(e.target.value) })}>
-                              {range(1, 3).map((n) => <option key={n} value={n}>{n}</option>)}
-                            </select>
-                          </label>
-                        )}
-
-                        {/* Interpretation system */}
-                        {def.id === 'interp' && (
-                          <div className="av-item__opt-row">
-                            <label className="av-opt-label">
-                              Receivers (people)
-                              <select className="av-select av-select--sm"
-                                value={item.receivers ?? 65}
-                                onChange={(e) => patchItem(def.id, { receivers: parseInt(e.target.value) })}>
-                                {range(5, 200, 5).map((n) => <option key={n} value={n}>{n}</option>)}
-                              </select>
-                            </label>
-                            <label className="av-opt-label">
-                              Booths
-                              <select className="av-select av-select--sm"
-                                value={item.booths ?? 1}
-                                onChange={(e) => patchItem(def.id, { booths: parseInt(e.target.value) })}>
-                                {range(1, 5).map((n) => <option key={n} value={n}>{n}</option>)}
-                              </select>
-                            </label>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-
-          {/* Supplies moved to their own generator */}
-          <p className="av-section__hint av-supplies-moved">
-            Folders, table tent cards, notepads and other supplies now have their own generator:{' '}
-            <Link to={`/supplies-materials${setup.eventCode ? `?code=${encodeURIComponent(setup.eventCode)}` : ''}`}>
-              Supplies &amp; Materials →
-            </Link>
-          </p>
-
-          {/* Export + Save */}
-          <div className="av-export-bar">
-            <div className="av-filename">📄 {filename}</div>
-            {savedAt && (
-              <div className="av-saved-chip">
-                ✓ Saved{savedBy ? ` by ${savedBy}` : ''} · {new Date(savedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-              </div>
-            )}
-            {savedAt && setup.eventCode && (
-              <Link className="av-financials-link" to={`/event/${setup.eventCode}?tab=financials`}>
-                View in Financials →
-              </Link>
-            )}
-            {saveError && <p className="av-save-error">⚠ {saveError}</p>}
-            {financialsSyncError && <p className="av-save-error">⚠ Financials sync failed: {financialsSyncError}</p>}
-            <div className="av-export-row">
-              <button
-                className="av-btn av-btn--export"
-                onClick={handleExport}
-                disabled={exporting || !hasContent}
-              >
-                {exporting ? '⏳ Generating…' : '⬇ Export Equipment List (.xlsx)'}
-              </button>
-              {driveLink && (
-                <button
-                  type="button"
-                  className="av-btn av-btn--link"
-                  onClick={handleCopyLink}
-                  title="Copy Google Drive link to clipboard"
-                >
-                  {linkCopied ? '✓ Copied!' : '🔗 Link'}
-                </button>
-              )}
-              <button
-                type="button"
-                className="av-btn av-btn--save"
-                onClick={handleSave}
-                disabled={saving || !setup.eventCode || !hasContent}
-                title={!setup.eventCode ? 'Enter an event code first' : 'Save equipment list to Google Drive'}
-              >
-                {saving ? '⏳ Saving…' : '💾 Save'}
-              </button>
-            </div>
-            {!hasContent && (
-              <p className="av-export-hint">Select at least one equipment item above.</p>
-            )}
-            {!setup.eventCode && hasContent && (
-              <p className="av-export-hint">Enter an event code to enable saving to Google Drive.</p>
-            )}
-          </div>
-        </aside>
-
-        {/* ══ RIGHT PANEL — Live Preview ═══════════════════════════════════════ */}
-        <main className="av-panel av-panel--preview">
-          <h3 className="av-preview__title">Preview</h3>
-
-          <div className="av-preview-wrap">
-            <table className="av-preview-table">
-              <thead>
-                <tr>
-                  <th colSpan={7} className="av-pt__title">
-                    <div>{setup.eventCode || 'EVENT'} — {setup.eventCity || 'City'} — Date: {setup.eventDate || '—'}</div>
-                    <div className="av-pt__title-sub">
-                      Set up: {setup.setupStyle}{setup.pax ? ` — ${setup.pax} PAX` : ''}
-                    </div>
-                  </th>
-                </tr>
-                <tr className="av-pt__head">
-                  <th>No.</th>
-                  <th>Name of the Service and Brief Description</th>
-                  <th>Item</th>
-                  <th>Day</th>
-                  <th>Amt</th>
-                  <th>Price / Item</th>
-                  <th>Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {!hasContent ? (
-                  <tr>
-                    <td colSpan={7} className="av-pt__empty">
-                      No items selected — check equipment on the left to build the list.
-                    </td>
-                  </tr>
-                ) : (
-                  <>
-                    {enabledItems.length > 0 && (
-                      <>
-                        <tr className="av-pt__section">
-                          <th colSpan={7}>Conference Equipment</th>
-                        </tr>
-                        {enabledItems.map((item, idx) => (
-                          <tr key={item.id} className="av-pt__row">
-                            <td className="av-pt__num">{idx + 1}</td>
-                            <td className="av-pt__desc">{buildDescription(item)}</td>
-                            <td>Item</td>
-                            <td>{setup.days}</td>
-                            <td>{resolvePreviewAmount(item)}</td>
-                            <td>—</td>
-                            <td>0</td>
-                          </tr>
-                        ))}
-                      </>
-                    )}
-                  </>
-                )}
-              </tbody>
-              {hasContent && (
-                <tfoot>
-                  {enabledItems.length > 0 && (
-                    <tr className="av-pt__footer">
-                      <td colSpan={6}>Equipment Total</td>
-                      <td>0</td>
-                    </tr>
-                  )}
-                  <tr className="av-pt__footer av-pt__footer--total">
-                    <td colSpan={6}>Total Sum (*Taxes and fees Included)</td>
-                    <td>0</td>
-                  </tr>
-                </tfoot>
-              )}
-            </table>
-          </div>
-        </main>
-      </div>
-    </div>
-  );
-}
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-export function resolvePreviewAmount(item: AVItemState): number {
-  switch (item.id) {
-    case 'sound':        return 1;
-    case 'lcd':          return item.amount ?? 1;
-    case 'screen':       return item.amount ?? 1;
-    case 'laptop':       return item.amount ?? 1;
-    case 'feedback':     return item.amount ?? 1;
-    case 'printer':      return item.amount ?? 1;
-    case 'mic-fixed':    return item.amount ?? 10;
-    case 'mic-head':     return item.amount ?? 1;
-    case 'podium':       return 1;
-    case 'mic-wireless': return (item.lapel ?? 0) + (item.handheld ?? 0);
-    case 'internet':     return item.amount ?? 1;
-    case 'camera':       return item.amount ?? 1;
-    case 'interp':       return item.booths ?? 1;
-    default:             return 1;
-  }
-}
-
-function formatEventDate(dateStr: string): string {
-  return formatIsoDate(dateStr);
+function driveFromSaved(code: string, saved: SavedAVEquipment): DriveMeta {
+  const fileId = saved.driveFileId || driveFileIdFromUrl(saved.driveUrl) || null;
+  const url = saved.driveUrl || (fileId ? `https://drive.google.com/file/d/${fileId}/view?usp=sharing` : null);
+  return { code, url, fileId };
 }
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
@@ -795,8 +89,579 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   return btoa(binary);
 }
 
-function driveFileIdFromUrl(url: string | undefined): string | undefined {
-  if (!url) return undefined;
-  const m = url.match(/\/file\/d\/([^/?#]+)/);
-  return m?.[1];
+interface Opt {
+  v: string | number;
+  t: string;
+}
+
+/** Options plus the current value when it isn't one of them (lists saved before the redesign). */
+function withCurrent(opts: Opt[], value: string | number, label: (v: string | number) => string): Opt[] {
+  return opts.some((o) => String(o.v) === String(value)) ? opts : [...opts, { v: value, t: label(value) }];
+}
+
+function SelectField(props: {
+  id: string;
+  label: string;
+  value: string | number;
+  options: Opt[];
+  full?: boolean;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className={props.full ? 'full' : undefined}>
+      <label className="avx-lbl" htmlFor={props.id}>{props.label}</label>
+      <select id={props.id} className="avx-inp avx-inp-sm" value={String(props.value)} onChange={(e) => props.onChange(e.target.value)}>
+        {props.options.map((o) => (
+          <option key={String(o.v)} value={String(o.v)}>{o.t}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+const nums = (list: number[]): Opt[] => list.map((n) => ({ v: n, t: String(n) }));
+
+function ItemConfig({ def, item, pax, onPatch }: {
+  def: AVItemDef;
+  item: AVItemState;
+  pax: number;
+  onPatch: (patch: Partial<AVItemState>) => void;
+}) {
+  const id = def.id;
+  const int = (v: string) => parseInt(v, 10) || 0;
+  const paxText = pax || '?';
+  const qty = (
+    <SelectField id={`q-${id}`} label="Quantity" value={item.amount ?? 1} options={nums(qtyOptions(def))}
+      onChange={(v) => onPatch({ amount: int(v) })} />
+  );
+
+  switch (def.kind) {
+    case 'lumens':
+      return (
+        <>
+          <SelectField id={`opt-${id}`} label="Luminosity" full value={item.luminosity || 0}
+            options={withCurrent(
+              [{ v: 0, t: `Auto for ${paxText} PAX · ${autoLumens(pax)} lm` }, ...LUMENS.map((l) => ({ v: l, t: `${l} lm` }))],
+              item.luminosity || 0,
+              (v) => `${v} lm`,
+            )}
+            onChange={(v) => onPatch({ luminosity: int(v) })} />
+          {qty}
+        </>
+      );
+    case 'screen':
+      return (
+        <>
+          <SelectField id={`opt-${id}`} label={def.sizeLabel ?? 'Size'} full value={item.screenSize ?? ''}
+            options={withCurrent(
+              [{ v: '', t: `Auto for ${paxText} PAX · ${def.autoSize!(pax)}` }, ...def.sizes!.map((s) => ({ v: s, t: s }))],
+              item.screenSize ?? '',
+              (v) => `${v} m`,
+            )}
+            onChange={(v) => onPatch({ screenSize: v })} />
+          {qty}
+        </>
+      );
+    case 'net':
+      return (
+        <SelectField id={`opt-${id}`} label="Bandwidth" full value={item.bandwidth || DEFAULT_BANDWIDTH}
+          options={BANDWIDTHS.map((b) => ({ v: b, t: b }))} onChange={(v) => onPatch({ bandwidth: v })} />
+      );
+    case 'wireless': {
+      const total = (item.lapel ?? 0) + (item.handheld ?? 0);
+      return (
+        <>
+          <SelectField id={`b-${id}`} label="Lapel mics" value={item.lapel ?? 0} options={nums(MIC_OPTIONS)}
+            onChange={(v) => onPatch({ lapel: int(v) })} />
+          <SelectField id={`a-${id}`} label="Wireless handheld" value={item.handheld ?? 0} options={nums(MIC_OPTIONS)}
+            onChange={(v) => onPatch({ handheld: int(v) })} />
+          <div className="avx-note">Total on the list: {total} microphone{total === 1 ? '' : 's'}</div>
+        </>
+      );
+    }
+    case 'si':
+      return (
+        <>
+          <SelectField id={`b-${id}`} label="Receivers (people)" value={item.receivers ?? 10}
+            options={withCurrent(nums(RECEIVER_OPTIONS), item.receivers ?? 10, String)}
+            onChange={(v) => onPatch({ receivers: int(v) })} />
+          <SelectField id={`a-${id}`} label="Booths" value={item.booths ?? 1}
+            options={withCurrent(nums(BOOTH_OPTIONS), item.booths ?? 1, String)}
+            onChange={(v) => onPatch({ booths: int(v) })} />
+        </>
+      );
+    case 'fixed':
+      return <div className="avx-note">Always 1 — one podium per room.</div>;
+    default:
+      return qty;
+  }
+}
+
+export function AVEquipmentPage() {
+  const [sp, setSp] = useSearchParams();
+  const { user } = useUser();
+  const urlCode = sp.get('code');
+
+  // Restore this browser's saved list for the event in the URL before the first paint.
+  const [initial] = useState(() => {
+    const saved = urlCode ? loadAVEquipment(urlCode) : null;
+    return { saved, code: urlCode ?? '' };
+  });
+
+  const [setup, setSetup] = useState<AVSetup>(() =>
+    initial.saved
+      ? { ...initial.saved.setup, days: initial.saved.setup.days || 1 }
+      : {
+          eventCode: urlCode ?? '',
+          eventRowId: '',
+          eventCity: sp.get('city') ?? '',
+          eventDate: sp.get('dates') ?? '',
+          setupStyle: 'Classroom',
+          pax: '',
+          days: 1,
+        },
+  );
+  const [items, setItems] = useState<AVItemState[]>(() => normalizeItems(initial.saved?.items));
+  const [status, setStatus] = useState<Status>(() =>
+    initial.saved ? (initial.saved.driveUrl || initial.saved.driveFileId ? 'exported' : 'saved') : 'new',
+  );
+  const [statusAt, setStatusAt] = useState<string | null>(initial.saved?.savedAt ?? null);
+  const [statusBy, setStatusBy] = useState(initial.saved?.savedBy ?? '');
+  const [drive, setDrive] = useState<DriveMeta>(() => (initial.saved ? driveFromSaved(initial.code, initial.saved) : NO_DRIVE));
+  const [exporting, setExporting] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [financialsError, setFinancialsError] = useState<string | null>(null);
+  const [events, setEvents] = useState<Event[]>(() => peekEvents()?.events ?? []);
+  const [eventsLoaded, setEventsLoaded] = useState(() => !!peekEvents());
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchEvents()
+      .then((res) => {
+        if (!cancelled) setEvents(res.events ?? []);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setEventsLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const options = useMemo(() => generatorEventOptions(events, urlCode), [events, urlCode]);
+  const pax = paxNumber(setup.pax);
+  const lines = useMemo(() => buildAVLines(setup, items), [setup, items]);
+  const fileName = avEquipmentFilename(setup);
+  const onCount = items.filter((it) => it.enabled).length;
+  const selectedEvent = options.find((ev) => ev.code === setup.eventCode) ?? null;
+
+  // Once events load: fill in what the URL couldn't give (row id, PAX, file day), or start on the first event.
+  const [seeded, setSeeded] = useState(false);
+  if (!seeded && options.length > 0) {
+    setSeeded(true);
+    const ev = setup.eventCode ? options.find((e) => e.code === setup.eventCode) : options[0];
+    if (ev && !setup.eventCode) applyEvent(ev);
+    else if (ev && initial.saved) {
+      // Older saved lists have no row id (needed for the Financials sync).
+      if (!setup.eventRowId && ev.rowId) setSetup((s) => ({ ...s, eventRowId: ev.rowId ?? '' }));
+    } else if (ev && status === 'new') setSetup((s) => setupFromEvent(ev, s));
+  }
+
+  function markDirty() {
+    setStatus('dirty');
+  }
+
+  function patchSetup(patch: Partial<AVSetup>) {
+    setSetup((s) => ({ ...s, ...patch }));
+    markDirty();
+  }
+
+  function patchItem(id: string, patch: Partial<AVItemState>) {
+    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));
+    markDirty();
+  }
+
+  function pickEvent(code: string) {
+    const ev = events.find((e) => e.code === code);
+    if (!ev) return;
+    const next = new URLSearchParams(sp);
+    next.set('code', ev.code);
+    next.delete('city');
+    next.delete('dates');
+    setSp(next, { replace: true });
+    applyEvent(ev);
+  }
+
+  /** Load this browser's saved list for the event, or take the event's details and keep the equipment chosen so far. */
+  function applyEvent(ev: Event) {
+    setSaveError(null);
+    setFinancialsError(null);
+    const saved = loadAVEquipment(ev.code);
+    if (saved) {
+      setSetup({ ...saved.setup, eventRowId: saved.setup.eventRowId || ev.rowId || '', days: saved.setup.days || 1 });
+      setItems(normalizeItems(saved.items));
+      setStatus(saved.driveUrl || saved.driveFileId ? 'exported' : 'saved');
+      setStatusAt(saved.savedAt);
+      setStatusBy(saved.savedBy);
+      setDrive(driveFromSaved(ev.code, saved));
+      return;
+    }
+    setSetup((s) => setupFromEvent(ev, s));
+    setDrive(NO_DRIVE);
+    setStatusAt(null);
+    setStatusBy('');
+    setStatus(items.some((it) => it.enabled) ? 'dirty' : 'new');
+  }
+
+  function clearAll() {
+    setItems(blankItems());
+    setStatus('new');
+  }
+
+  function persist(driveMeta: DriveMeta, at: string) {
+    const name = user?.name ?? 'Unknown';
+    const prior = loadAVEquipment(setup.eventCode);
+    saveAVEquipment(setup.eventCode, {
+      setup,
+      items,
+      // Supplies moved to their own generator; keep anything already saved here so it isn't lost.
+      supplies: prior?.supplies,
+      savedAt: at,
+      savedBy: name,
+      savedByEmail: user?.email ?? '',
+      driveUrl: driveMeta.code === setup.eventCode ? driveMeta.url ?? undefined : undefined,
+      driveFileId: driveMeta.code === setup.eventCode ? driveMeta.fileId ?? undefined : undefined,
+    });
+    setStatusAt(at);
+    setStatusBy(name);
+  }
+
+  function saveDraft() {
+    if (!setup.eventCode.trim()) return;
+    persist(drive, new Date().toISOString());
+    setStatus('saved');
+  }
+
+  async function downloadXlsx() {
+    if (lines.length === 0 || exporting) return;
+    exportAVEquipment(setup, items);
+    if (!setup.eventCode.trim()) {
+      setStatus('exported');
+      setStatusAt(new Date().toISOString());
+      return;
+    }
+
+    setExporting(true);
+    setSaveError(null);
+    setFinancialsError(null);
+    const name = user?.name ?? 'Unknown';
+    const email = user?.email ?? '';
+    const sameEvent = drive.code === setup.eventCode;
+    let nextDrive: DriveMeta = sameEvent ? drive : NO_DRIVE;
+    try {
+      const result = await saveAVEquipmentToDrive({
+        eventCode: setup.eventCode,
+        fileName,
+        dataBase64: arrayBufferToBase64(avEquipmentToArrayBuffer(setup, items)),
+        uploadedBy: name,
+        actorEmail: email,
+        eventLocation: setup.eventCity,
+        driveFileId: nextDrive.fileId ?? undefined,
+      });
+      nextDrive = { code: setup.eventCode, url: result.driveUrl, fileId: result.driveFileId };
+      setDrive(nextDrive);
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : 'Could not save to Google Drive');
+    }
+    persist(nextDrive, new Date().toISOString());
+    setStatus('exported');
+
+    try {
+      await syncGeneratorCostItems(setup.eventCode, setup.eventRowId, buildAVCostLines(setup, items), email);
+    } catch (e) {
+      setFinancialsError(e instanceof Error ? e.message : 'Could not sync to Financials');
+    }
+    setExporting(false);
+  }
+
+  const statusLabel =
+    status === 'new'
+      ? onCount ? 'Unsaved changes' : 'New'
+      : status === 'dirty'
+        ? 'Unsaved changes'
+        : status === 'saved'
+          ? 'Draft saved'
+          : (() => {
+              const ago = formatAgo(statusAt ?? undefined);
+              return !ago || ago === 'just now' ? 'Exported just now' : `Exported ${ago}`;
+            })();
+  const statusTitle = statusAt && (status === 'saved' || status === 'exported')
+    ? `${status === 'saved' ? 'Saved' : 'Exported'}${statusBy ? ` by ${statusBy}` : ''} · ${new Date(statusAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+    : undefined;
+  const [titleLine, subLine] = avTitleLines(setup);
+  const driveUrl = drive.code === setup.eventCode ? drive.url : null;
+
+  return (
+    <div className="avx">
+      <div className="avx-titlebar">
+        <div className="avx-titlebar__left">
+          <div className="avx-tile" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="4" width="18" height="12" rx="2" />
+              <path d="M8 20h8M12 16v4" />
+              <path d="M10 8.5v3l3-1.5z" />
+            </svg>
+          </div>
+          <div className="avx-titlebar__name">
+            <Link className="avx-back" to={setup.eventCode ? `/generators?code=${encodeURIComponent(setup.eventCode)}` : '/generators'}>
+              ← Generators
+            </Link>
+            <h1>AV Equipment List</h1>
+          </div>
+          <span
+            className={`avx-status${status === 'saved' ? ' is-saved' : status === 'exported' ? ' is-exported' : ''}`}
+            role="status"
+            title={statusTitle}
+          >
+            {statusLabel}
+          </span>
+        </div>
+        <div className="avx-actions">
+          <button type="button" className="avx-btn avx-btn--secondary" onClick={clearAll}>Clear all</button>
+          <button
+            type="button"
+            className="avx-btn avx-btn--secondary"
+            onClick={saveDraft}
+            disabled={!setup.eventCode.trim()}
+            title={setup.eventCode.trim() ? 'Keep this list in this browser' : 'Enter an event code first'}
+          >
+            Save draft
+          </button>
+          <button
+            type="button"
+            className="avx-btn avx-btn--primary"
+            onClick={downloadXlsx}
+            disabled={lines.length === 0 || exporting}
+            title={setup.eventCode.trim() ? 'Download the .xlsx and save it to the event’s Drive folder' : undefined}
+          >
+            <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />
+            </svg>
+            {exporting ? 'Saving to Drive…' : 'Download .xlsx'}
+          </button>
+        </div>
+      </div>
+
+      {(saveError || financialsError) && (
+        <div className="avx-alert" role="alert">
+          {saveError && <p>The file downloaded, but saving it to Google Drive failed: {saveError}</p>}
+          {financialsError && <p>Financials sync failed: {financialsError}</p>}
+        </div>
+      )}
+
+      <div className="avx-layout">
+        {/* ── Form ── */}
+        <form className="avx-form" aria-label="AV equipment list settings" onSubmit={(e) => e.preventDefault()}>
+          <section className="avx-card">
+            <h2 className="avx-sec-h">1 · Event</h2>
+            <label className="avx-lbl" htmlFor="av-event">Active event</label>
+            <select
+              id="av-event"
+              className="avx-inp avx-inp--event"
+              value={selectedEvent ? selectedEvent.code : ''}
+              onChange={(e) => pickEvent(e.target.value)}
+            >
+              {!selectedEvent && (
+                <option value="">
+                  {options.length ? '— Pick an event —' : eventsLoaded ? 'No active events — fill in the fields below' : 'Loading events…'}
+                </option>
+              )}
+              {options.map((ev) => (
+                <option key={ev.code} value={ev.code}>{generatorEventLabel(ev)}</option>
+              ))}
+            </select>
+            <div className="avx-grid-3">
+              <div>
+                <label className="avx-lbl" htmlFor="av-code">Code</label>
+                <input id="av-code" className="avx-inp" value={setup.eventCode} onChange={(e) => patchSetup({ eventCode: e.target.value })} />
+              </div>
+              <div>
+                <label className="avx-lbl" htmlFor="av-city">City</label>
+                <input id="av-city" className="avx-inp" value={setup.eventCity} onChange={(e) => patchSetup({ eventCity: e.target.value })} />
+              </div>
+              <div>
+                <label className="avx-lbl" htmlFor="av-date">Date</label>
+                <input
+                  id="av-date"
+                  className="avx-inp"
+                  value={setup.eventDate}
+                  // A typed date names the file from the text instead of the event's start day.
+                  onChange={(e) => patchSetup({ eventDate: e.target.value, fileDay: '' })}
+                />
+              </div>
+            </div>
+          </section>
+
+          <section className="avx-card">
+            <h2 className="avx-sec-h">2 · Conference setup</h2>
+            <div className="avx-lbl" id="setup-lbl">Setup style</div>
+            <div className="avx-pills" role="group" aria-labelledby="setup-lbl">
+              {SETUP_STYLES.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  className="avx-pill"
+                  aria-pressed={s === setup.setupStyle}
+                  onClick={() => patchSetup({ setupStyle: s })}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+            <div className="avx-grid-2">
+              <div>
+                <label className="avx-lbl" htmlFor="av-pax">PAX (capacity)</label>
+                <input
+                  id="av-pax"
+                  className="avx-inp"
+                  type="number"
+                  min={1}
+                  value={setup.pax}
+                  onChange={(e) => patchSetup({ pax: e.target.value })}
+                />
+              </div>
+              <div>
+                <div className="avx-lbl" id="days-lbl">Days AV needed</div>
+                <div className="avx-stepper" role="group" aria-labelledby="days-lbl">
+                  <button type="button" aria-label="Fewer days" onClick={() => patchSetup({ days: Math.max(1, setup.days - 1) })}>−</button>
+                  <output aria-live="polite">{setup.days} day{setup.days === 1 ? '' : 's'}</output>
+                  <button type="button" aria-label="More days" onClick={() => patchSetup({ days: Math.min(MAX_DAYS, setup.days + 1) })}>+</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="avx-card">
+            <div className="avx-card__head">
+              <h2 className="avx-sec-h">3 · Equipment</h2>
+              <span className="avx-count">{onCount} of {AV_ITEMS.length} selected</span>
+            </div>
+            <div className="avx-suggest">
+              <span>{suggestionText(setup.setupStyle, pax)}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setItems((prev) => applySuggestion(prev, setup.setupStyle, pax));
+                  markDirty();
+                }}
+              >
+                Apply suggestion
+              </button>
+            </div>
+            <div className="avx-items">
+              {AV_ITEMS.map((def, idx) => {
+                const item = items.find((it) => it.id === def.id)!;
+                return (
+                  <div key={def.id} className={`avx-item${item.enabled ? ' is-on' : ''}`}>
+                    <div className="avx-item__head">
+                      <input
+                        type="checkbox"
+                        id={`cb-${def.id}`}
+                        checked={item.enabled}
+                        onChange={(e) => patchItem(def.id, { enabled: e.target.checked })}
+                      />
+                      <label htmlFor={`cb-${def.id}`}>
+                        <span className="avx-item__n">{idx + 1}</span>
+                        <span className="avx-item__name">{def.name}</span>
+                      </label>
+                      <span className="avx-item__sum">{itemSummary(item, pax)}</span>
+                    </div>
+                    {item.enabled && (
+                      <div className="avx-item__cfg">
+                        <ItemConfig def={def} item={item} pax={pax} onPatch={(patch) => patchItem(def.id, patch)} />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <p className="avx-footnote">
+              Folders, table tents, notepads and other supplies have their own generator:{' '}
+              <Link to={`/supplies-materials${setup.eventCode ? `?code=${encodeURIComponent(setup.eventCode)}` : ''}`}>
+                Supplies &amp; Materials →
+              </Link>
+            </p>
+          </section>
+        </form>
+
+        {/* ── Preview ── */}
+        <section className="avx-card avx-preview" aria-label="Preview">
+          <div className="avx-preview__head">
+            <h2 className="avx-sec-h">Preview</h2>
+            <span className="avx-filename">{fileName}</span>
+            <span className="avx-count"><strong>{lines.length}</strong> line{lines.length === 1 ? '' : 's'}</span>
+          </div>
+          <div className="avx-scroll-x">
+            <div className="avx-psa" role="table" aria-label="Equipment list preview">
+              <div className="avx-psa-band avx-psa-title" role="row">
+                <div role="columnheader">
+                  <div className="t">{titleLine}</div>
+                  <div className="s">{subLine}</div>
+                </div>
+              </div>
+              <div className="avx-psa-row is-head" role="row">
+                <div className="c num" role="columnheader">No.</div>
+                <div className="c" role="columnheader">Name of the Service and Brief Description</div>
+                <div className="c num" role="columnheader">Item</div>
+                <div className="c num" role="columnheader">Day</div>
+                <div className="c num" role="columnheader">Amt</div>
+                <div className="c num" role="columnheader">Price / Item</div>
+                <div className="c num" role="columnheader">Total</div>
+              </div>
+              <div className="avx-psa-band avx-psa-section" role="row"><span role="cell">Conference Equipment</span></div>
+              {lines.length ? (
+                <>
+                  {lines.map((r) => (
+                    <div key={r.id} className="avx-psa-row" role="row">
+                      <div className="c num b" role="cell">{r.no}</div>
+                      <div className="c" role="cell">{r.description}</div>
+                      <div className="c num" role="cell">Item</div>
+                      <div className="c num" role="cell">{r.day}</div>
+                      <div className="c num b" role="cell">{r.amt}</div>
+                      <div className="c num" role="cell">—</div>
+                      <div className="c num" role="cell">—</div>
+                    </div>
+                  ))}
+                  <div className="avx-psa-total is-equipment" role="row">
+                    <div className="c" role="cell">Equipment Total</div>
+                    <div className="c num" role="cell">—</div>
+                  </div>
+                  <div className="avx-psa-total is-sum" role="row">
+                    <div className="c" role="cell">Total Sum (*Taxes and fees included)</div>
+                    <div className="c num" role="cell">—</div>
+                  </div>
+                </>
+              ) : (
+                <div className="avx-psa-empty" role="row">
+                  <span role="cell">No equipment yet — tick items on the left, or apply the suggestion for this setup.</span>
+                </div>
+              )}
+            </div>
+          </div>
+          <p className="avx-price-note">Prices are left blank for now — the vendor fills in Price / Item and Total.</p>
+          {(driveUrl || (status === 'exported' && setup.eventCode)) && (
+            <p className="avx-links">
+              {driveUrl && (
+                <a href={driveUrl} target="_blank" rel="noreferrer">Open in Drive ↗</a>
+              )}
+              {setup.eventCode && status === 'exported' && (
+                <Link to={`/event/${encodeURIComponent(setup.eventCode)}?tab=financials`}>View in Financials →</Link>
+              )}
+            </p>
+          )}
+        </section>
+      </div>
+    </div>
+  );
 }

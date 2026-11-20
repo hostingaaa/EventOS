@@ -1,7 +1,7 @@
 /**
  * Persists AV equipment list state per event in localStorage.
  */
-import type { AVItemState, AVSetup } from '../pages/AVEquipmentPage';
+import type { AVItemState, AVSetup } from './avEquipment';
 import type { SupplyItemState } from './supplies';
 
 export interface SavedAVEquipment {
